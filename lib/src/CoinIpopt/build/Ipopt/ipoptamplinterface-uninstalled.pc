@@ -1,0 +1,10 @@
+prefix=/home/baxter/Documents/CoinIpopt/build
+libdir=/home/baxter/Documents/CoinIpopt/build/Ipopt/src/Apps/AmplSolver
+
+Name: IPOPT
+Description: Ampl Interface TNLP to Ipopt
+URL: https://projects.coin-or.org/Ipopt
+Version: 3.12.6
+Libs: ${libdir}/libipoptamplinterface.la 
+Cflags: -I/home/baxter/Documents/CoinIpopt/Ipopt/src/Apps/AmplSolver
+Requires: ipopt coinasl 
