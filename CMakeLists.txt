@@ -9,7 +9,11 @@ find_package(catkin REQUIRED roscpp)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}")
 
 find_package(IPOPT REQUIRED)
+find_package(Eigen3 REQUIRED)
 
+include_directories(${EIGEN3_INCLUDE_DIR})
+message("${EIGEN_FOUND}")
+message("${EIGEN3_INCLUDE_DIR}")
 include_directories(${IPOPT_INCLUDE_DIRS})
 
 ## System dependencies are found with CMake's conventions
