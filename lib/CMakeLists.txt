@@ -17,9 +17,9 @@ include_directories(${PROJECT_SOURCE_DIR}/include)
 # which would be an unnecessary overhead.
 
 add_library(react_controller include/react_controller/reactCtrlThread.h
-                            include/react_controller/reactIpOpt.h
-                            src/react_controller/reactCtrlThread.cpp
-                            src/react_controller/reactIpOpt.cpp)
+                             include/react_controller/reactIpOpt.h
+                             src/react_controller/reactCtrlThread.cpp
+                             src/react_controller/reactIpOpt.cpp)
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
@@ -29,7 +29,8 @@ add_dependencies(react_controller    ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
 
-target_link_libraries(react_controller       ${catkin_LIBRARIES})
+target_link_libraries(react_controller    ${Eigen_LIBRARIES}
+                                          ${catkin_LIBRARIES})
 
 ## Mark libraries for installation
 install (TARGETS react_controller
