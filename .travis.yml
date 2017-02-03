@@ -80,7 +80,7 @@ before_install:
   # Install IPOPT, compile it and set the proper environment variable
   - mkdir ~/src
   - cd ~/src
-  - svn co https://projects.coin-or.org/svn/Ipopt/stable/3.12 ipopt
+  - svn co --trust-server-cert https://projects.coin-or.org/svn/Ipopt/stable/3.12 ipopt
   - mkdir $IPOPT_DIR/build
   - cd $IPOPT_DIR/ThirdParty
   - cd ASL    && ./get.ASL    && cd ../
