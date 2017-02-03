@@ -63,7 +63,7 @@ env:
     - CATKIN_OPTIONS=$CI_SOURCE_PATH/catkin.options
     - ROS_PARALLEL_JOBS='-j8 -l6'
     - REPO_NAME=$(echo $TRAVIS_REPO_SLUG | cut -d"/" -f2) # if you have multiple packages per repo, change this variable accordingly
-    - IPOPT_DIR=~/src/ipopt
+    - IPOPT_DIR=~/src/ipopt/build
 
 ################################################################################
 
@@ -81,14 +81,14 @@ before_install:
   - mkdir ~/src
   - cd ~/src
   - svn co --trust-server-cert --non-interactive https://projects.coin-or.org/svn/Ipopt/stable/3.12 ipopt
-  - mkdir $IPOPT_DIR/build
-  - cd $IPOPT_DIR/ThirdParty
+  - mkdir $IPOPT_DIR
+  - cd $IPOPT_DIR/../ThirdParty
   - cd ASL    && ./get.ASL    && cd ../
   - cd Blas   && ./get.Blas   && cd ../
   - cd Lapack && ./get.Lapack && cd ../
   - cd Metis  && ./get.Metis  && cd ../
   - cd Mumps  && ./get.Mumps  && cd ../
-  - cd $IPOPT_DIR/build
+  - cd $IPOPT_DIR
   - ../configure
   - make -j8
   - sudo make install
