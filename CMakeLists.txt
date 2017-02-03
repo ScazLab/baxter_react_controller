@@ -4,26 +4,14 @@ project(baxter_react_controller)
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
-find_package(catkin REQUIRED roscpp)
+find_package(catkin REQUIRED
+                    cmake_modules
+                    roscpp)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}")
 
 find_package(IPOPT REQUIRED)
-find_package(Eigen3 REQUIRED)
-
-include_directories(${EIGEN3_INCLUDE_DIR})
-message("${EIGEN_FOUND}")
-message("${EIGEN3_INCLUDE_DIR}")
-include_directories(${IPOPT_INCLUDE_DIRS})
-
-## System dependencies are found with CMake's conventions
-# find_package(Boost REQUIRED COMPONENTS system)
-
-
-## Uncomment this if the package has a setup.py. This macro ensures
-## modules and global scripts declared therein get installed
-## See http://ros.org/doc/api/catkin/html/user_guide/setup_dot_py.html
-# catkin_python_setup()
+find_package(Eigen REQUIRED)
 
 ################################################
 ## Declare ROS messages, services and actions ##
@@ -76,26 +64,6 @@ include_directories(${IPOPT_INCLUDE_DIRS})
 #   std_msgs  # Or other packages containing msgs
 # )
 
-################################################
-## Declare ROS dynamic reconfigure parameters ##
-################################################
-
-## To declare and build dynamic reconfigure parameters within this
-## package, follow these steps:
-## * In the file package.xml:
-##   * add a build_depend and a run_depend tag for "dynamic_reconfigure"
-## * In this file (CMakeLists.txt):
-##   * add "dynamic_reconfigure" to
-##     find_package(catkin REQUIRED COMPONENTS ...)
-##   * uncomment the "generate_dynamic_reconfigure_options" section below
-##     and list every .cfg file to be processed
-
-## Generate dynamic reconfigure parameters in the 'cfg' folder
-# generate_dynamic_reconfigure_options(
-#   cfg/DynReconf1.cfg
-#   cfg/DynReconf2.cfg
-# )
-
 ###################################
 ## catkin specific configuration ##
 ###################################
@@ -109,16 +77,17 @@ catkin_package(
    INCLUDE_DIRS lib/include
    LIBRARIES react_controller
 #  CATKIN_DEPENDS other_catkin_pkg
-#  DEPENDS system_lib
+   DEPENDS Eigen
 )
 
 ###########
 ## Build ##
 ###########
-
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
-   include_directories(lib/include
+include_directories(lib/include
+                    ${IPOPT_INCLUDE_DIRS}
+                    ${Eigen_INCLUDE_DIRS}
                     ${catkin_INCLUDE_DIRS})
 
 
@@ -133,14 +102,14 @@ catkin_package(
 # add_dependencies(baxter_react_controller ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Add C++ libraries
-   add_subdirectory(lib)
+add_subdirectory(lib)
 
 ## Declare a C++ executable
 add_executable(baxter_react_controller src/baxter_react_controller.cpp)
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above
-   add_dependencies(baxter_react_controller ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(baxter_react_controller ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(baxter_react_controller               react_controller
