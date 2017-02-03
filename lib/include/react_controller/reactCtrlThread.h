@@ -29,7 +29,7 @@
 // #include <vector>
 // #include <deque>
 
-// #include "reactIpOpt.h"
+#include "reactIpOpt.h"
 // #include "particleThread.h"
 // #include "avoidanceHandler.h"
 
@@ -39,7 +39,7 @@
 
 // class reactCtrlThread: public yarp::os::RateThread
 // {
-    
+
 // public:
 //     // CONSTRUCTOR
 //     reactCtrlThread(int , const string & , const string & , const string &_ ,
@@ -78,7 +78,7 @@
 //     // Gets the vMax
 //     double getVMax();
 
-//     // [DEPRECATED] Sets the trajectory time 
+//     // [DEPRECATED] Sets the trajectory time
 //     bool setTrajTime(const double );
 
 //     // Sets the trajectory speed
@@ -99,7 +99,7 @@
 //     bool stopControl();
 
 //     bool stopControlAndSwitchToPositionMode();
-    
+
 // protected:
 //     /***************************************************************************/
 //     // EXTERNAL VARIABLES: change them from command line or through .ini file
@@ -128,19 +128,19 @@
 //     string referenceGen; // either "uniformParticle" - constant velocity with particleThread - or "minJerk"
 //     bool tactileCollisionPointsOn; //if on, will be reading collision points from /skinEventsAggregator/skin_events_aggreg:o
 //     bool visualCollisionPointsOn; //if on, will be reading predicted collision points from visuoTactileRF/pps_activations_aggreg:o
-    
+
 //     bool gazeControl; //will follow target with gaze
 //     bool stiffInteraction; //stiff vs. compliant interaction mode
-        
+
 //     bool hittingConstraints; //inequality constraints for safety of shoudler assembly and to prevent self-collisions torso-upper arm, upper-arm - forearm
 //     bool orientationControl; //if orientation should be controlled as well
 //     bool visualizeTargetInSim;  // will use the yarp rpc /icubSim/world to visualize the target
 //     // will use the yarp rpc /icubSim/world to visualize the particle (trajectory - intermediate targets)
-//     bool visualizeParticleInSim; 
+//     bool visualizeParticleInSim;
 //     // will use the yarp rpc /icubSim/world to visualize the potential collision points
 //     bool visualizeCollisionPointsInSim;
 //     //to enable/disable the smooth changes of joint velocities bounds in optimizer
-    
+
 //     /***************************************************************************/
 //     // INTERNAL VARIABLES:
 //     double dT;  //period of the thread in seconds  =getRate()/1000.0;
@@ -150,12 +150,12 @@
 //     iCub::ctrl::Integrator *I; //if controlMode == positionDirect, we need to integrate the velocity control commands
 
 //     int        state;        // Flag to know in which state the thread is in
-    
+
 //     // Driver for "classical" interfaces
 //     PolyDriver       ddA;
 //     PolyDriver       ddT;
 //     PolyDriver       ddG; // gaze  controller  driver
-    
+
 //     // "Classical" interfaces for the arm
 //     IEncoders            *iencsA;
 //     IVelocityControl2     *ivelA;
@@ -168,11 +168,11 @@
 //     iCub::iKin::iCubArm    *arm;
 //     iCub::iKin::iKinChain  *armChain;
 //     int jntsA;
-    
+
 //     VectorOf<InteractionModeEnum> interactionModesOrig;
 //     VectorOf<InteractionModeEnum> interactionModesNew;
 //     VectorOf<int> jointsToSetInteractionA;
-    
+
 //     // "Classical" interfaces for the torso
 //     IEncoders            *iencsT;
 //     IVelocityControl2     *ivelT;
@@ -181,17 +181,17 @@
 //     IControlLimits        *ilimT;
 //     yarp::sig::Vector     *encsT;
 //     int jntsT;
-    
+
 //     // Gaze interface
 //     IGazeControl    *igaze;
 //     int contextGaze;
 
-    
+
 //     size_t chainActiveDOF;
 //     //parallel virtual arm and chain on which ipopt will be working in the positionDirect mode case
 //     iCub::iKin::iCubArm    *virtualArm;
-//     iCub::iKin::iKinChain *virtualArmChain; 
-    
+//     iCub::iKin::iKinChain *virtualArmChain;
+
 //     yarp::sig::Vector x_0;  // Initial end-effector position
 //     yarp::sig::Vector x_t;  // Current end-effector position
 //     yarp::sig::Vector x_n;  // Desired next end-effector position
@@ -215,52 +215,52 @@
 //     yarp::sig::Vector qIntegrated; //joint angle values integrated from velocity commands by Integrator - controlMode positionDirect only
 
 //     yarp::sig::Vector q_dot;  // Computed joint velocities to reach the target
-    
+
 //     yarp::sig::Matrix lim;  //matrix with joint position limits for the current chain
 //     yarp::sig::Matrix vLimNominal;     //matrix with min/max velocity limits for the current chain
 //     yarp::sig::Matrix vLimAdapted;  //matrix with min/max velocity limits after adptation by avoidanceHandler
-      
+
 //     //yarp::sig::Matrix H;      // End-effector pose
-      
+
 //     // ports and files
 //     yarp::os::BufferedPort<yarp::os::Bottle> aggregSkinEventsInPort; //coming from /skinEventsAggregator/skin_events_aggreg:o
-//     yarp::os::BufferedPort<yarp::os::Bottle> aggregPPSeventsInPort; //coming from visuoTactileRF/pps_activations_aggreg:o 
+//     yarp::os::BufferedPort<yarp::os::Bottle> aggregPPSeventsInPort; //coming from visuoTactileRF/pps_activations_aggreg:o
 //     //expected format for both: (skinPart_s x y z o1 o2 o3 magnitude), with position x,y,z and normal o1 o2 o3 in link FoR
 //     yarp::os::Port outPort;
 //     yarp::os::Port outPortiCubGui;
 //     yarp::os::Port portToSimWorld;
-//     ofstream fout_param; //log parameters that stay constant during the simulation, but are important for analysis - e.g. joint limits 
+//     ofstream fout_param; //log parameters that stay constant during the simulation, but are important for analysis - e.g. joint limits
 //     // Stamp for the setEnvelope for the ports
 //     yarp::os::Stamp ts;
-//     double t_0; 
- 
+//     double t_0;
+
 //     // IPOPT STUFF
 //     int ipoptExitCode;
 //     double timeToSolveProblem_s; //time taken by q_dot = solveIK(ipoptExitCode) ~ ipopt + avoidance handler
 
 //     // Mutex for handling things correctly
 //     yarp::os::Mutex mutex;
-    
-//     yarp::os::Bottle    cmd; 
+
+//     yarp::os::Bottle    cmd;
 //     yarp::sig::Matrix T_world_root; //homogenous transf. matrix expressing the rotation and translation of FoR from world (simulator) to from robot (Root) FoR
-    
+
 //     bool visualizeIniCubGui;
 //     bool visualizeParticleIniCubGui;
 //     bool visualizeTargetIniCubGui;
-    
+
 //     // objects in simulator will be created only for first target - with new targets they will be moved
 //     bool firstTarget;
 //     std::vector<collisionPoint_t> collisionPoints; //list of "avoidance vectors" from peripersonal space / safety margin
 //     int collisionPointsVisualizedCount; //objects will be created in simulator and then their positions updated every iteration
 //     yarp::sig::Vector collisionPointsSimReservoirPos; //inactive collision points will be stored in the world
-        
+
 //     /**
 //     * Solves the Inverse Kinematic task
 //     */
 //     yarp::sig::Vector solveIK(int &);
 
 //     /**** kinematic chain, control, ..... *****************************/
-    
+
 //     /**
 //     * Aligns joint bounds according to the actual limits of the robot
 //     */
@@ -320,9 +320,9 @@
 
 
 //     void convertPosFromRootToSimFoR(const yarp::sig::Vector &pos, yarp::sig::Vector &outPos);
-    
+
 //     void convertPosFromLinkToRootFoR(const yarp::sig::Vector &pos,const iCub::skinDynLib::SkinPart skinPart, yarp::sig::Vector &outPos);
-        
+
 
 //    /************************** communication through ports in/out ***********************************/
 
@@ -337,23 +337,23 @@
 //     /***************************** visualizations in icubGui  ****************************/
 //     //uses corresponding global variables for target pos (x_d) or particle pos (x_n) and creates bottles for the port to iCubGui
 //     void sendiCubGuiObject(const std::string object_type);
-    
+
 //     void deleteiCubGuiObject(const std::string object_type);
-    
+
 //     /****************** visualizations in icub simulator   *************************************/
 //     /**
 //     * Creates a sphere (not affected by gravity) in the iCub simulator through the /icubSim/world port
 //     * @param radius
-//     * @param pos  
+//     * @param pos
 //     */
 //     void createStaticSphere(double radius, const yarp::sig::Vector &pos);
-   
+
 //     void moveSphere(int index, const yarp::sig::Vector &pos);
-    
+
 //     void createStaticBox(const yarp::sig::Vector &pos);
-    
+
 //     void moveBox(int index, const yarp::sig::Vector &pos);
-    
+
 //     void showCollisionPointsInSim();
 
 
