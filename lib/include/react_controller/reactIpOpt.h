@@ -4,6 +4,9 @@
 #include <IpTNLP.hpp>
 #include <IpIpoptApplication.hpp>
 #include <Eigen/Dense>
+#include <Eigen/SVD>
+#include <kdl/chain.hpp>
+#include <urdf/model.h>
 
 // #include <yarp/os/all.h>
 // #include <yarp/dev/all.h>
@@ -30,47 +33,47 @@ using namespace Eigen;
 /****************************************************************/
 class ControllerNLP : public Ipopt::TNLP
 {
-    // iKinChain &chain;
+    KDL::Chain &chain;
     bool hitting_constraints;
     bool orientation_control;
 
-    VectorXi xr,pr;
+    VectorXd xr,pr;
     MatrixXd Hr,skew_nr,skew_sr,skew_ar;
     MatrixXd q_lim,v_lim;    
-    VectorXi q0,v0,v,p0;
-    MatrixXd H0,R0,He,J0_xyz,J0_ang,Derr_ang;
-    VectorXi err_xyz,err_ang;
+    VectorXd q0,v0,v,p0;
+    Matrix3d H0,R0,He,J0_xyz,J0_ang,Derr_ang;
+    VectorXd err_xyz,err_ang;
     MatrixXd bounds;
     double dt;
 
     double shou_m,shou_n;
     double elb_m,elb_n;
 
-    VectorXi qGuard;
-    VectorXi qGuardMinExt;
-    VectorXi qGuardMinInt;
-    VectorXi qGuardMinCOG;
-    VectorXi qGuardMaxExt;
-    VectorXi qGuardMaxInt;
-    VectorXi qGuardMaxCOG;
+    VectorXd qGuard;
+    VectorXd qGuardMinExt;
+    VectorXd qGuardMinInt;
+    VectorXd qGuardMinCOG;
+    VectorXd qGuardMaxExt;
+    VectorXd qGuardMaxInt;
+    VectorXd qGuardMaxCOG;
 
     /****************************************************************/
     void computeSelfAvoidanceConstraints();
     void computeGuard();
     void computeBounds();
-    MatrixXd v2m(const VectorXi &x);
-    MatrixXd skew(const Vector3i &w);
+    MatrixXd v2m(const Matrix<double, 6, 1> &x);
+    MatrixXd skew(const Vector3d &w);
 
     public:
-    // ControllerNLP(iKinChain &chain_);
-    void set_xr(const VectorXi &xr);
+    ControllerNLP(KDL::Chain &chain_);
+    void set_xr(const VectorXd &xr);
     void set_v_limInDegPerSecond(const MatrixXd &v_lim);
     void set_hitting_constraints(const bool _hitting_constraints);
     void set_orientation_control(const bool _orientation_control);
     void set_dt(const double dt);
     void set_v0InDegPerSecond(const VectorXi &v0);
     void init();
-    VectorXi get_resultInDegPerSecond() const;
+    Matrix<double, 6, 1> get_resultInDegPerSecond() const;
     // Property getParameters() const;
     bool get_nlp_info(Ipopt::Index &n, Ipopt::Index &m, Ipopt::Index &nnz_jac_g,
                       Ipopt::Index &nnz_h_lag, IndexStyleEnum &index_style);
@@ -88,6 +91,9 @@ class ControllerNLP : public Ipopt::TNLP
     void finalize_solution(Ipopt::SolverReturn status, Ipopt::Index n, const Ipopt::Number *x, const Ipopt::Number *z_L,
                            const Ipopt::Number *z_U, Ipopt::Index m, const Ipopt::Number *g, const Ipopt::Number *lambda,
                            Ipopt::Number obj_value, const Ipopt::IpoptData *ip_data, Ipopt::IpoptCalculatedQuantities *ip_cq);
+    void SVD(const MatrixXd &in, MatrixXd &U, VectorXd &S, MatrixXd &V);
+    Vector4d dcm2axis(const MatrixXd &R);
+    Matrix4d axis2dcm(const Vector4d &v);
 };
 
 

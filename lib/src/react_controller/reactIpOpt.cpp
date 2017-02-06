@@ -1,3 +1,5 @@
+#include <math.h>
+
 #include "react_controller/reactIpOpt.h"
 
 
@@ -79,76 +81,76 @@
 //     }
 
 //     /****************************************************************/
-//     MatrixXd ControllerNLP::v2m(const Vector &x)
-//     {
-//         yAssert(x.length()>=6);
-//         Vector ang=x.subVector(3,5);
-//         double ang_mag=norm(ang);
-//         if (ang_mag>0.0)
-//             ang/=ang_mag;
-//         ang.push_back(ang_mag);
-//         MatrixXd H=axis2dcm(ang);
-//         H(0,3)=x[0];
-//         H(1,3)=x[1];
-//         H(2,3)=x[2];
-//         return H;
-//     }
+    MatrixXd ControllerNLP::v2m(const Matrix<double, 6, 1> &x)
+    {
+        Vector4d ang;
+        ang.block(0, 0, 1, 3) = x.tail(3);
+        double ang_mag=ang.norm();
+        if (ang_mag>0.0)
+            ang/=ang_mag;
+        ang(0, 4) = ang_mag;
+        MatrixXd H=axis2dcm(ang);
+        H(0,3)=x[0];
+        H(1,3)=x[1];
+        H(2,3)=x[2];
+        return H;
+    }
 
     /****************************************************************/
-    // MatrixXd ControllerNLP::skew(const Vector3i &w)
-    // {
-    //     yAssert(w.length()>=3);
-    //     MatrixXd S(3,3);
-    //     S(0,0)=S(1,1)=S(2,2)=0.0;
-    //     S(1,0)= w[2]; S(0,1)=-S(1,0);
-    //     S(2,0)=-w[1]; S(0,2)=-S(2,0);
-    //     S(2,1)= w[0]; S(1,2)=-S(2,1);
-    //     return S;
-    // }
+    MatrixXd ControllerNLP::skew(const Vector3d &w)
+    {
+        MatrixXd S(3,3);
+        S(0,0)=S(1,1)=S(2,2)=0.0;
+        S(1,0)= w[2]; S(0,1)=-S(1,0);
+        S(2,0)=-w[1]; S(0,2)=-S(2,0);
+        S(2,1)= w[0]; S(1,2)=-S(2,1);
+        return S;
+    }
 
-// //public:
-//     /****************************************************************/
-//     ControllerNLP::ControllerNLP(iKinChain &chain_) : chain(chain_)
-//     {
-//         xr.resize(6,0.0);
-//         set_xr(xr);
+    /****************************************************************/
+    ControllerNLP::ControllerNLP(KDL::Chain &chain_) : chain(chain_)
+    {
+        xr.resize(6,0.0);
+        set_xr(xr);
 
-//         v0.resize(chain.getDOF(),0.0); v=v0;
-//         He=zeros(4,4); He(3,3)=1.0;
+        v0.resize(chain.getNrOfJoints(),0.0); v=v0;
+        Matrix4f He;
+        He.setZero(); 
+        He(3,3)=1.0;
 
-//         q_lim.resize(chain.getDOF(),2);
-//         v_lim.resize(chain.getDOF(),2);
-//         for (size_t r=0; r<chain.getDOF(); r++)
-//         {
-//             q_lim(r,0)=chain(r).getMin();
-//             q_lim(r,1)=chain(r).getMax();
+        q_lim.resize(chain.getNrOfJoints(),2);
+        v_lim.resize(chain.getNrOfJoints(),2);
+        for (size_t r=0; r<chain.getNrOfJoints(); r++)
+        {
+            /* angle bounds */
+            // q_lim(r,0)=chain(r).getMin();
+            // q_lim(r,1)=chain(r).getMax();
 
-//             v_lim(r,1)=std::numeric_limits<double>::max();
-//             v_lim(r,0)=-v_lim(r,1);
-//         }
-//         bounds=v_lim;
+            // v_lim(r,1)=std::numeric_limits<double>::max();
+            // v_lim(r,0)=-v_lim(r,1);
+        }
+        bounds=v_lim;
 
-//         computeSelfAvoidanceConstraints();
-//         computeGuard();
+        computeSelfAvoidanceConstraints();
+        computeGuard();
 
-//         hitting_constraints=true;
-//         orientation_control=true;
-//         dt=0.01;
-//     }
+        hitting_constraints=true;
+        orientation_control=true;
+        dt=0.01;
+    }
 
-//     /****************************************************************/
-//     void ControllerNLP::set_xr(const Vector &xr)
-//     {
-//         yAssert(this->xr.length()==xr.length());
-//         this->xr=xr;
+    /****************************************************************/
+    void ControllerNLP::set_xr(const VectorXd &xr)
+    {
+        this->xr=xr;
 
-//         Hr=v2m(xr);
-//         pr=xr.subVector(0,2);
+        Hr=v2m(xr);
+        pr=xr.block(0, 0, 1, 3);
 
-//         skew_nr=skew(Hr.getCol(0));
-//         skew_sr=skew(Hr.getCol(1));
-//         skew_ar=skew(Hr.getCol(2));
-//     }
+        skew_nr=skew(Hr.col(0));
+        skew_sr=skew(Hr.col(1));
+        skew_ar=skew(Hr.col(2));
+    }
 
 //     /****************************************************************/
 //     void ControllerNLP::set_v_limInDegPerSecond(const MatrixXd &v_lim)
@@ -188,26 +190,27 @@
 //         this->v0=CTRL_DEG2RAD*v0;
 //     }
 
-//     /****************************************************************/
-//     void ControllerNLP::init()
-//     {
-//         q0=chain.getAng();
-//         H0=chain.getH();
-//         R0=H0.submatrix(0,2,0,2);
-//         p0=H0.getCol(3).subVector(0,2);
+    /****************************************************************/
+    void ControllerNLP::init()
+    {
+        // q0=chain.getAng();
+        // H0=chain.getH();
+        R0=H0.block(0,0,3,3);
+        p0=H0.col(3).block(0, 0, 1, 3);
 
-//         MatrixXd J0=chain.GeoJacobian();
-//         J0_xyz=J0.submatrix(0,2,0,chain.getDOF()-1);
-//         J0_ang=J0.submatrix(3,5,0,chain.getDOF()-1);
+        // MatrixXd J0=chain.GeoJacobian();
+        MatrixXd J0;
+        J0_xyz=J0.block(0,0,3,chain.getNrOfJoints()-1);
+        J0_ang=J0.block(0,3,3,chain.getNrOfJoints()-1);
 
-//         computeBounds();
-//     }
+        computeBounds();
+    }
 
-//     /****************************************************************/
-//     Vector ControllerNLP::get_resultInDegPerSecond() const
-//     {
-//         return CTRL_RAD2DEG*v;
-//     }
+    /****************************************************************/
+    // Matrix<double, 6, 1> ControllerNLP::get_resultInDegPerSecond() const
+    // {
+    //     return CTRL_RAD2DEG*v;
+    // }
 
 //     /****************************************************************/
 //     Property ControllerNLP::getParameters() const
@@ -290,170 +293,262 @@
 //         return true;
 //     }
 
-    // /************************************************************************/
-    // void ControllerNLP::computeQuantities(const Ipopt::Number *x, const bool new_x)
-    // {
-    //     if (new_x)
-    //     {
-    //         for (size_t i=0; i<v.length(); i++)
-    //             v[i]=x[i];
+    /************************************************************************/
+    void ControllerNLP::computeQuantities(const Ipopt::Number *x, const bool new_x)
+    {
+        if (new_x)
+        {
+            for (size_t i=0; i<6; i++)
+                v[i]=x[i];
 
-    //         He.setSubmatrix(R0+dt*(skew(J0_ang*v)*R0),0,0);
-    //         Vector pe=p0+dt*(J0_xyz*v);
-    //         He(0,3)=pe[0];
-    //         He(1,3)=pe[1];
-    //         He(2,3)=pe[2];
+            Matrix3d sub = R0+dt*(skew(J0_ang*v)*R0);
 
-    //         err_xyz=pr-pe;
-    //         err_ang=dcm2axis(Hr*He.transpose());
-    //         err_ang*=err_ang[3];
-    //         err_ang.pop_back();
+            He.block(0, 0, 3, 3) = sub;
+            Vector3d pe=p0+dt*(J0_xyz*v);
+            He(0,3)=pe[0];
+            He(1,3)=pe[1];
+            He(2,3)=pe[2];
 
-    //         MatrixXd L=-0.5*(skew_nr*skew(He.col(0))+
-    //                        skew_sr*skew(He.col(1))+
-    //                        skew_ar*skew(He.col(2)));
-    //         Derr_ang=-dt*(L*J0_ang);
-    //     }
-    // }
+            err_xyz=pr-pe;
+            err_ang=dcm2axis(Hr*He.transpose());
+            err_ang*=err_ang[3];
+            err_ang.resize(3);
 
-    // /****************************************************************/
-    // bool ControllerNLP::eval_f(Ipopt::Index n, const Ipopt::Number *x, bool new_x,
-    //             Ipopt::Number &obj_value)
-    // {
-    //     computeQuantities(x,new_x);
-    //     obj_value=(orientation_control?err_ang.squaredNorm():0.0);
-    //     return true;
-    // }
+            MatrixXd L=-0.5*(skew_nr*skew(He.col(0))+
+                           skew_sr*skew(He.col(1))+
+                           skew_ar*skew(He.col(2)));
+            Derr_ang=-dt*(L*J0_ang);
+        }
+    }
 
-    // /****************************************************************/
-    // bool ControllerNLP::eval_grad_f(Ipopt::Index n, const Ipopt::Number* x, bool new_x,
-    //                  Ipopt::Number *grad_f)
-    // {
-    //     computeQuantities(x,new_x);
-    //     for (Ipopt::Index i=0; i<n; i++)
-    //         grad_f[i]=(orientation_control?2.0*err_ang.dot(Derr_ang.col(i)):0.0);
-    //     return true;
-    // }
+    /****************************************************************/
+    bool ControllerNLP::eval_f(Ipopt::Index n, const Ipopt::Number *x, bool new_x,
+                Ipopt::Number &obj_value)
+    {
+        computeQuantities(x,new_x);
+        obj_value=(orientation_control?err_ang.squaredNorm():0.0);
+        return true;
+    }
 
-    // /****************************************************************/
-    // bool ControllerNLP::eval_g(Ipopt::Index n, const Ipopt::Number *x, bool new_x,
-    //             Ipopt::Index m, Ipopt::Number *g)
-    // {
-    //     computeQuantities(x,new_x);
-
-    //     // reaching in position
-    //     g[0]=err_xyz.squaredNorm();
-
-    //     if (hitting_constraints)
-    //     {
-    //         // shoulder's cables length
-    //         g[1]=1.71*(q0[3+0]+dt*x[3+0]-(q0[3+1]+dt*x[3+1]));
-    //         g[2]=1.71*(q0[3+0]+dt*x[3+0]-(q0[3+1]+dt*x[3+1])-(q0[3+2]+dt*x[3+2]));
-    //         g[3]=q0[3+1]+dt*x[3+1]+q0[3+2]+dt*x[3+2];
-
-    //         // avoid hitting torso
-    //         g[4]=q0[3+1]+dt*x[3+1]-shou_m*(q0[3+2]+dt*x[3+2]);
-
-    //         // avoid hitting forearm
-    //         g[5]=-elb_m*(q0[3+3+0]+dt*x[3+3+0])+q0[3+3+1]+dt*x[3+3+1];
-    //         g[6]=elb_m*(q0[3+3+0]+dt*x[3+3+0])+q0[3+3+1]+dt*x[3+3+1];
-    //     }
-
-    //     return true;
-    // }
+    /****************************************************************/
+    bool ControllerNLP::eval_grad_f(Ipopt::Index n, const Ipopt::Number* x, bool new_x,
+                     Ipopt::Number *grad_f)
+    {
+        computeQuantities(x,new_x);
+        for (Ipopt::Index i=0; i<n; i++) {
+            grad_f[i]=(orientation_control?2.0*err_ang.dot(Derr_ang.col(i)):0.0);
+        }
+        return true;
+    }
 
     // /****************************************************************/
-    // bool ControllerNLP::eval_jac_g(Ipopt::Index n, const Ipopt::Number *x, bool new_x,
-    //                 Ipopt::Index m, Ipopt::Index nele_jac, Ipopt::Index *iRow,
-    //                 Ipopt::Index *jCol, Ipopt::Number *values)
-    // {
-    //     if (values==NULL)
-    //     {
-    //         Ipopt::Index idx=0;
+    bool ControllerNLP::eval_g(Ipopt::Index n, const Ipopt::Number *x, bool new_x,
+                Ipopt::Index m, Ipopt::Number *g)
+    {
+        computeQuantities(x,new_x);
 
-    //         // reaching in position
-    //         for (Ipopt::Index i=0; i<n; i++)
-    //         {
-    //             iRow[i]=0; jCol[i]=i;
-    //             idx++;
-    //         }
+        // reaching in position
+        g[0]=err_xyz.squaredNorm();
 
-    //         if (hitting_constraints)
-    //         {
-    //             // shoulder's cables length
-    //             iRow[idx]=1; jCol[idx]=3+0; idx++;
-    //             iRow[idx]=1; jCol[idx]=3+1; idx++;
+        if (hitting_constraints)
+        {
+            // shoulder's cables length
+            g[1]=1.71*(q0[3+0]+dt*x[3+0]-(q0[3+1]+dt*x[3+1]));
+            g[2]=1.71*(q0[3+0]+dt*x[3+0]-(q0[3+1]+dt*x[3+1])-(q0[3+2]+dt*x[3+2]));
+            g[3]=q0[3+1]+dt*x[3+1]+q0[3+2]+dt*x[3+2];
 
-    //             iRow[idx]=2; jCol[idx]=3+0; idx++;
-    //             iRow[idx]=2; jCol[idx]=3+1; idx++;
-    //             iRow[idx]=2; jCol[idx]=3+2; idx++;
+            // avoid hitting torso
+            g[4]=q0[3+1]+dt*x[3+1]-shou_m*(q0[3+2]+dt*x[3+2]);
 
-    //             iRow[idx]=3; jCol[idx]=3+1; idx++;
-    //             iRow[idx]=3; jCol[idx]=3+2; idx++;
+            // avoid hitting forearm
+            g[5]=-elb_m*(q0[3+3+0]+dt*x[3+3+0])+q0[3+3+1]+dt*x[3+3+1];
+            g[6]=elb_m*(q0[3+3+0]+dt*x[3+3+0])+q0[3+3+1]+dt*x[3+3+1];
+        }
 
-    //             // avoid hitting torso
-    //             iRow[idx]=4; jCol[idx]=3+1; idx++;
-    //             iRow[idx]=4; jCol[idx]=3+2; idx++;
+        return true;
+    }
 
-    //             // avoid hitting forearm
-    //             iRow[idx]=5; jCol[idx]=3+3+0; idx++;
-    //             iRow[idx]=5; jCol[idx]=3+3+1; idx++;
+    /****************************************************************/
+    bool ControllerNLP::eval_jac_g(Ipopt::Index n, const Ipopt::Number *x, bool new_x,
+                    Ipopt::Index m, Ipopt::Index nele_jac, Ipopt::Index *iRow,
+                    Ipopt::Index *jCol, Ipopt::Number *values)
+    {
+        if (values==NULL)
+        {
+            Ipopt::Index idx=0;
 
-    //             iRow[idx]=6; jCol[idx]=3+3+0; idx++;
-    //             iRow[idx]=6; jCol[idx]=3+3+1; idx++;
-    //         }
-    //     }
-    //     else
-    //     {
-    //         computeQuantities(x,new_x);
+            // reaching in position
+            for (Ipopt::Index i=0; i<n; i++)
+            {
+                iRow[i]=0; jCol[i]=i;
+                idx++;
+            }
 
-    //         Ipopt::Index idx=0;
+            if (hitting_constraints)
+            {
+                // shoulder's cables length
+                iRow[idx]=1; jCol[idx]=3+0; idx++;
+                iRow[idx]=1; jCol[idx]=3+1; idx++;
 
-    //         // reaching in position
-    //         for (Ipopt::Index i=0; i<n; i++)
-    //         {
-    //             values[i]=-2.0*dt*err_xyz.dot(J0_xyz.col(i));
-    //             idx++;
-    //         }
+                iRow[idx]=2; jCol[idx]=3+0; idx++;
+                iRow[idx]=2; jCol[idx]=3+1; idx++;
+                iRow[idx]=2; jCol[idx]=3+2; idx++;
 
-    //         if (hitting_constraints)
-    //         {
-    //             // shoulder's cables length
-    //             values[idx++]=1.71*dt;
-    //             values[idx++]=-1.71*dt;
+                iRow[idx]=3; jCol[idx]=3+1; idx++;
+                iRow[idx]=3; jCol[idx]=3+2; idx++;
 
-    //             values[idx++]=1.71*dt;
-    //             values[idx++]=-1.71*dt;
-    //             values[idx++]=-1.71*dt;
+                // avoid hitting torso
+                iRow[idx]=4; jCol[idx]=3+1; idx++;
+                iRow[idx]=4; jCol[idx]=3+2; idx++;
 
-    //             values[idx++]=dt;
-    //             values[idx++]=dt;
+                // avoid hitting forearm
+                iRow[idx]=5; jCol[idx]=3+3+0; idx++;
+                iRow[idx]=5; jCol[idx]=3+3+1; idx++;
 
-    //             // avoid hitting torso
-    //             values[idx++]=dt;
-    //             values[idx++]=-shou_m*dt;
+                iRow[idx]=6; jCol[idx]=3+3+0; idx++;
+                iRow[idx]=6; jCol[idx]=3+3+1; idx++;
+            }
+        }
+        else
+        {
+            computeQuantities(x,new_x);
 
-    //             // avoid hitting forearm
-    //             values[idx++]=-elb_m*dt;
-    //             values[idx++]=dt;
+            Ipopt::Index idx=0;
 
-    //             values[idx++]=elb_m*dt;
-    //             values[idx++]=dt;
-    //         }
-    //     }
+            // reaching in position
+            for (Ipopt::Index i=0; i<n; i++)
+            {
+                values[i]=-2.0*dt*(err_xyz.dot(J0_xyz.col(i)));
+                idx++;
+            }
 
-    //     return true;
-    // }
+            if (hitting_constraints)
+            {
+                // shoulder's cables length
+                values[idx++]=1.71*dt;
+                values[idx++]=-1.71*dt;
 
-//     /****************************************************************/
-//     void ControllerNLP::finalize_solution(Ipopt::SolverReturn status, Ipopt::Index n,
-//                            const Ipopt::Number *x, const Ipopt::Number *z_L,
-//                            const Ipopt::Number *z_U, Ipopt::Index m,
-//                            const Ipopt::Number *g, const Ipopt::Number *lambda,
-//                            Ipopt::Number obj_value, const Ipopt::IpoptData *ip_data,
-//                            Ipopt::IpoptCalculatedQuantities *ip_cq)
-//     {
-//         for (Ipopt::Index i=0; i<n; i++)
-//             v[i]=x[i];
-//     }
+                values[idx++]=1.71*dt;
+                values[idx++]=-1.71*dt;
+                values[idx++]=-1.71*dt;
+
+                values[idx++]=dt;
+                values[idx++]=dt;
+
+                // avoid hitting torso
+                values[idx++]=dt;
+                values[idx++]=-shou_m*dt;
+
+                // avoid hitting forearm
+                values[idx++]=-elb_m*dt;
+                values[idx++]=dt;
+
+                values[idx++]=elb_m*dt;
+                values[idx++]=dt;
+            }
+        }
+
+        return true;
+    }
+
+    void SVD(const MatrixXd &in, Matrix3d &U, Vector3d &S, Matrix3d &V)
+    {
+        Eigen::JacobiSVD< Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor> > svd(in, Eigen::ComputeThinU | Eigen::ComputeThinV);
+    
+        U = svd.matrixU();
+    
+        S = svd.singularValues();
+    
+        V = svd.matrixV();
+    
+        return;
+    }
+
+    Matrix4d axis2dcm(const Vector4d &v)
+    {
+        Matrix4d R; R.setIdentity();
+   
+        double theta=v[3];
+        if (theta==0.0)
+            return R;
+
+        double c=cos(theta);
+        double s=sin(theta);
+        double C=1.0-c;
+
+        double xs =v[0]*s;
+        double ys =v[1]*s;
+        double zs =v[2]*s;
+        double xC =v[0]*C;
+        double yC =v[1]*C;
+        double zC =v[2]*C;
+        double xyC=v[0]*yC;
+        double yzC=v[1]*zC;
+        double zxC=v[2]*xC;
+
+        R(0,0)=v[0]*xC+c;
+        R(0,1)=xyC-zs;
+        R(0,2)=zxC+ys;
+        R(1,0)=xyC+zs;
+        R(1,1)=v[1]*yC+c;
+        R(1,2)=yzC-xs;
+        R(2,0)=zxC-ys;
+        R(2,1)=yzC+xs;
+        R(2,2)=v[2]*zC+c;
+
+        return R;
+   }
+
+    Vector4d dcm2axis(const MatrixXd &R)
+    {
+
+        Vector4d v;
+        v[0]=R(2,1)-R(1,2);
+        v[1]=R(0,2)-R(2,0);
+        v[2]=R(1,0)-R(0,1);
+        v[3]=0.0;
+        double r=v.norm();
+        double theta=atan2(0.5*r,0.5*(R(0,0)+R(1,1)+R(2,2)-1));
+   
+        if (r<1e-9) {
+            // if we enter here, then 
+            // R is symmetric; this can
+            // happen only if the rotation
+            // angle is 0 (R=I) or 180 degrees
+            Matrix3d A=R.block(0,0,3,3);
+            Matrix3d U, V;
+            Vector3d S;
+
+            // A=I+sin(theta)*S+(1-cos(theta))*S^2
+            // where S is the skew matrix.
+            // Given a point x, A*x is the rotated one,
+            // hence if Ax=x then x belongs to the rotation
+            // axis. We have therefore to find the kernel of
+            // the linear application (A-I).
+            Matrix3d I; I.setIdentity();
+            SVD(A-I,U,S,V);
+
+            v[0]=V(0,2);
+            v[1]=V(1,2);
+            v[2]=V(2,2);
+            r=v.norm();
+       }
+   
+       v=(1.0/r)*v;
+       v[3]=theta;
+   
+       return v;
+   }
+
+    /****************************************************************/
+    void ControllerNLP::finalize_solution(Ipopt::SolverReturn status, Ipopt::Index n,
+                           const Ipopt::Number *x, const Ipopt::Number *z_L,
+                           const Ipopt::Number *z_U, Ipopt::Index m,
+                           const Ipopt::Number *g, const Ipopt::Number *lambda,
+                           Ipopt::Number obj_value, const Ipopt::IpoptData *ip_data,
+                           Ipopt::IpoptCalculatedQuantities *ip_cq)
+    {
+        for (Ipopt::Index i=0; i<n; i++)
+            v[i]=x[i];
+    }
 

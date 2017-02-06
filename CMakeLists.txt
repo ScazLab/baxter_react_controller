@@ -12,6 +12,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}")
 
 find_package(IPOPT REQUIRED)
 find_package(Eigen REQUIRED)
+find_package(orocos_kdl REQUIRED)
 
 ################################################
 ## Declare ROS messages, services and actions ##
@@ -77,7 +78,7 @@ catkin_package(
    INCLUDE_DIRS lib/include
    LIBRARIES react_controller
 #  CATKIN_DEPENDS other_catkin_pkg
-   DEPENDS Eigen
+   DEPENDS Eigen orocos_kdl
 )
 
 ###########
@@ -88,6 +89,7 @@ catkin_package(
 include_directories(lib/include
                     ${IPOPT_INCLUDE_DIRS}
                     ${Eigen_INCLUDE_DIRS}
+                    ${orocos_kdl_INCLUDE_DIRS}
                     ${catkin_INCLUDE_DIRS})
 
 
