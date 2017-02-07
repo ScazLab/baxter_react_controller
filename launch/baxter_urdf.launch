@@ -1,0 +1,3 @@
+<launch>
+  <param name="robot_description" command="cat $(find baxter_description)/urdf/baxter.urdf" />
+</launch>
