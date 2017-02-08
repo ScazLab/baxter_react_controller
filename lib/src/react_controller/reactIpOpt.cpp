@@ -1,87 +1,88 @@
 #include <math.h>
 
 #include "react_controller/reactIpOpt.h"
+#include "react_controller/mathUtils.h"
 
+using namespace Eigen;
+    /****************************************************************/
+    void ControllerNLP::computeSelfAvoidanceConstraints()
+    {
+        double joint1_0, joint1_1;
+        double joint2_0, joint2_1;
+        joint1_0= 28.0*CTRL_DEG2RAD;
+        joint1_1= 23.0*CTRL_DEG2RAD;
+        joint2_0=-37.0*CTRL_DEG2RAD;
+        joint2_1= 80.0*CTRL_DEG2RAD;
+        shou_m=(joint1_1-joint1_0)/(joint2_1-joint2_0);
+        shou_n=joint1_0-shou_m*joint2_0;
+
+        double joint3_0, joint3_1;
+        double joint4_0, joint4_1;
+        joint3_0= 85.0*CTRL_DEG2RAD;
+        joint3_1=105.0*CTRL_DEG2RAD;
+        joint4_0= 90.0*CTRL_DEG2RAD;
+        joint4_1= 40.0*CTRL_DEG2RAD;
+        elb_m=(joint4_1-joint4_0)/(joint3_1-joint3_0);
+        elb_n=joint4_0-elb_m*joint3_0;
+    }
+
+    /****************************************************************/
+    void ControllerNLP::computeGuard()
+    {
+        double guardRatio=0.1;
+        qGuard.resize(chain.getNrOfJoints());
+        qGuardMinExt.resize(chain.getNrOfJoints());
+        qGuardMinInt.resize(chain.getNrOfJoints());
+        qGuardMinCOG.resize(chain.getNrOfJoints());
+        qGuardMaxExt.resize(chain.getNrOfJoints());
+        qGuardMaxInt.resize(chain.getNrOfJoints());
+        qGuardMaxCOG.resize(chain.getNrOfJoints());
+
+        for (size_t i=0; i<chain.getNrOfJoints(); i++)
+        {
+            // qGuard[i]=0.25*guardRatio*(chain(i).getMax()-chain(i).getMin());
+
+            // qGuardMinExt[i]=chain(i).getMin()+qGuard[i];
+            // qGuardMinInt[i]=qGuardMinExt[i]+qGuard[i];
+            // qGuardMinCOG[i]=0.5*(qGuardMinExt[i]+qGuardMinInt[i]);
+
+            // qGuardMaxExt[i]=chain(i).getMax()-qGuard[i];
+            // qGuardMaxInt[i]=qGuardMaxExt[i]-qGuard[i];
+            // qGuardMaxCOG[i]=0.5*(qGuardMaxExt[i]+qGuardMaxInt[i]);
+        }
+    }
+
+    /****************************************************************/
+    void ControllerNLP::computeBounds()
+    {
+        for (size_t i=0; i<chain.getNrOfJoints(); i++)
+        {
+            double qi=q0[i];
+            if ((qi>=qGuardMinInt[i]) && (qi<=qGuardMaxInt[i]))
+                bounds(i,0)=bounds(i,1)=1.0;
+            else if (qi<qGuardMinInt[i])
+            {
+                bounds(i,0)=(qi<=qGuardMinExt[i]?0.0:
+                             0.5*(1.0+tanh(+10.0*(qi-qGuardMinCOG[i])/qGuard[i])));
+                bounds(i,1)=1.0;
+            }
+            else
+            {
+                bounds(i,0)=1.0;
+                bounds(i,1)=(qi>=qGuardMaxExt[i]?0.0:
+                             0.5*(1.0+tanh(-10.0*(qi-qGuardMaxCOG[i])/qGuard[i])));
+            }
+        }
+
+        for (size_t i=0; i<chain.getNrOfJoints(); i++)
+        {
+            bounds(i,0)*=v_lim(i,0);
+            bounds(i,1)*=v_lim(i,1);
+        }
+    }
 
 //     /****************************************************************/
-//     void ControllerNLP::computeSelfAvoidanceConstraints()
-//     {
-//         double joint1_0, joint1_1;
-//         double joint2_0, joint2_1;
-//         joint1_0= 28.0*CTRL_DEG2RAD;
-//         joint1_1= 23.0*CTRL_DEG2RAD;
-//         joint2_0=-37.0*CTRL_DEG2RAD;
-//         joint2_1= 80.0*CTRL_DEG2RAD;
-//         shou_m=(joint1_1-joint1_0)/(joint2_1-joint2_0);
-//         shou_n=joint1_0-shou_m*joint2_0;
-
-//         double joint3_0, joint3_1;
-//         double joint4_0, joint4_1;
-//         joint3_0= 85.0*CTRL_DEG2RAD;
-//         joint3_1=105.0*CTRL_DEG2RAD;
-//         joint4_0= 90.0*CTRL_DEG2RAD;
-//         joint4_1= 40.0*CTRL_DEG2RAD;
-//         elb_m=(joint4_1-joint4_0)/(joint3_1-joint3_0);
-//         elb_n=joint4_0-elb_m*joint3_0;
-//     }
-
-//     /****************************************************************/
-//     void ControllerNLP::computeGuard()
-//     {
-//         double guardRatio=0.1;
-//         qGuard.resize(chain.getDOF());
-//         qGuardMinExt.resize(chain.getDOF());
-//         qGuardMinInt.resize(chain.getDOF());
-//         qGuardMinCOG.resize(chain.getDOF());
-//         qGuardMaxExt.resize(chain.getDOF());
-//         qGuardMaxInt.resize(chain.getDOF());
-//         qGuardMaxCOG.resize(chain.getDOF());
-
-//         for (size_t i=0; i<chain.getDOF(); i++)
-//         {
-//             qGuard[i]=0.25*guardRatio*(chain(i).getMax()-chain(i).getMin());
-
-//             qGuardMinExt[i]=chain(i).getMin()+qGuard[i];
-//             qGuardMinInt[i]=qGuardMinExt[i]+qGuard[i];
-//             qGuardMinCOG[i]=0.5*(qGuardMinExt[i]+qGuardMinInt[i]);
-
-//             qGuardMaxExt[i]=chain(i).getMax()-qGuard[i];
-//             qGuardMaxInt[i]=qGuardMaxExt[i]-qGuard[i];
-//             qGuardMaxCOG[i]=0.5*(qGuardMaxExt[i]+qGuardMaxInt[i]);
-//         }
-//     }
-
-//     /****************************************************************/
-//     void ControllerNLP::computeBounds()
-//     {
-//         for (size_t i=0; i<chain.getDOF(); i++)
-//         {
-//             double qi=q0[i];
-//             if ((qi>=qGuardMinInt[i]) && (qi<=qGuardMaxInt[i]))
-//                 bounds(i,0)=bounds(i,1)=1.0;
-//             else if (qi<qGuardMinInt[i])
-//             {
-//                 bounds(i,0)=(qi<=qGuardMinExt[i]?0.0:
-//                              0.5*(1.0+tanh(+10.0*(qi-qGuardMinCOG[i])/qGuard[i])));
-//                 bounds(i,1)=1.0;
-//             }
-//             else
-//             {
-//                 bounds(i,0)=1.0;
-//                 bounds(i,1)=(qi>=qGuardMaxExt[i]?0.0:
-//                              0.5*(1.0+tanh(-10.0*(qi-qGuardMaxCOG[i])/qGuard[i])));
-//             }
-//         }
-
-//         for (size_t i=0; i<chain.getDOF(); i++)
-//         {
-//             bounds(i,0)*=v_lim(i,0);
-//             bounds(i,1)*=v_lim(i,1);
-//         }
-//     }
-
-//     /****************************************************************/
-    MatrixXd ControllerNLP::v2m(const Matrix<double, 6, 1> &x)
+    MatrixXd ControllerNLP::v2m(const VectorXd &x)
     {
         Vector4d ang;
         ang.block(0, 0, 1, 3) = x.tail(3);
@@ -89,7 +90,7 @@
         if (ang_mag>0.0)
             ang/=ang_mag;
         ang(0, 4) = ang_mag;
-        MatrixXd H=axis2dcm(ang);
+        MatrixXd H = axis2dcm(ang);
         H(0,3)=x[0];
         H(1,3)=x[1];
         H(2,3)=x[2];
@@ -99,7 +100,7 @@
     /****************************************************************/
     MatrixXd ControllerNLP::skew(const Vector3d &w)
     {
-        MatrixXd S(3,3);
+        MatrixXd S;
         S(0,0)=S(1,1)=S(2,2)=0.0;
         S(1,0)= w[2]; S(0,1)=-S(1,0);
         S(2,0)=-w[1]; S(0,2)=-S(2,0);
@@ -152,43 +153,35 @@
         skew_ar=skew(Hr.col(2));
     }
 
-//     /****************************************************************/
-//     void ControllerNLP::set_v_limInDegPerSecond(const MatrixXd &v_lim)
-//     {
-//         yAssert((this->v_lim.rows()==v_lim.rows()) &&
-//                 (this->v_lim.cols()==v_lim.cols()));
+    /****************************************************************/
+    void ControllerNLP::set_v_limInDegPerSecond(const MatrixXd &v_lim)
+    {
+        this->v_lim=CTRL_DEG2RAD*v_lim;
+    }
 
-//         for (int r=0; r<v_lim.rows(); r++)
-//             yAssert(v_lim(r,0)<=v_lim(r,1));
+    /****************************************************************/
+    void ControllerNLP::set_hitting_constraints(const bool _hitting_constraints)
+    {
+        hitting_constraints=_hitting_constraints;
+    }
 
-//         this->v_lim=CTRL_DEG2RAD*v_lim;
-//     }
+    /****************************************************************/
+    void ControllerNLP::set_orientation_control(const bool _orientation_control)
+    {
+        orientation_control=_orientation_control;
+    }
 
-//     /****************************************************************/
-//     void ControllerNLP::set_hitting_constraints(const bool _hitting_constraints)
-//     {
-//         hitting_constraints=_hitting_constraints;
-//     }
+    /****************************************************************/
+    void ControllerNLP::set_dt(const double dt)
+    {
+        this->dt=dt;
+    }
 
-//     /****************************************************************/
-//     void ControllerNLP::set_orientation_control(const bool _orientation_control)
-//     {
-//         orientation_control=_orientation_control;
-//     }
-
-//     /****************************************************************/
-//     void ControllerNLP::set_dt(const double dt)
-//     {
-//         yAssert(dt>0.0);
-//         this->dt=dt;
-//     }
-
-//     /****************************************************************/
-//     void ControllerNLP::set_v0InDegPerSecond(const Vector &v0)
-//     {
-//         yAssert(this->v0.length()==v0.length());
-//         this->v0=CTRL_DEG2RAD*v0;
-//     }
+    /****************************************************************/
+    void ControllerNLP::set_v0InDegPerSecond(const VectorXd &v0)
+    {
+        this->v0=CTRL_DEG2RAD*v0;
+    }
 
     /****************************************************************/
     void ControllerNLP::init()
@@ -207,10 +200,10 @@
     }
 
     /****************************************************************/
-    // Matrix<double, 6, 1> ControllerNLP::get_resultInDegPerSecond() const
-    // {
-    //     return CTRL_RAD2DEG*v;
-    // }
+    VectorXd ControllerNLP::get_resultInDegPerSecond() const
+    {
+        return CTRL_RAD2DEG*v;
+    }
 
 //     /****************************************************************/
 //     Property ControllerNLP::getParameters() const
@@ -220,78 +213,78 @@
 //         return parameters;
 //     }
 
-//     /****************************************************************/
-//     bool ControllerNLP::get_nlp_info(Ipopt::Index &n, Ipopt::Index &m, Ipopt::Index &nnz_jac_g,
-//                       Ipopt::Index &nnz_h_lag, IndexStyleEnum &index_style)
-//     {
-//         n=chain.getDOF();
+    /****************************************************************/
+    bool ControllerNLP::get_nlp_info(Ipopt::Index &n, Ipopt::Index &m, Ipopt::Index &nnz_jac_g,
+                      Ipopt::Index &nnz_h_lag, IndexStyleEnum &index_style)
+    {
+        n=chain.getNrOfJoints();
 
-//         // reaching in position
-//         m=1; nnz_jac_g=n;
+        // reaching in position
+        m=1; nnz_jac_g=n;
 
-//         if (hitting_constraints)
-//         {
-//             // shoulder's cables length
-//             m+=3; nnz_jac_g+=2+3+2;
+        if (hitting_constraints)
+        {
+            // shoulder's cables length
+            m+=3; nnz_jac_g+=2+3+2;
 
-//             // avoid hitting torso
-//             m+=1; nnz_jac_g+=2;
+            // avoid hitting torso
+            m+=1; nnz_jac_g+=2;
 
-//             // avoid hitting forearm
-//             m+=2; nnz_jac_g+=2+2;
-//         }
+            // avoid hitting forearm
+            m+=2; nnz_jac_g+=2+2;
+        }
 
-//         nnz_h_lag=0;
-//         index_style=TNLP::C_STYLE;
-//         return true;
-//     }
+        nnz_h_lag=0;
+        index_style=TNLP::C_STYLE;
+        return true;
+    }
 
-//     /****************************************************************/
-//     bool ControllerNLP::get_bounds_info(Ipopt::Index n, Ipopt::Number *x_l, Ipopt::Number *x_u,
-//                          Ipopt::Index m, Ipopt::Number *g_l, Ipopt::Number *g_u)
-//     {
-//         for (Ipopt::Index i=0; i<n; i++)
-//         {
-//             x_l[i]=bounds(i,0);
-//             x_u[i]=bounds(i,1);
-//         }
+    /****************************************************************/
+    bool ControllerNLP::get_bounds_info(Ipopt::Index n, Ipopt::Number *x_l, Ipopt::Number *x_u,
+                         Ipopt::Index m, Ipopt::Number *g_l, Ipopt::Number *g_u)
+    {
+        for (Ipopt::Index i=0; i<n; i++)
+        {
+            x_l[i]=bounds(i,0);
+            x_u[i]=bounds(i,1);
+        }
 
-//         // reaching in position
-//         g_l[0]=g_u[0]=0.0;
+        // reaching in position
+        g_l[0]=g_u[0]=0.0;
 
-//         if (hitting_constraints)
-//         {
-//             // shoulder's cables length
-//             g_l[1]=-347.00*CTRL_DEG2RAD;
-//             g_u[1]=std::numeric_limits<double>::max();
-//             g_l[2]=-366.57*CTRL_DEG2RAD;
-//             g_u[2]=112.42*CTRL_DEG2RAD;
-//             g_l[3]=-66.60*CTRL_DEG2RAD;
-//             g_u[3]=213.30*CTRL_DEG2RAD;
+        if (hitting_constraints)
+        {
+            // shoulder's cables length
+            g_l[1]=-347.00*CTRL_DEG2RAD;
+            g_u[1]=std::numeric_limits<double>::max();
+            g_l[2]=-366.57*CTRL_DEG2RAD;
+            g_u[2]=112.42*CTRL_DEG2RAD;
+            g_l[3]=-66.60*CTRL_DEG2RAD;
+            g_u[3]=213.30*CTRL_DEG2RAD;
 
-//             // avoid hitting torso
-//             g_l[4]=shou_n;
-//             g_u[4]=std::numeric_limits<double>::max();
+            // avoid hitting torso
+            g_l[4]=shou_n;
+            g_u[4]=std::numeric_limits<double>::max();
 
-//             // avoid hitting forearm
-//             g_l[5]=-std::numeric_limits<double>::max();
-//             g_u[5]=elb_n;
-//             g_l[6]=-elb_n;
-//             g_u[6]=std::numeric_limits<double>::max();
-//         }
+            // avoid hitting forearm
+            g_l[5]=-std::numeric_limits<double>::max();
+            g_u[5]=elb_n;
+            g_l[6]=-elb_n;
+            g_u[6]=std::numeric_limits<double>::max();
+        }
 
-//         return true;
-//     }
+        return true;
+    }
 
-//     /****************************************************************/
-//     bool ControllerNLP::get_starting_point(Ipopt::Index n, bool init_x, Ipopt::Number *x,
-//                             bool init_z, Ipopt::Number *z_L, Ipopt::Number *z_U,
-//                             Ipopt::Index m, bool init_lambda, Ipopt::Number *lambda)
-//     {
-//         for (Ipopt::Index i=0; i<n; i++)
-//             x[i]=std::min(std::max(bounds(i,0),v0[i]),bounds(i,1));
-//         return true;
-//     }
+    /****************************************************************/
+    bool ControllerNLP::get_starting_point(Ipopt::Index n, bool init_x, Ipopt::Number *x,
+                            bool init_z, Ipopt::Number *z_L, Ipopt::Number *z_U,
+                            Ipopt::Index m, bool init_lambda, Ipopt::Number *lambda)
+    {
+        for (Ipopt::Index i=0; i<n; i++)
+            x[i]=std::min(std::max(bounds(i,0),v0[i]),bounds(i,1));
+        return true;
+    }
 
     /************************************************************************/
     void ControllerNLP::computeQuantities(const Ipopt::Number *x, const bool new_x)
@@ -304,7 +297,7 @@
             Matrix3d sub = R0+dt*(skew(J0_ang*v)*R0);
 
             He.block(0, 0, 3, 3) = sub;
-            Vector3d pe=p0+dt*(J0_xyz*v);
+            Vector3d pe; //=p0+dt*(J0_xyz*v);
             He(0,3)=pe[0];
             He(1,3)=pe[1];
             He(2,3)=pe[2];
@@ -451,95 +444,6 @@
         return true;
     }
 
-    void SVD(const MatrixXd &in, Matrix3d &U, Vector3d &S, Matrix3d &V)
-    {
-        Eigen::JacobiSVD< Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor> > svd(in, Eigen::ComputeThinU | Eigen::ComputeThinV);
-    
-        U = svd.matrixU();
-    
-        S = svd.singularValues();
-    
-        V = svd.matrixV();
-    
-        return;
-    }
-
-    Matrix4d axis2dcm(const Vector4d &v)
-    {
-        Matrix4d R; R.setIdentity();
-   
-        double theta=v[3];
-        if (theta==0.0)
-            return R;
-
-        double c=cos(theta);
-        double s=sin(theta);
-        double C=1.0-c;
-
-        double xs =v[0]*s;
-        double ys =v[1]*s;
-        double zs =v[2]*s;
-        double xC =v[0]*C;
-        double yC =v[1]*C;
-        double zC =v[2]*C;
-        double xyC=v[0]*yC;
-        double yzC=v[1]*zC;
-        double zxC=v[2]*xC;
-
-        R(0,0)=v[0]*xC+c;
-        R(0,1)=xyC-zs;
-        R(0,2)=zxC+ys;
-        R(1,0)=xyC+zs;
-        R(1,1)=v[1]*yC+c;
-        R(1,2)=yzC-xs;
-        R(2,0)=zxC-ys;
-        R(2,1)=yzC+xs;
-        R(2,2)=v[2]*zC+c;
-
-        return R;
-   }
-
-    Vector4d dcm2axis(const MatrixXd &R)
-    {
-
-        Vector4d v;
-        v[0]=R(2,1)-R(1,2);
-        v[1]=R(0,2)-R(2,0);
-        v[2]=R(1,0)-R(0,1);
-        v[3]=0.0;
-        double r=v.norm();
-        double theta=atan2(0.5*r,0.5*(R(0,0)+R(1,1)+R(2,2)-1));
-   
-        if (r<1e-9) {
-            // if we enter here, then 
-            // R is symmetric; this can
-            // happen only if the rotation
-            // angle is 0 (R=I) or 180 degrees
-            Matrix3d A=R.block(0,0,3,3);
-            Matrix3d U, V;
-            Vector3d S;
-
-            // A=I+sin(theta)*S+(1-cos(theta))*S^2
-            // where S is the skew matrix.
-            // Given a point x, A*x is the rotated one,
-            // hence if Ax=x then x belongs to the rotation
-            // axis. We have therefore to find the kernel of
-            // the linear application (A-I).
-            Matrix3d I; I.setIdentity();
-            SVD(A-I,U,S,V);
-
-            v[0]=V(0,2);
-            v[1]=V(1,2);
-            v[2]=V(2,2);
-            r=v.norm();
-       }
-   
-       v=(1.0/r)*v;
-       v[3]=theta;
-   
-       return v;
-   }
-
     /****************************************************************/
     void ControllerNLP::finalize_solution(Ipopt::SolverReturn status, Ipopt::Index n,
                            const Ipopt::Number *x, const Ipopt::Number *z_L,
@@ -550,5 +454,9 @@
     {
         for (Ipopt::Index i=0; i<n; i++)
             v[i]=x[i];
+    }
+
+    ControllerNLP::~ControllerNLP() {
+        return;
     }
 

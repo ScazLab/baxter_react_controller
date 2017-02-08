@@ -9,6 +9,7 @@ project(baxterReactController)
 # find_package(OpenCV REQUIRED)
 
 include_directories(${PROJECT_SOURCE_DIR}/include)
+include_directories(${baxter_collaboration_INCLUDE_DIRS})
 
 ## Declare the C++ libraries
 # For the record, robot_utils is decoupled from robot_interface
@@ -18,8 +19,12 @@ include_directories(${PROJECT_SOURCE_DIR}/include)
 
 add_library(react_controller include/react_controller/reactCtrlThread.h
                              include/react_controller/reactIpOpt.h
+                             include/react_controller/ctrlThread.h
+                             include/react_controller/mathUtils.h
                              src/react_controller/reactCtrlThread.cpp
-                             src/react_controller/reactIpOpt.cpp)
+                             src/react_controller/reactIpOpt.cpp
+                             src/react_controller/ctrlThread.cpp
+                             src/react_controller/mathUtils.cpp)
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries

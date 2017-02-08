@@ -6,7 +6,8 @@ project(baxter_react_controller)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED
                     cmake_modules
-                    roscpp)
+                    roscpp
+                    baxter_collaboration)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}")
 
@@ -89,6 +90,7 @@ catkin_package(
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(lib/include
+                    ${baxter_collaboration_INCLUDE_DIRS}
                     ${IPOPT_INCLUDE_DIRS}
                     ${Eigen_INCLUDE_DIRS}
                     ${orocos_kdl_INCLUDE_DIRS}
@@ -113,10 +115,11 @@ add_executable(baxter_react_controller src/baxter_react_controller.cpp)
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above
-add_dependencies(baxter_react_controller ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(baxter_react_controller ${${PROJECT_NAME}_EXPORTED_TARGETS} react_controller ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(baxter_react_controller               react_controller
+                                                            ${IPOPT_LIBRARIES}
                                                             ${catkin_LIBRARIES})
 
 #############
