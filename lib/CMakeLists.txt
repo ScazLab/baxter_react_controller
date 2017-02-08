@@ -9,7 +9,6 @@ project(baxterReactController)
 # find_package(OpenCV REQUIRED)
 
 include_directories(${PROJECT_SOURCE_DIR}/include)
-include_directories(${baxter_collaboration_INCLUDE_DIRS})
 
 ## Declare the C++ libraries
 # For the record, robot_utils is decoupled from robot_interface

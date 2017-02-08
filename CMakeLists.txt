@@ -90,7 +90,6 @@ catkin_package(
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(lib/include
-                    ${baxter_collaboration_INCLUDE_DIRS}
                     ${IPOPT_INCLUDE_DIRS}
                     ${Eigen_INCLUDE_DIRS}
                     ${orocos_kdl_INCLUDE_DIRS}
