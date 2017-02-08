@@ -14,6 +14,8 @@ find_package(IPOPT REQUIRED)
 find_package(Eigen REQUIRED)
 find_package(orocos_kdl REQUIRED)
 
+add_definitions(-DHAVE_CSTDDEF)
+
 ################################################
 ## Declare ROS messages, services and actions ##
 ################################################
