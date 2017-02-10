@@ -5,28 +5,15 @@
 #include <IpIpoptApplication.hpp>
 #include <Eigen/Dense>
 #include <kdl/chain.hpp>
+#include <kdl/chainfksolver.hpp>
+#include <kdl_parser/kdl_parser.hpp>
 #include <urdf/model.h>
 #include <math.h>
 
-// #include <yarp/os/all.h>
-// #include <yarp/dev/all.h>
-// #include <yarp/sig/all.h>
-// #include <yarp/math/Math.h>
-
-// #include <iCub/ctrl/math.h>
-// #include <iCub/ctrl/pids.h>
-// #include <iCub/ctrl/minJerkCtrl.h>
-// #include <iCub/iKin/iKinFwd.h>
-// #include <iCub/skinDynLib/common.h>
+#include <react_controller/baxterChain.h>
 
 using namespace std;
 using namespace Eigen;
-// using namespace yarp::os;
-// using namespace yarp::dev;
-// using namespace yarp::sig;
-// using namespace yarp::math;
-// using namespace iCub::ctrl;
-// using namespace iCub::iKin;
 
 #define CTRL_RAD2DEG (180.0 / M_PI)
 #define CTRL_DEG2RAD (M_PI/180.0)
@@ -34,7 +21,8 @@ using namespace Eigen;
 /****************************************************************/
 class ControllerNLP : public Ipopt::TNLP
 {
-    KDL::Chain &chain;
+    BaxterChain &chain;
+    KDL::JntArray lb, ub;
     bool hitting_constraints;
     bool orientation_control;
 
@@ -66,7 +54,7 @@ class ControllerNLP : public Ipopt::TNLP
     MatrixXd skew(const Vector3d &w);
 
     public:
-    ControllerNLP(KDL::Chain &chain_);
+    ControllerNLP(BaxterChain &chain_, KDL::JntArray &lb_, KDL::JntArray &ub_);
     void set_xr(const VectorXd &xr);
     void set_v_limInDegPerSecond(const MatrixXd &v_lim);
     void set_hitting_constraints(const bool _hitting_constraints);

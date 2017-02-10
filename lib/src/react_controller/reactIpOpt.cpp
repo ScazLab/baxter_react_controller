@@ -40,15 +40,15 @@ using namespace Eigen;
 
         for (size_t i=0; i<chain.getNrOfJoints(); i++)
         {
-            // qGuard[i]=0.25*guardRatio*(chain(i).getMax()-chain(i).getMin());
+            qGuard[i]=0.25*guardRatio*(ub.data[i]-lb.data[i]);
 
-            // qGuardMinExt[i]=chain(i).getMin()+qGuard[i];
-            // qGuardMinInt[i]=qGuardMinExt[i]+qGuard[i];
-            // qGuardMinCOG[i]=0.5*(qGuardMinExt[i]+qGuardMinInt[i]);
+            qGuardMinExt[i]=lb.data[i]+qGuard[i];
+            qGuardMinInt[i]=qGuardMinExt[i]+qGuard[i];
+            qGuardMinCOG[i]=0.5*(qGuardMinExt[i]+qGuardMinInt[i]);
 
-            // qGuardMaxExt[i]=chain(i).getMax()-qGuard[i];
-            // qGuardMaxInt[i]=qGuardMaxExt[i]-qGuard[i];
-            // qGuardMaxCOG[i]=0.5*(qGuardMaxExt[i]+qGuardMaxInt[i]);
+            qGuardMaxExt[i]=ub.data[i]-qGuard[i];
+            qGuardMaxInt[i]=qGuardMaxExt[i]-qGuard[i];
+            qGuardMaxCOG[i]=0.5*(qGuardMaxExt[i]+qGuardMaxInt[i]);
         }
     }
 
@@ -109,7 +109,7 @@ using namespace Eigen;
     }
 
     /****************************************************************/
-    ControllerNLP::ControllerNLP(KDL::Chain &chain_) : chain(chain_)
+    ControllerNLP::ControllerNLP(BaxterChain &chain_, KDL::JntArray &lb_, KDL::JntArray &ub_) : chain(chain_), ub(ub_), lb(lb_)
     {
         xr.resize(6,0.0);
         set_xr(xr);
@@ -124,11 +124,11 @@ using namespace Eigen;
         for (size_t r=0; r<chain.getNrOfJoints(); r++)
         {
             /* angle bounds */
-            // q_lim(r,0)=chain(r).getMin();
-            // q_lim(r,1)=chain(r).getMax();
+            q_lim(r,0)=ub.data[r];
+            q_lim(r,1)=ub.data[r];
 
-            // v_lim(r,1)=std::numeric_limits<double>::max();
-            // v_lim(r,0)=-v_lim(r,1);
+            v_lim(r,1)=std::numeric_limits<double>::max();
+            v_lim(r,0)=-v_lim(r,1);
         }
         bounds=v_lim;
 
@@ -186,13 +186,12 @@ using namespace Eigen;
     /****************************************************************/
     void ControllerNLP::init()
     {
-        // q0=chain.getAng();
-        // H0=chain.getH();
+        q0=chain.getAngEigen();
+        H0=chain.getH();
         R0=H0.block(0,0,3,3);
         p0=H0.col(3).block(0, 0, 1, 3);
 
-        // MatrixXd J0=chain.GeoJacobian();
-        MatrixXd J0;
+        MatrixXd J0=GeoJacobian(chain);
         J0_xyz=J0.block(0,0,3,chain.getNrOfJoints()-1);
         J0_ang=J0.block(0,3,3,chain.getNrOfJoints()-1);
 
