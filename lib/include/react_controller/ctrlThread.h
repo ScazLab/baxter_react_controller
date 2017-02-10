@@ -10,7 +10,7 @@ private:
     BaxterChain _chain;
     ros::Subscriber _jntstate_sub;
     pthread_mutex_t _mutex_jnts;
-    
+
 public:
     CtrlThread(const std::string& base_link, const std::string& tip_link);
     void solveIK();

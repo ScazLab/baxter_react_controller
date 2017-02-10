@@ -10,18 +10,24 @@
 
 using namespace Eigen;
 
-
 /****************************************************************/
 class BaxterChain : public KDL::Chain
 {
-    std::vector<double> _joint_angles;
+private:
+    std::vector<double> _q;
 
-    public:
+public:
+
     BaxterChain();
-    VectorXd getAngEigen();
-    std::vector<double> getAngStd();
+    BaxterChain(KDL::Chain _chain);
+    BaxterChain(KDL::Chain _chain, std::vector<double> _joint_angles_0);
+    VectorXd getAng();
+    // std::vector<double> getAngStd();
     bool setAng(std::vector<double> joint_angles);
     MatrixXd getH();
+    MatrixXd getH(const unsigned int i);
+    MatrixXd GeoJacobian();
+    MatrixXd GeoJacobian(const unsigned int i);
     ~BaxterChain();
 };
 

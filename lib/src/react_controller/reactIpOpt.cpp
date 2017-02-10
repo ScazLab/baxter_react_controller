@@ -109,14 +109,14 @@ using namespace Eigen;
     }
 
     /****************************************************************/
-    ControllerNLP::ControllerNLP(BaxterChain &chain_, KDL::JntArray &lb_, KDL::JntArray &ub_) : chain(chain_), ub(ub_), lb(lb_)
+    ControllerNLP::ControllerNLP(BaxterChain chain_, KDL::JntArray &lb_, KDL::JntArray &ub_) : chain(chain_), ub(ub_), lb(lb_)
     {
         xr.resize(6,0.0);
         set_xr(xr);
 
         v0.resize(chain.getNrOfJoints(),0.0); v=v0;
         Matrix4f He;
-        He.setZero(); 
+        He.setZero();
         He(3,3)=1.0;
 
         q_lim.resize(chain.getNrOfJoints(),2);
@@ -186,12 +186,13 @@ using namespace Eigen;
     /****************************************************************/
     void ControllerNLP::init()
     {
-        q0=chain.getAngEigen();
+        q0=chain.getAng();
         H0=chain.getH();
         R0=H0.block(0,0,3,3);
         p0=H0.col(3).block(0, 0, 1, 3);
 
-        MatrixXd J0=GeoJacobian(chain);
+        // MatrixXd J0=GeoJacobian(chain);
+        MatrixXd J0;
         J0_xyz=J0.block(0,0,3,chain.getNrOfJoints()-1);
         J0_ang=J0.block(0,3,3,chain.getNrOfJoints()-1);
 

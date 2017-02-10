@@ -14,21 +14,21 @@ CtrlThread::CtrlThread(const std::string& base_link, const std::string& tip_link
     std::string urdf_xml,full_urdf_xml;
     node_handle.param<std::string>("urdf_xml",urdf_xml,"/robot_description");
     node_handle.searchParam(urdf_xml,full_urdf_xml);
-    
+
     ROS_DEBUG_NAMED("trac_ik","Reading xml file from parameter server");
     if (!node_handle.getParam(full_urdf_xml, xml_string))
       {
         ROS_FATAL_NAMED("trac_ik","Could not load the xml from parameter server: %s", urdf_xml.c_str());
         return;
       }
-    
+
     node_handle.param(full_urdf_xml,xml_string,std::string());
     robot_model.initString(xml_string);
-    
+
     ROS_DEBUG_STREAM_NAMED("trac_ik","Reading joints and links from URDF");
 
     KDL::Tree tree;
-    
+
     if (!kdl_parser::treeFromUrdfModel(robot_model, tree))
       ROS_FATAL("Failed to extract kdl tree from xml robot description");
 
@@ -110,18 +110,18 @@ void CtrlThread::solveIK()
     app->Initialize();
 
     Ipopt::SmartPtr<ControllerNLP> nlp;
-    nlp=new ControllerNLP(_chain, _lb, _ub);
-    nlp->set_hitting_constraints(hittingConstraints);
-    nlp->set_orientation_control(orientationControl);
-    nlp->set_dt(dT);
-    nlp->set_xr(xr);
-    nlp->set_v_limInDegPerSecond(vLimAdapted);
-    nlp->set_v0InDegPerSecond(q_dot);
-    nlp->init();
+    // nlp=new ControllerNLP(_chain, _lb, _ub);
+    // nlp->set_hitting_constraints(hittingConstraints);
+    // nlp->set_orientation_control(orientationControl);
+    // nlp->set_dt(dT);
+    // nlp->set_xr(xr);
+    // nlp->set_v_limInDegPerSecond(vLimAdapted);
+    // nlp->set_v0InDegPerSecond(q_dot);
+    // nlp->init();
 
-    _exit_code=app->OptimizeTNLP(GetRawPtr(nlp));
+    // _exit_code=app->OptimizeTNLP(GetRawPtr(nlp));
 
-    res=nlp->get_resultInDegPerSecond();
+    // res=nlp->get_resultInDegPerSecond();
     ROS_DEBUG("HELLO");
 }
 

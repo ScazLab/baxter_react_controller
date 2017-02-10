@@ -8,7 +8,8 @@ find_package(catkin REQUIRED
                     cmake_modules
                     roscpp
                     baxter_core_msgs
-                    baxter_collaboration)
+                    baxter_collaboration
+                    eigen_conversions)
 
 # check c++11 / c++0x
 include(CheckCXXCompilerFlag)

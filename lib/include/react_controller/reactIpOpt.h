@@ -21,14 +21,14 @@ using namespace Eigen;
 /****************************************************************/
 class ControllerNLP : public Ipopt::TNLP
 {
-    BaxterChain &chain;
+    BaxterChain chain;
     KDL::JntArray lb, ub;
     bool hitting_constraints;
     bool orientation_control;
 
     VectorXd xr,pr;
     MatrixXd Hr,skew_nr,skew_sr,skew_ar;
-    MatrixXd q_lim,v_lim;    
+    MatrixXd q_lim,v_lim;
     VectorXd p0, q0, v0, v;
     MatrixXd H0,R0,He,J0_xyz,J0_ang,Derr_ang;
     VectorXd err_xyz,err_ang;
@@ -54,7 +54,7 @@ class ControllerNLP : public Ipopt::TNLP
     MatrixXd skew(const Vector3d &w);
 
     public:
-    ControllerNLP(BaxterChain &chain_, KDL::JntArray &lb_, KDL::JntArray &ub_);
+    ControllerNLP(BaxterChain chain_, KDL::JntArray &lb_, KDL::JntArray &ub_);
     void set_xr(const VectorXd &xr);
     void set_v_limInDegPerSecond(const MatrixXd &v_lim);
     void set_hitting_constraints(const bool _hitting_constraints);
