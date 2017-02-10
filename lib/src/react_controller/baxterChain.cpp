@@ -4,32 +4,64 @@
 #include <react_controller/baxterChain.h>
 #include <eigen_conversions/eigen_kdl.h>
 
-BaxterChain::BaxterChain() {
+Matrix4d KDLFrameToEigen(KDL::Frame _f)
+{
+    Matrix4d result;
+    result.setIdentity();
+
+    //get pose matrix
+    KDL::Rotation rotKDL = _f.M;
+    KDL::Vector   posKDL = _f.p;
+
+    //convert to Eigen matrix
+    Eigen::Quaterniond quatEig;
+    Eigen::Vector3d posEig;
+
+    tf::quaternionKDLToEigen(rotKDL, quatEig);
+    tf::vectorKDLToEigen(posKDL, posEig);
+
+    Matrix3d rot = quatEig.toRotationMatrix();
+
+    result.block<3,3>(0,0) = rot;
+    result.block<3,1>(0,3) = posEig;
+
+    return result;
+}
+
+/**************************************************************************/
+/*                            BaxterChain                                 */
+/**************************************************************************/
+
+BaxterChain::BaxterChain()
+{
 
 }
 
-BaxterChain::BaxterChain(KDL::Chain _chain) : KDL::Chain(_chain) {
+BaxterChain::BaxterChain(KDL::Chain _chain) : KDL::Chain(_chain)
+{
     // cycle through the chain to get the number of joints
     // int nS = ?chain numbersegments
     int num_joints = _chain.getNrOfJoints();
 
     for (int i = 0; i < num_joints; ++i)
     {
-        _q.push_back(0.0);
+        q.push_back(0.0);
     }
 
 
 }
 
-BaxterChain::BaxterChain(KDL::Chain _chain, std::vector<double> _joint_angles_0)  : KDL::Chain(_chain) {
-    // cycle through the chain to get the number of joints
-    // int nS = ?chain numbersegments
+BaxterChain::BaxterChain(KDL::Chain _chain, std::vector<double> _q_0)  : KDL::Chain(_chain)
+{
     int num_joints = _chain.getNrOfJoints();
-    assert(num_joints == _joint_angles_0.size());
+
+    // TODO : better interface: instead of assert, just
+    // place a ROS_ERROR and fill q with zeros.
+    assert(num_joints == _q_0.size());
 
     for (int i = 0; i < num_joints; ++i)
     {
-        _q.push_back(_joint_angles_0[i]);
+        q.push_back(_q_0[i]);
     }
 
 
@@ -71,8 +103,7 @@ BaxterChain::BaxterChain(KDL::Chain _chain, std::vector<double> _joint_angles_0)
 
 MatrixXd BaxterChain::GeoJacobian()
 {
-
-    int DOF = _q.size();
+    int DOF = q.size();
 
     MatrixXd J(6,DOF);
     MatrixXd PN,Z;
@@ -81,18 +112,17 @@ MatrixXd BaxterChain::GeoJacobian()
     std::deque<MatrixXd> intH;
     intH.push_back(getH(0));
 
-    for (unsigned int i=0; i<N; i++) {
-        intH.push_back(intH[i]*getH(getSegment(i)));
+    for (unsigned int i=0; i<DOF; i++)
+    {
+        intH.push_back(intH[i]*getH(i));
     }
 
-    PN=intH[N]*HN;
+    PN=intH[DOF];
 
     for (unsigned int i=0; i<DOF; i++)
     {
-        unsigned int j=hash[i];
-
-        Z=intH[j];
-        w=cross(Z,2,PN-Z,3);
+        Z=intH[i];
+        // w=cross(Z,2,PN-Z,3); // TODO define cross
 
         J(0,i)=w[0];
         J(1,i)=w[1];
@@ -103,58 +133,35 @@ MatrixXd BaxterChain::GeoJacobian()
     }
 }
 
-
-
-VectorXd BaxterChain::getAng() {
-    return Map<VectorXd>(_q.data(), _q.size());
+VectorXd BaxterChain::getAng()
+{
+    return Map<VectorXd>(q.data(), q.size());
 }
 
-// std::vector<double> BaxterChain::getAngStd() {
-//     return _joint_angles;
-// }
-
-bool BaxterChain::setAng(std::vector<double> joint_angles) {
-    _q = joint_angles;
+bool BaxterChain::setAng(std::vector<double> _q)
+{
+    q = _q;
     return true;
 }
 
-MatrixXd BaxterChain::getH() {
-
-    int num_joints = _q.size();
-
-    return getH(num_joints - 1);
+MatrixXd BaxterChain::getH()
+{
+    return getH(q.size() - 1);
 }
 
-MatrixXd BaxterChain::getH(const unsigned int i) {
+MatrixXd BaxterChain::getH(const unsigned int _i)
+{
     //num joints in chain
-    int num_joints = _q.size();
+    int num_joints = q.size();
 
-    assert(i < num_joints);
+    // TODO also here, remove the assert, place a ROS_ERROR, and return
+    // if i > than num_joints
+    assert(_i < num_joints);
 
-    //get i'th segment frame w.r.t base frame
-    KDL::Segment seg = getSegment(i);
-    return getH(seg);
+    return KDLFrameToEigen(getSegment(_i).pose(0.0));
 }
 
-MatrixXd BaxterChain::getH(KDL::Segment seg) {
-    KDL::Frame f = seg.pose(0.0);
-
-    //get pose matrix
-    KDL::Rotation mat = f.M;
-    KDL::Vector posKDL = f.p;
-    //convert to Eigen matrix
-    Eigen::Quaterniond quart;
-    Eigen::Vector3d posEig;
-    tf::quaternionKDLToEigen(mat, quart);
-    tf::vectorKDLToEigen(posKDL, posEig);
-    Matrix3d rot = quart.toRotationMatrix();
-    Matrix4d trans;
-    trans.setIdentity();
-    trans.block<3,3>(0,0) = rot;
-    trans.block<3,1>(0,3) = posEig;
-    return trans;
-}
-
-BaxterChain::~BaxterChain() {
+BaxterChain::~BaxterChain()
+{
     return;
 }
