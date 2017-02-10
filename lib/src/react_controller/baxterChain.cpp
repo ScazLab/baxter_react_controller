@@ -119,39 +119,39 @@ bool BaxterChain::setAng(std::vector<double> joint_angles) {
 
 MatrixXd BaxterChain::getH() {
 
-    //num joints in chain
     int num_joints = _q.size();
 
-    //get end effector segment frame w.r.t base frame
-    KDL::Segment seg = getSegment(num_joints - 1);
-    KDL::Frame f = seg.pose(0.0);
-
-    //get pose matrix
-    KDL::Rotation mat = f.M;
-
-    //convert to Eigen matrix
-    Eigen::Quaterniond quart;
-    tf::quaternionKDLToEigen(mat, quart);
-    return quart.toRotationMatrix();
+    return getH(num_joints - 1);
 }
 
 MatrixXd BaxterChain::getH(const unsigned int i) {
     //num joints in chain
-    int num_joints = _q.size();\
+    int num_joints = _q.size();
 
-    assert(i < num_joints - 1)
+    assert(i < num_joints);
 
     //get i'th segment frame w.r.t base frame
     KDL::Segment seg = getSegment(i);
+    return getH(seg);
+}
+
+MatrixXd BaxterChain::getH(KDL::Segment seg) {
     KDL::Frame f = seg.pose(0.0);
 
     //get pose matrix
     KDL::Rotation mat = f.M;
-
+    KDL::Vector posKDL = f.p;
     //convert to Eigen matrix
     Eigen::Quaterniond quart;
+    Eigen::Vector3d posEig;
     tf::quaternionKDLToEigen(mat, quart);
-    return quart.toRotationMatrix();
+    tf::vectorKDLToEigen(posKDL, posEig);
+    Matrix3d rot = quart.toRotationMatrix();
+    Matrix4d trans;
+    trans.setIdentity();
+    trans.block<3,3>(0,0) = rot;
+    trans.block<3,1>(0,3) = posEig;
+    return trans;
 }
 
 BaxterChain::~BaxterChain() {

@@ -26,6 +26,7 @@ public:
     bool setAng(std::vector<double> joint_angles);
     MatrixXd getH();
     MatrixXd getH(const unsigned int i);
+    MatrixXd getH(KDL::Segment seg);
     MatrixXd GeoJacobian();
     MatrixXd GeoJacobian(const unsigned int i);
     ~BaxterChain();
