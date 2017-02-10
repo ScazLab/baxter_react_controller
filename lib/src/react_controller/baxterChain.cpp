@@ -69,38 +69,39 @@ BaxterChain::BaxterChain(KDL::Chain _chain, std::vector<double> _joint_angles_0)
 //     return J;
 // }
 
-// Matrix BaxterChain::GeoJacobian()
-// {
-//     // yAssert(DOF>0);
-//     int DOF = _joint_angles_0.size()
+MatrixXd BaxterChain::GeoJacobian()
+{
 
-//     Matrix J(6,DOF);
-//     Matrix PN,Z;
-//     Vector w;
+    int DOF = _q.size();
 
-//     deque<Matrix> intH;
-//     intH.push_back(H0);
+    MatrixXd J(6,DOF);
+    MatrixXd PN,Z;
+    VectorXd w;
 
-//     for (unsigned int i=0; i<N; i++)
-//         intH.push_back(intH[i]*allList[i]->getH(true));
+    std::deque<MatrixXd> intH;
+    intH.push_back(getH(0));
 
-//     PN=intH[N]*HN;
+    for (unsigned int i=0; i<N; i++) {
+        intH.push_back(intH[i]*getH(getSegment(i)));
+    }
 
-//     for (unsigned int i=0; i<DOF; i++)
-//     {
-//         unsigned int j=hash[i];
+    PN=intH[N]*HN;
 
-//         Z=intH[j];
-//         w=cross(Z,2,PN-Z,3);
+    for (unsigned int i=0; i<DOF; i++)
+    {
+        unsigned int j=hash[i];
 
-//         J(0,i)=w[0];
-//         J(1,i)=w[1];
-//         J(2,i)=w[2];
-//         J(3,i)=Z(0,2);
-//         J(4,i)=Z(1,2);
-//         J(5,i)=Z(2,2);
-//     }
-// }
+        Z=intH[j];
+        w=cross(Z,2,PN-Z,3);
+
+        J(0,i)=w[0];
+        J(1,i)=w[1];
+        J(2,i)=w[2];
+        J(3,i)=Z(0,2);
+        J(4,i)=Z(1,2);
+        J(5,i)=Z(2,2);
+    }
+}
 
 
 

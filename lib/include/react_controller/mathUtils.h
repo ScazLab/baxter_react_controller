@@ -15,3 +15,4 @@ using namespace Eigen;
 void SVD(const MatrixXd &in, MatrixXd &U, VectorXd &S, MatrixXd &V);
 VectorXd dcm2axis(const MatrixXd &R);
 MatrixXd axis2dcm(const VectorXd &v);
+Vector3d cross(const MatrixXd &A, int colA, const MatrixXd &B, int colB);

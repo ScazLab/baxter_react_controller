@@ -13,6 +13,17 @@ void SVD(const MatrixXd &in, Matrix3d &U, Vector3d &S, Matrix3d &V)
     return;
 }
 
+Vector3d cross(const MatrixXd &A, int colA, const MatrixXd &B, int colB)
+{
+
+    Vector3d v;
+    v[0]=A(1,colA)*B(2,colB)-A(2,colA)*B(1,colB);
+    v[1]=A(2,colA)*B(0,colB)-A(0,colA)*B(2,colB);
+    v[2]=A(0,colA)*B(1,colB)-A(1,colA)*B(0,colB);
+
+    return v;
+}
+
 MatrixXd axis2dcm(const VectorXd &v)
 {
     MatrixXd R(4, 4); R.setIdentity();
@@ -60,7 +71,7 @@ VectorXd dcm2axis(const Eigen::MatrixXd &R)
     double theta=atan2(0.5*r,0.5*(R(0,0)+R(1,1)+R(2,2)-1));
 
     if (r<1e-9) {
-        // if we enter here, then 
+        // if we enter here, then
         // R is symmetric; this can
         // happen only if the rotation
         // angle is 0 (R=I) or 180 degrees
