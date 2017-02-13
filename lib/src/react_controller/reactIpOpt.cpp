@@ -1,4 +1,5 @@
 #include <math.h>
+#include <ros/ros.h>
 
 #include "react_controller/reactIpOpt.h"
 #include "react_controller/mathUtils.h"
@@ -84,12 +85,12 @@ using namespace Eigen;
 //     /****************************************************************/
     MatrixXd ControllerNLP::v2m(const VectorXd &x)
     {
-        Vector4d ang;
-        ang.block(0, 0, 1, 3) = x.tail(3);
+        Vector4d ang; ang.setZero();
+        ang.block(0, 0, 3, 1) = x.tail(3);
         double ang_mag=ang.norm();
         if (ang_mag>0.0)
             ang/=ang_mag;
-        ang(0, 4) = ang_mag;
+        ang(3, 0) = ang_mag;
         MatrixXd H = axis2dcm(ang);
         H(0,3)=x[0];
         H(1,3)=x[1];
@@ -98,9 +99,9 @@ using namespace Eigen;
     }
 
     /****************************************************************/
-    MatrixXd ControllerNLP::skew(const Vector3d &w)
+    MatrixXd ControllerNLP::skew(const VectorXd &w)
     {
-        MatrixXd S;
+        MatrixXd S(3,3);
         S(0,0)=S(1,1)=S(2,2)=0.0;
         S(1,0)= w[2]; S(0,1)=-S(1,0);
         S(2,0)=-w[1]; S(0,2)=-S(2,0);
@@ -111,10 +112,11 @@ using namespace Eigen;
     /****************************************************************/
     ControllerNLP::ControllerNLP(BaxterChain chain_, KDL::JntArray &lb_, KDL::JntArray &ub_) : chain(chain_), ub(ub_), lb(lb_)
     {
-        xr.resize(6,0.0);
+        xr.resize(6); xr.setZero();
         set_xr(xr);
 
-        v0.resize(chain.getNrOfJoints(),0.0); v=v0;
+        v0.resize(chain.getNrOfJoints()); v0.setZero();
+        v=v0;
         Matrix4f He;
         He.setZero();
         He(3,3)=1.0;
@@ -146,8 +148,7 @@ using namespace Eigen;
         this->xr=xr;
 
         Hr=v2m(xr);
-        pr=xr.block(0, 0, 1, 3);
-
+        pr=xr.block(0, 0, 3, 1);
         skew_nr=skew(Hr.col(0));
         skew_sr=skew(Hr.col(1));
         skew_ar=skew(Hr.col(2));

@@ -2,6 +2,7 @@
 #include <deque>
 
 #include <react_controller/baxterChain.h>
+#include <react_controller/mathUtils.h>
 #include <eigen_conversions/eigen_kdl.h>
 
 Matrix4d KDLFrameToEigen(KDL::Frame _f)
@@ -122,7 +123,7 @@ MatrixXd BaxterChain::GeoJacobian()
     for (unsigned int i=0; i<DOF; i++)
     {
         Z=intH[i];
-        // w=cross(Z,2,PN-Z,3); // TODO define cross
+        w=cross(Z,2,PN-Z,3); // TODO define cross
 
         J(0,i)=w[0];
         J(1,i)=w[1];

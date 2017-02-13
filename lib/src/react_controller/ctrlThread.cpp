@@ -4,7 +4,7 @@ using namespace sensor_msgs;
 using namespace baxter_core_msgs;
 
 CtrlThread::CtrlThread(const std::string& base_link, const std::string& tip_link) :
-        RobotInterface("test", "test")
+        RobotInterface("baxter_react_controller", "left")
 {
     ros::NodeHandle node_handle("~");
 
@@ -78,6 +78,7 @@ CtrlThread::CtrlThread(const std::string& base_link, const std::string& tip_link
 
     _jntstate_sub  = node_handle.subscribe("/robot/joint_states",
                                     SUBSCRIBER_BUFFER, &CtrlThread::jointStatesCb, this);
+    solveIK();
 }
 
 void CtrlThread::solveIK()
@@ -110,7 +111,7 @@ void CtrlThread::solveIK()
     app->Initialize();
 
     Ipopt::SmartPtr<ControllerNLP> nlp;
-    // nlp=new ControllerNLP(_chain, _lb, _ub);
+    nlp=new ControllerNLP(_chain, _lb, _ub);
     // nlp->set_hitting_constraints(hittingConstraints);
     // nlp->set_orientation_control(orientationControl);
     // nlp->set_dt(dT);

@@ -51,7 +51,7 @@ class ControllerNLP : public Ipopt::TNLP
     void computeGuard();
     void computeBounds();
     MatrixXd v2m(const VectorXd &x);
-    MatrixXd skew(const Vector3d &w);
+    MatrixXd skew(const VectorXd &w);
 
     public:
     ControllerNLP(BaxterChain chain_, KDL::JntArray &lb_, KDL::JntArray &ub_);
