@@ -1,5 +1,6 @@
 #include <assert.h>
 #include <deque>
+#include <ros/ros.h>
 
 #include <react_controller/baxterChain.h>
 #include <react_controller/mathUtils.h>
@@ -132,6 +133,7 @@ MatrixXd BaxterChain::GeoJacobian()
         J(4,i)=Z(1,2);
         J(5,i)=Z(2,2);
     }
+    return J;
 }
 
 VectorXd BaxterChain::getAng()

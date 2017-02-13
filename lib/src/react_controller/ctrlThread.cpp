@@ -4,7 +4,7 @@ using namespace sensor_msgs;
 using namespace baxter_core_msgs;
 
 CtrlThread::CtrlThread(const std::string& base_link, const std::string& tip_link) :
-        RobotInterface("baxter_react_controller", "left")
+     RobotInterface("baxter_react_controller", "left")
 {
     ros::NodeHandle node_handle("~");
 
@@ -32,17 +32,20 @@ CtrlThread::CtrlThread(const std::string& base_link, const std::string& tip_link
     if (!kdl_parser::treeFromUrdfModel(robot_model, tree))
       ROS_FATAL("Failed to extract kdl tree from xml robot description");
 
-    if(!tree.getChain(base_link, tip_link, _chain))
+
+    KDL::Chain chain;
+
+    if(!tree.getChain(base_link, tip_link, chain))
       ROS_FATAL("Couldn't find chain %s to %s",base_link.c_str(),tip_link.c_str());
 
-    std::vector<KDL::Segment> chain_segs = _chain.segments;
+    std::vector<KDL::Segment> chain_segs = chain.segments;
 
     boost::shared_ptr<const urdf::Joint> joint;
 
     std::vector<double> l_bounds, u_bounds;
 
-    _lb.resize(_chain.getNrOfJoints());
-    _ub.resize(_chain.getNrOfJoints());
+    _lb.resize(chain.getNrOfJoints());
+    _ub.resize(chain.getNrOfJoints());
 
     uint joint_num=0;
     for(unsigned int i = 0; i < chain_segs.size(); ++i) {
@@ -78,6 +81,7 @@ CtrlThread::CtrlThread(const std::string& base_link, const std::string& tip_link
 
     _jntstate_sub  = node_handle.subscribe("/robot/joint_states",
                                     SUBSCRIBER_BUFFER, &CtrlThread::jointStatesCb, this);
+    _chain = BaxterChain(chain);
     solveIK();
 }
 
@@ -112,18 +116,17 @@ void CtrlThread::solveIK()
 
     Ipopt::SmartPtr<ControllerNLP> nlp;
     nlp=new ControllerNLP(_chain, _lb, _ub);
-    // nlp->set_hitting_constraints(hittingConstraints);
-    // nlp->set_orientation_control(orientationControl);
-    // nlp->set_dt(dT);
-    // nlp->set_xr(xr);
-    // nlp->set_v_limInDegPerSecond(vLimAdapted);
-    // nlp->set_v0InDegPerSecond(q_dot);
-    // nlp->init();
+    nlp->set_hitting_constraints(hittingConstraints);
+    nlp->set_orientation_control(orientationControl);
+    nlp->set_dt(dT);
+    nlp->set_xr(xr);
+    nlp->set_v_limInDegPerSecond(vLimAdapted);
+    nlp->set_v0InDegPerSecond(q_dot);
+    nlp->init();
 
     // _exit_code=app->OptimizeTNLP(GetRawPtr(nlp));
 
     // res=nlp->get_resultInDegPerSecond();
-    ROS_DEBUG("HELLO");
 }
 
 void CtrlThread::jointStatesCb(const sensor_msgs::JointState& msg)

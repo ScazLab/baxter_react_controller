@@ -56,6 +56,8 @@ using namespace Eigen;
     /****************************************************************/
     void ControllerNLP::computeBounds()
     {
+        bounds.resize(chain.getNrOfJoints(), 2);
+
         for (size_t i=0; i<chain.getNrOfJoints(); i++)
         {
             double qi=q0[i];
@@ -73,8 +75,7 @@ using namespace Eigen;
                 bounds(i,1)=(qi>=qGuardMaxExt[i]?0.0:
                              0.5*(1.0+tanh(-10.0*(qi-qGuardMaxCOG[i])/qGuard[i])));
             }
-        }
-
+        };
         for (size_t i=0; i<chain.getNrOfJoints(); i++)
         {
             bounds(i,0)*=v_lim(i,0);
@@ -190,14 +191,13 @@ using namespace Eigen;
         q0=chain.getAng();
         H0=chain.getH();
         R0=H0.block(0,0,3,3);
-        p0=H0.col(3).block(0, 0, 1, 3);
+        p0=H0.col(3).block(0, 0, 3, 1);
 
-        // MatrixXd J0=GeoJacobian(chain);
-        MatrixXd J0;
-        J0_xyz=J0.block(0,0,3,chain.getNrOfJoints()-1);
-        J0_ang=J0.block(0,3,3,chain.getNrOfJoints()-1);
+        MatrixXd J0=chain.GeoJacobian();
+        J0_xyz=J0.block(0,0,chain.getNrOfJoints()-1, 3);
+        J0_ang=J0.block(0,3,chain.getNrOfJoints()-1, 3);
 
-        computeBounds();
+        // computeBounds();
     }
 
     /****************************************************************/
