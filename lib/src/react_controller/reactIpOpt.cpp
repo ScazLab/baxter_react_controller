@@ -58,6 +58,8 @@ using namespace Eigen;
     {
         bounds.resize(chain.getNrOfJoints(), 2);
 
+        ROS_INFO("rows: %d, columns: %d", v_lim.rows(), v_lim.cols());
+
         for (size_t i=0; i<chain.getNrOfJoints(); i++)
         {
             double qi=q0[i];
@@ -118,7 +120,7 @@ using namespace Eigen;
 
         v0.resize(chain.getNrOfJoints()); v0.setZero();
         v=v0;
-        Matrix4f He;
+        He.resize(4, 4);
         He.setZero();
         He(3,3)=1.0;
 
@@ -188,16 +190,17 @@ using namespace Eigen;
     /****************************************************************/
     void ControllerNLP::init()
     {
+        ROS_INFO("IN INIT");
         q0=chain.getAng();
         H0=chain.getH();
         R0=H0.block(0,0,3,3);
         p0=H0.col(3).block(0, 0, 3, 1);
 
         MatrixXd J0=chain.GeoJacobian();
-        J0_xyz=J0.block(0,0,chain.getNrOfJoints()-1, 3);
-        J0_ang=J0.block(0,3,chain.getNrOfJoints()-1, 3);
+        J0_xyz=J0.block(0,0,3,chain.getNrOfJoints());
+        J0_ang=J0.block(3,0,3,chain.getNrOfJoints());
 
-        // computeBounds();
+        computeBounds();
     }
 
     /****************************************************************/
@@ -295,10 +298,9 @@ using namespace Eigen;
             for (size_t i=0; i<6; i++)
                 v[i]=x[i];
 
-            Matrix3d sub = R0+dt*(skew(J0_ang*v)*R0);
-
-            He.block(0, 0, 3, 3) = sub;
-            Vector3d pe; //=p0+dt*(J0_xyz*v);
+            MatrixXd sub = R0+dt*(skew(J0_ang*v)*R0);
+            He.block<3,3>(0, 0) = sub;
+            VectorXd pe=p0+dt*(J0_xyz*v);
             He(0,3)=pe[0];
             He(1,3)=pe[1];
             He(2,3)=pe[2];
@@ -358,7 +360,6 @@ using namespace Eigen;
             g[5]=-elb_m*(q0[3+3+0]+dt*x[3+3+0])+q0[3+3+1]+dt*x[3+3+1];
             g[6]=elb_m*(q0[3+3+0]+dt*x[3+3+0])+q0[3+3+1]+dt*x[3+3+1];
         }
-
         return true;
     }
 

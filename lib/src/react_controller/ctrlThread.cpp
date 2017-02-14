@@ -82,21 +82,35 @@ CtrlThread::CtrlThread(const std::string& base_link, const std::string& tip_link
     _jntstate_sub  = node_handle.subscribe("/robot/joint_states",
                                     SUBSCRIBER_BUFFER, &CtrlThread::jointStatesCb, this);
     _chain = BaxterChain(chain);
-    solveIK();
+    x_0.resize(3); x_0.setZero();
+    x_t.resize(3); x_t.setZero();
+    x_n.resize(3); x_n.setZero();
+    x_d.resize(3); x_d.setZero();
+
+    o_n.resize(3); o_n.setZero();
+
+    solveIK(1e-6, 45);
 }
 
-void CtrlThread::solveIK()
+void CtrlThread::solveIK(double tol, double vMax)
 {
-    double tol = 1e-6;
     double dT = 0.001;
     VectorXd xr(6);
-    MatrixXd vLimAdapted(3, 3);
-    VectorXd q_dot(6);
-    VectorXd res(3);
+    xr.block<3, 1>(0, 0) = x_n;
+    xr.block<3, 1>(3, 0) = o_n;
 
-    bool verbosity = false;
+    MatrixXd vLimAdapted; vLimAdapted.resize(_chain.getNrOfJoints(), 2);
+    for (size_t r = 0, DOF = _chain.getNrOfJoints(); r < DOF; ++r) {
+        vLimAdapted(r, 0) = -vMax;
+        vLimAdapted(r, 1) = vMax;
+    }
+    q_dot.resize(_chain.getNrOfJoints());
+    q_dot.setZero();
+    VectorXd res(_chain.getNrOfJoints()); res.setZero();
+
+    bool verbosity = true;
     bool controlMode = true;
-    bool hittingConstraints = true;
+    bool hittingConstraints = false;
     bool orientationControl = true;
     int _exit_code;
 
@@ -124,9 +138,17 @@ void CtrlThread::solveIK()
     nlp->set_v0InDegPerSecond(q_dot);
     nlp->init();
 
-    // _exit_code=app->OptimizeTNLP(GetRawPtr(nlp));
+    _exit_code=app->OptimizeTNLP(GetRawPtr(nlp));
 
-    // res=nlp->get_resultInDegPerSecond();
+    res=nlp->get_resultInDegPerSecond();
+
+    if(verbosity >= 1){
+        ROS_INFO("x_n: %d %d %d\tx_d: %d %d %d\tdT: %d", x_n[0], x_n[1], x_n[2], x_d[0], x_d[1], x_d[2], dT);
+        ROS_INFO("x_0: %d %d %d\tx_t: %d %d %d", x_0[0], x_0[1], x_0[2], x_t[0], x_t[1], x_t[2]);
+        ROS_INFO("norm(x_n-x_t): %g\tnorm(x_d-x_n): %g\tnorm(x_d-x_t): %g",
+                    (x_n-x_t).norm(), (x_d-x_n).norm(), (x_d-x_t).norm());
+        ROS_INFO("Result (solved velocities (deg/s)): %d %d %d %d %d %d %d",res[0], res[1], res[2], res[3], res[4], res[5], res[6]);
+    }
 }
 
 void CtrlThread::jointStatesCb(const sensor_msgs::JointState& msg)
