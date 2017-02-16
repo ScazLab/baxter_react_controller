@@ -1,5 +1,5 @@
 #include <robot_interface/robot_interface.h>
-#include <react_controller/reactIpOpt.h>
+#include <react_controller/controllerNLP.h>
 #include <baxter_core_msgs/JointCommand.h>
 
 class CtrlThread : public RobotInterface

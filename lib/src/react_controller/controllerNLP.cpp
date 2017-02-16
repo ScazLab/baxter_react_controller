@@ -1,7 +1,7 @@
 #include <math.h>
 #include <ros/ros.h>
 
-#include "react_controller/reactIpOpt.h"
+#include "react_controller/controllerNLP.h"
 #include "react_controller/mathUtils.h"
 
 using namespace Eigen;
