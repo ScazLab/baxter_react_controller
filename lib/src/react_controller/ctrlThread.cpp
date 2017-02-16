@@ -2,9 +2,10 @@
 
 using namespace sensor_msgs;
 using namespace baxter_core_msgs;
+using namespace Eigen;
 
-CtrlThread::CtrlThread(const std::string& base_link, const std::string& tip_link) :
-     RobotInterface("baxter_react_controller", "left")
+CtrlThread::CtrlThread(const std::string& _base_link, const std::string& _tip_link) :
+                                  RobotInterface("baxter_react_controller", "left")
 {
     ros::NodeHandle node_handle("~");
 
@@ -17,10 +18,10 @@ CtrlThread::CtrlThread(const std::string& base_link, const std::string& tip_link
 
     ROS_DEBUG_NAMED("trac_ik","Reading xml file from parameter server");
     if (!node_handle.getParam(full_urdf_xml, xml_string))
-      {
+    {
         ROS_FATAL_NAMED("trac_ik","Could not load the xml from parameter server: %s", urdf_xml.c_str());
         return;
-      }
+    }
 
     node_handle.param(full_urdf_xml,xml_string,std::string());
     robot_model.initString(xml_string);
@@ -32,53 +33,63 @@ CtrlThread::CtrlThread(const std::string& base_link, const std::string& tip_link
     if (!kdl_parser::treeFromUrdfModel(robot_model, tree))
       ROS_FATAL("Failed to extract kdl tree from xml robot description");
 
-    KDL::Chain chain;
+    KDL::Chain kdl_chain;
 
-    if(!tree.getChain(base_link, tip_link, chain))
-      ROS_FATAL("Couldn't find chain %s to %s",base_link.c_str(),tip_link.c_str());
+    if(!tree.getChain(_base_link, _tip_link, kdl_chain))
+      ROS_FATAL("Couldn't find chain %s to %s",_base_link.c_str(),_tip_link.c_str());
 
-    std::vector<KDL::Segment> chain_segs = chain.segments;
+    std::vector<KDL::Segment> kdl_chain_segs = kdl_chain.segments;
 
     boost::shared_ptr<const urdf::Joint> joint;
 
     std::vector<double> l_bounds, u_bounds;
 
-    _lb.resize(chain.getNrOfJoints());
-    _ub.resize(chain.getNrOfJoints());
+    lb.resize(kdl_chain.getNrOfJoints());
+    ub.resize(kdl_chain.getNrOfJoints());
 
     uint joint_num=0;
-    for(unsigned int i = 0; i < chain_segs.size(); ++i) {
-      joint = robot_model.getJoint(chain_segs[i].getJoint().getName());
-      if (joint->type != urdf::Joint::UNKNOWN && joint->type != urdf::Joint::FIXED) {
-        joint_num++;
-        float lower, upper;
-        int hasLimits;
-        if ( joint->type != urdf::Joint::CONTINUOUS ) {
-          if(joint->safety) {
-            lower = std::max(joint->limits->lower, joint->safety->soft_lower_limit);
-            upper = std::min(joint->limits->upper, joint->safety->soft_upper_limit);
-          } else {
-            lower = joint->limits->lower;
-            upper = joint->limits->upper;
-          }
-          hasLimits = 1;
+    for(unsigned int i = 0; i < kdl_chain_segs.size(); ++i)
+    {
+        joint = robot_model.getJoint(kdl_chain_segs[i].getJoint().getName());
+
+        if (joint->type != urdf::Joint::UNKNOWN && joint->type != urdf::Joint::FIXED)
+        {
+            joint_num++;
+            float lower, upper;
+            int hasLimits = 0;
+
+            if ( joint->type != urdf::Joint::CONTINUOUS )
+            {
+                if(joint->safety)
+                {
+                    lower = std::max(joint->limits->lower, joint->safety->soft_lower_limit);
+                    upper = std::min(joint->limits->upper, joint->safety->soft_upper_limit);
+                }
+                else
+                {
+                    lower = joint->limits->lower;
+                    upper = joint->limits->upper;
+                }
+
+                hasLimits = 1;
+            }
+
+            if(hasLimits)
+            {
+                lb(joint_num-1)=lower;
+                ub(joint_num-1)=upper;
+            }
+            else
+            {
+                lb(joint_num-1)=std::numeric_limits<float>::lowest();
+                ub(joint_num-1)=std::numeric_limits<float>::max();
+            }
+
+            ROS_INFO_STREAM("IK Using joint "<<joint->name<<" "<<lb(joint_num-1)<<" "<<ub(joint_num-1));
         }
-        else {
-          hasLimits = 0;
-        }
-        if(hasLimits) {
-          _lb(joint_num-1)=lower;
-          _ub(joint_num-1)=upper;
-        }
-        else {
-          _lb(joint_num-1)=std::numeric_limits<float>::lowest();
-          _ub(joint_num-1)=std::numeric_limits<float>::max();
-        }
-        ROS_INFO_STREAM("IK Using joint "<<joint->name<<" "<<_lb(joint_num-1)<<" "<<_ub(joint_num-1));
-      }
     }
 
-    _chain = BaxterChain(chain);
+    chain = new BaxterChain(kdl_chain);
 
     x_0.resize(3); x_0.setZero();
     x_t.resize(3); x_t.setZero();
@@ -101,14 +112,16 @@ VectorXd CtrlThread::solveIK(int &_exit_code)
     xr.block<3, 1>(0, 0) = x_n;
     xr.block<3, 1>(3, 0) = o_n;
 
-    MatrixXd vLimAdapted; vLimAdapted.resize(_chain.getNrOfJoints(), 2);
-    for (size_t r = 0, DOF = _chain.getNrOfJoints(); r < DOF; ++r) {
+    MatrixXd vLimAdapted;
+    vLimAdapted.resize(chain->getNrOfJoints(), 2);
+    for (size_t r = 0, DOF = chain->getNrOfJoints(); r < DOF; ++r)
+    {
         vLimAdapted(r, 0) = -vMax;
         vLimAdapted(r, 1) = vMax;
     }
-    q_dot.resize(_chain.getNrOfJoints());
+    q_dot.resize(chain->getNrOfJoints());
     q_dot.setZero();
-    VectorXd res(_chain.getNrOfJoints()); res.setZero();
+    VectorXd res(chain->getNrOfJoints()); res.setZero();
 
     bool verbosity = true;
     // bool controlMode = true;
@@ -129,7 +142,7 @@ VectorXd CtrlThread::solveIK(int &_exit_code)
     app->Initialize();
 
     Ipopt::SmartPtr<ControllerNLP> nlp;
-    nlp=new ControllerNLP(_chain, _lb, _ub);
+    nlp=new ControllerNLP(*chain, lb, ub);
     nlp->set_hitting_constraints(hittingConstraints);
     nlp->set_orientation_control(orientationControl);
     nlp->set_dt(dT);
@@ -142,7 +155,8 @@ VectorXd CtrlThread::solveIK(int &_exit_code)
 
     res=nlp->get_resultInDegPerSecond();
 
-    if(verbosity >= 1){
+    if(verbosity >= 1)
+    {
         ROS_INFO("x_n: %g %g %g\tx_d: %g %g %g\tdT: %g", x_n[0], x_n[1], x_n[2], x_d[0], x_d[1], x_d[2], dT);
         ROS_INFO("x_0: %g %g %g\tx_t: %g %g %g", x_0[0], x_0[1], x_0[2], x_t[0], x_t[1], x_t[2]);
         ROS_INFO("norm(x_n-x_t): %g\tnorm(x_d-x_n): %g\tnorm(x_d-x_t): %g",
@@ -151,4 +165,13 @@ VectorXd CtrlThread::solveIK(int &_exit_code)
     }
 
     return res;
+}
+
+CtrlThread::~CtrlThread()
+{
+    if (chain)
+    {
+        delete chain;
+        chain = 0;
+    }
 }
