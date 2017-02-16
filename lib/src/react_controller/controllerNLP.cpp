@@ -147,9 +147,9 @@ MatrixXd ControllerNLP::skew(const VectorXd &w)
 }
 
 /****************************************************************/
-void ControllerNLP::set_xr(const VectorXd &xr)
+void ControllerNLP::set_xr(const VectorXd &_xr)
 {
-    this->xr=xr;
+    xr=_xr;
 
     Hr=v2m(xr);
     pr=xr.block(0, 0, 3, 1);
@@ -159,9 +159,9 @@ void ControllerNLP::set_xr(const VectorXd &xr)
 }
 
 /****************************************************************/
-void ControllerNLP::set_v_limInDegPerSecond(const MatrixXd &v_lim)
+void ControllerNLP::set_v_limInDegPerSecond(const MatrixXd &_v_lim)
 {
-    this->v_lim=CTRL_DEG2RAD*v_lim;
+    v_lim=CTRL_DEG2RAD*_v_lim;
 }
 
 /****************************************************************/
@@ -177,15 +177,15 @@ void ControllerNLP::set_orientation_control(const bool _orientation_control)
 }
 
 /****************************************************************/
-void ControllerNLP::set_dt(const double dt)
+void ControllerNLP::set_dt(const double _dt)
 {
-    this->dt=dt;
+    dt=_dt;
 }
 
 /****************************************************************/
-void ControllerNLP::set_v0InDegPerSecond(const VectorXd &v0)
+void ControllerNLP::set_v0InDegPerSecond(const VectorXd &_v0)
 {
-    this->v0=CTRL_DEG2RAD*v0;
+    v0=CTRL_DEG2RAD*_v0;
 }
 
 /****************************************************************/
