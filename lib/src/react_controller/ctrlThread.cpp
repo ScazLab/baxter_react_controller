@@ -26,9 +26,7 @@ CtrlThread::CtrlThread(const std::string& _base_link, const std::string& _tip_li
     node_handle.param(full_urdf_xml,xml_string,std::string());
     robot_model.initString(xml_string);
 
-    std::vector<double> vec = {0, 0, 0, 0, 0, 0, 0};
-
-    chain = new BaxterChain(robot_model, vec, _base_link, _tip_link);
+    chain = new BaxterChain(robot_model, _base_link, _tip_link);
 
     x_0.resize(3); x_0.setZero();
     x_t.resize(3); x_t.setZero();

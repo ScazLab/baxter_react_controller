@@ -7,6 +7,7 @@
 #include <eigen_conversions/eigen_kdl.h>
 
 using namespace Eigen;
+using namespace   std;
 
 Matrix4d KDLFrameToEigen(KDL::Frame _f)
 {
@@ -35,25 +36,43 @@ Matrix4d KDLFrameToEigen(KDL::Frame _f)
 /**************************************************************************/
 /*                            BaxterChain                                 */
 /**************************************************************************/
-BaxterChain::BaxterChain(KDL::Chain _chain) : KDL::Chain(_chain)
+BaxterChain::BaxterChain(urdf::Model _robot_model,
+                         const string& _base_link,
+                          const string& _tip_link)
 {
+    initChain(_robot_model, _base_link, _tip_link);
+
     for (size_t i = 0; i < getNrOfJoints(); ++i)
     {
         q.push_back(0.0);
     }
 }
 
-BaxterChain::BaxterChain(urdf::Model robot_model, std::vector<double> _q_0, const std::string& _base_link, const std::string& _tip_link)
+BaxterChain::BaxterChain(urdf::Model _robot_model,
+                         const string& _base_link,
+                          const string& _tip_link,
+                         std::vector<double> _q_0)
 {
+    initChain(_robot_model, _base_link, _tip_link);
+
     // TODO : better interface: instead of assert, just
     // place a ROS_ERROR and fill q with zeros.
     assert(getNrOfJoints() == _q_0.size());
 
-    ROS_DEBUG_STREAM_NAMED("trac_ik","Reading joints and links from URDF");
+    for (size_t i = 0; i < getNrOfJoints(); ++i)
+    {
+        q.push_back(_q_0[i]);
+    }
+}
 
+void BaxterChain::initChain(urdf::Model _robot_model,
+                       const std::string& _base_link,
+                        const std::string& _tip_link)
+{
+    ROS_DEBUG("Reading joints and links from URDF");
     KDL::Tree tree;
 
-    if (!kdl_parser::treeFromUrdfModel(robot_model, tree))
+    if (!kdl_parser::treeFromUrdfModel(_robot_model, tree))
       ROS_FATAL("Failed to extract kdl tree from xml robot description");
 
     if(!tree.getChain(_base_link, _tip_link, chain))
@@ -71,7 +90,7 @@ BaxterChain::BaxterChain(urdf::Model robot_model, std::vector<double> _q_0, cons
     uint joint_num=0;
     for(unsigned int i = 0; i < kdl_chain_segs.size(); ++i)
     {
-        joint = robot_model.getJoint(kdl_chain_segs[i].getJoint().getName());
+        joint = _robot_model.getJoint(kdl_chain_segs[i].getJoint().getName());
 
         if (joint->type != urdf::Joint::UNKNOWN && joint->type != urdf::Joint::FIXED)
         {
@@ -106,13 +125,10 @@ BaxterChain::BaxterChain(urdf::Model robot_model, std::vector<double> _q_0, cons
                 ub(joint_num-1)=std::numeric_limits<float>::max();
             }
 
-            ROS_INFO_STREAM("IK Using joint "<<joint->name<<" "<<lb(joint_num-1)<<" "<<ub(joint_num-1));
+            ROS_INFO_STREAM("IK Using joint "<<joint->name<<" "<<
+                                               lb(joint_num-1)<<" "<<
+                                               ub(joint_num-1));
         }
-    }
-
-    for (size_t i = 0; i < getNrOfJoints(); ++i)
-    {
-        q.push_back(_q_0[i]);
     }
 }
 

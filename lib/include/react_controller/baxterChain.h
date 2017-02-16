@@ -35,8 +35,18 @@ private:
 
 public:
     // TODO documentation
-    BaxterChain(KDL::Chain _chain);
-    BaxterChain(urdf::Model robot_model, std::vector<double> _q_0, const std::string& _base_link, const std::string& _tip_link);
+    BaxterChain(urdf::Model _robot_model,
+           const std::string& _base_link,
+           const std::string&  _tip_link);
+
+    BaxterChain(urdf::Model _robot_model,
+           const std::string& _base_link,
+           const std::string&  _tip_link,
+                std::vector<double> _q_0);
+
+    void initChain(urdf::Model _robot_model,
+              const std::string& _base_link,
+               const std::string& _tip_link);
 
     Eigen::VectorXd getAng();
     bool     setAng(std::vector<double> _q);
