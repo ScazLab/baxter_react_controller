@@ -12,9 +12,6 @@
 
 #include <react_controller/baxterChain.h>
 
-using namespace std;
-using namespace Eigen;
-
 #define CTRL_RAD2DEG (180.0 / M_PI)
 #define CTRL_DEG2RAD (M_PI/180.0)
 
@@ -27,43 +24,43 @@ class ControllerNLP : public Ipopt::TNLP
     bool hitting_constraints;
     bool orientation_control;
 
-    VectorXd xr,pr;
-    MatrixXd Hr,skew_nr,skew_sr,skew_ar;
-    MatrixXd q_lim,v_lim;
-    VectorXd p0, q0, v0, v;
-    MatrixXd H0,R0,He,J0_xyz,J0_ang,Derr_ang;
-    VectorXd err_xyz,err_ang;
-    MatrixXd bounds;
+    Eigen::VectorXd xr,pr;
+    Eigen::MatrixXd Hr,skew_nr,skew_sr,skew_ar;
+    Eigen::MatrixXd q_lim,v_lim;
+    Eigen::VectorXd p0, q0, v0, v;
+    Eigen::MatrixXd H0,R0,He,J0_xyz,J0_ang,Derr_ang;
+    Eigen::VectorXd err_xyz,err_ang;
+    Eigen::MatrixXd bounds;
     double dt;
 
     double shou_m,shou_n;
     double elb_m,elb_n;
 
-    VectorXd qGuard;
-    VectorXd qGuardMinExt;
-    VectorXd qGuardMinInt;
-    VectorXd qGuardMinCOG;
-    VectorXd qGuardMaxExt;
-    VectorXd qGuardMaxInt;
-    VectorXd qGuardMaxCOG;
+    Eigen::VectorXd qGuard;
+    Eigen::VectorXd qGuardMinExt;
+    Eigen::VectorXd qGuardMinInt;
+    Eigen::VectorXd qGuardMinCOG;
+    Eigen::VectorXd qGuardMaxExt;
+    Eigen::VectorXd qGuardMaxInt;
+    Eigen::VectorXd qGuardMaxCOG;
 
     /****************************************************************/
     void computeSelfAvoidanceConstraints();
     void computeGuard();
     void computeBounds();
-    MatrixXd v2m(const VectorXd &x);
-    MatrixXd skew(const VectorXd &w);
+    Eigen::MatrixXd v2m(const Eigen::VectorXd &x);
+    Eigen::MatrixXd skew(const Eigen::VectorXd &w);
 
     public:
     ControllerNLP(BaxterChain chain_, KDL::JntArray &lb_, KDL::JntArray &ub_);
-    void set_xr(const VectorXd &xr);
-    void set_v_limInDegPerSecond(const MatrixXd &v_lim);
+    void set_xr(const Eigen::VectorXd &xr);
+    void set_v_limInDegPerSecond(const Eigen::MatrixXd &v_lim);
     void set_hitting_constraints(const bool _hitting_constraints);
     void set_orientation_control(const bool _orientation_control);
     void set_dt(const double dt);
-    void set_v0InDegPerSecond(const VectorXd &v0);
+    void set_v0InDegPerSecond(const Eigen::VectorXd &v0);
     void init();
-    VectorXd get_resultInDegPerSecond() const;
+    Eigen::VectorXd get_resultInDegPerSecond() const;
     // Property getParameters() const;
     bool get_nlp_info(Ipopt::Index &n, Ipopt::Index &m, Ipopt::Index &nnz_jac_g,
                       Ipopt::Index &nnz_h_lag, IndexStyleEnum &index_style);
