@@ -16,11 +16,11 @@ include_directories(${PROJECT_SOURCE_DIR}/include)
 # without the need to link against the full robot_interface lib,
 # which would be an unnecessary overhead.
 
-add_library(react_controller include/react_controller/reactIpOpt.h
+add_library(react_controller include/react_controller/controllerNLP.h
                              include/react_controller/ctrlThread.h
                              include/react_controller/mathUtils.h
                              include/react_controller/baxterChain.h
-                             src/react_controller/reactIpOpt.cpp
+                             src/react_controller/controllerNLP.cpp
                              src/react_controller/ctrlThread.cpp
                              src/react_controller/mathUtils.cpp
                              src/react_controller/baxterChain.cpp)
