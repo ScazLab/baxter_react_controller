@@ -12,7 +12,7 @@ find_package(catkin REQUIRED
                     cmake_modules
                     roscpp
                     baxter_core_msgs
-                    baxter_collaboration
+                    baxter_collaboration_lib
                     eigen_conversions)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}")
