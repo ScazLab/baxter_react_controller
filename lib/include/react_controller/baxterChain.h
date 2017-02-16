@@ -3,10 +3,6 @@
 #include <kdl/jacobian.hpp>
 #include <kdl/jntarray.hpp>
 
-#include <Eigen/Dense>
-
-using namespace Eigen;
-
 // Things to remember:
 //  1 allList == quickList
 //  2 N == DOF
@@ -26,7 +22,7 @@ using namespace Eigen;
 // in my code and you would need to do it anyway when we'll integrate
 // with my code
 
-Matrix4d KDLFrameToEigen(KDL::Frame _f);
+Eigen::Matrix4d KDLFrameToEigen(KDL::Frame _f);
 
 /****************************************************************/
 class BaxterChain : public KDL::Chain
@@ -36,18 +32,17 @@ private:
 
 public:
     // TODO documentation
-    BaxterChain();
     BaxterChain(KDL::Chain _chain);
     BaxterChain(KDL::Chain _chain, std::vector<double> _q_0);
 
-    VectorXd getAng();
+    Eigen::VectorXd getAng();
     bool     setAng(std::vector<double> _q);
 
-    MatrixXd getH();
-    MatrixXd getH(const unsigned int _i);
+    Eigen::MatrixXd getH();
+    Eigen::MatrixXd getH(const unsigned int _i);
 
-    MatrixXd GeoJacobian();
-    MatrixXd GeoJacobian(const unsigned int _i);
+    Eigen::MatrixXd GeoJacobian();
+    Eigen::MatrixXd GeoJacobian(const unsigned int _i);
 
     ~BaxterChain();
 };

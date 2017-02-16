@@ -6,6 +6,8 @@
 #include <react_controller/mathUtils.h>
 #include <eigen_conversions/eigen_kdl.h>
 
+using namespace Eigen;
+
 Matrix4d KDLFrameToEigen(KDL::Frame _f)
 {
     Matrix4d result;
@@ -33,12 +35,6 @@ Matrix4d KDLFrameToEigen(KDL::Frame _f)
 /**************************************************************************/
 /*                            BaxterChain                                 */
 /**************************************************************************/
-
-BaxterChain::BaxterChain()
-{
-
-}
-
 BaxterChain::BaxterChain(KDL::Chain _chain) : KDL::Chain(_chain)
 {
     for (size_t i = 0; i < getNrOfJoints(); ++i)
