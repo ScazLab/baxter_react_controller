@@ -222,6 +222,8 @@ VectorXd ControllerNLP::get_resultInDegPerSecond() const
 bool ControllerNLP::get_nlp_info(Ipopt::Index &n, Ipopt::Index &m, Ipopt::Index &nnz_jac_g,
                   Ipopt::Index &nnz_h_lag, IndexStyleEnum &index_style)
 {
+    ROS_INFO("get_nlp_info");
+
     n=chain.getNrOfJoints();
 
     // reaching in position
@@ -248,6 +250,8 @@ bool ControllerNLP::get_nlp_info(Ipopt::Index &n, Ipopt::Index &m, Ipopt::Index 
 bool ControllerNLP::get_bounds_info(Ipopt::Index n, Ipopt::Number *x_l, Ipopt::Number *x_u,
                      Ipopt::Index m, Ipopt::Number *g_l, Ipopt::Number *g_u)
 {
+    ROS_INFO("get_bounds_info");
+
     for (Ipopt::Index i=0; i<n; i++)
     {
         x_l[i]=bounds(i,0);
@@ -294,6 +298,8 @@ bool ControllerNLP::get_starting_point(Ipopt::Index n, bool init_x, Ipopt::Numbe
 /************************************************************************/
 void ControllerNLP::computeQuantities(const Ipopt::Number *x, const bool new_x)
 {
+    // ROS_INFO("computeQuantities");
+
     if (new_x)
     {
         for (size_t i=0; i<6; i++)
