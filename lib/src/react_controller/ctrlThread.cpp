@@ -7,23 +7,21 @@ using namespace Eigen;
 CtrlThread::CtrlThread(const std::string& _base_link, const std::string& _tip_link) :
                                   RobotInterface("baxter_react_controller", "left")
 {
-    ros::NodeHandle node_handle("~");
-
     urdf::Model robot_model;
     std::string xml_string;
 
     std::string urdf_xml,full_urdf_xml;
-    node_handle.param<std::string>("urdf_xml",urdf_xml,"/robot_description");
-    node_handle.searchParam(urdf_xml,full_urdf_xml);
+    _n.param<std::string>("urdf_xml",urdf_xml,"/robot_description");
+    _n.searchParam(urdf_xml,full_urdf_xml);
 
-    ROS_DEBUG_NAMED("trac_ik","Reading xml file from parameter server");
-    if (!node_handle.getParam(full_urdf_xml, xml_string))
+    ROS_DEBUG("Reading xml file from parameter server");
+    if (!_n.getParam(full_urdf_xml, xml_string))
     {
-        ROS_FATAL_NAMED("trac_ik","Could not load the xml from parameter server: %s", urdf_xml.c_str());
+        ROS_FATAL("Could not load the xml from parameter server: %s", urdf_xml.c_str());
         return;
     }
 
-    node_handle.param(full_urdf_xml,xml_string,std::string());
+    _n.param(full_urdf_xml,xml_string,std::string());
     robot_model.initString(xml_string);
 
     chain = new BaxterChain(robot_model, _base_link, _tip_link);
