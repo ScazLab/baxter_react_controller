@@ -8,7 +8,7 @@ private:
     BaxterChain *chain;
 
     std::string urdf_param;
-    KDL::JntArray lb, ub;
+    // KDL::JntArray lb, ub;
 
     Eigen::VectorXd x_0;  // Initial end-effector position
     Eigen::VectorXd x_t;  // Current end-effector position

@@ -2,6 +2,7 @@
 #include <kdl/frames.hpp>
 #include <kdl/jacobian.hpp>
 #include <kdl/jntarray.hpp>
+#include <urdf/model.h>
 
 // Things to remember:
 //  1 allList == quickList
@@ -29,11 +30,13 @@ class BaxterChain : public KDL::Chain
 {
 private:
     std::vector<double> q;
+    KDL::JntArray lb, ub;
+    KDL::Chain chain;
 
 public:
     // TODO documentation
     BaxterChain(KDL::Chain _chain);
-    BaxterChain(KDL::Chain _chain, std::vector<double> _q_0);
+    BaxterChain(urdf::Model robot_model, std::vector<double> _q_0, const std::string& _base_link, const std::string& _tip_link);
 
     Eigen::VectorXd getAng();
     bool     setAng(std::vector<double> _q);
@@ -43,6 +46,9 @@ public:
 
     Eigen::MatrixXd GeoJacobian();
     Eigen::MatrixXd GeoJacobian(const unsigned int _i);
+
+    double getMax(const unsigned int _i);
+    double getMin(const unsigned int _i);
 
     ~BaxterChain();
 };

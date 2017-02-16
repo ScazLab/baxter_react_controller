@@ -20,7 +20,6 @@ class ControllerNLP : public Ipopt::TNLP
 {
     BaxterChain chain;
 
-    KDL::JntArray lb, ub;
     bool hitting_constraints;
     bool orientation_control;
 
@@ -52,7 +51,7 @@ class ControllerNLP : public Ipopt::TNLP
     Eigen::MatrixXd skew(const Eigen::VectorXd &w);
 
     public:
-    ControllerNLP(BaxterChain chain_, KDL::JntArray &lb_, KDL::JntArray &ub_);
+    ControllerNLP(BaxterChain chain_);
     void set_xr(const Eigen::VectorXd &xr);
     void set_v_limInDegPerSecond(const Eigen::MatrixXd &v_lim);
     void set_hitting_constraints(const bool _hitting_constraints);

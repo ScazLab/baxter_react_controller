@@ -7,7 +7,7 @@
 using namespace Eigen;
 
 /****************************************************************/
-ControllerNLP::ControllerNLP(BaxterChain chain_, KDL::JntArray &lb_, KDL::JntArray &ub_) : chain(chain_), lb(lb_), ub(ub_)
+ControllerNLP::ControllerNLP(BaxterChain chain_) : chain(chain_)
 {
     xr.resize(6); xr.setZero();
     set_xr(xr);
@@ -23,8 +23,8 @@ ControllerNLP::ControllerNLP(BaxterChain chain_, KDL::JntArray &lb_, KDL::JntArr
     for (size_t r=0; r<chain.getNrOfJoints(); r++)
     {
         /* angle bounds */
-        q_lim(r,0)=ub.data[r];
-        q_lim(r,1)=ub.data[r];
+        q_lim(r,0)=chain.getMin(r);
+        q_lim(r,1)=chain.getMax(r);
 
         v_lim(r,1)=std::numeric_limits<double>::max();
         v_lim(r,0)=-v_lim(r,1);
@@ -75,13 +75,13 @@ void ControllerNLP::computeGuard()
 
     for (size_t i=0; i<chain.getNrOfJoints(); i++)
     {
-        qGuard[i]=0.25*guardRatio*(ub.data[i]-lb.data[i]);
+        qGuard[i]=0.25*guardRatio*(chain.getMax(i)-chain.getMin(i));
 
-        qGuardMinExt[i]=lb.data[i]+qGuard[i];
+        qGuardMinExt[i]=chain.getMin(i)+qGuard[i];
         qGuardMinInt[i]=qGuardMinExt[i]+qGuard[i];
         qGuardMinCOG[i]=0.5*(qGuardMinExt[i]+qGuardMinInt[i]);
 
-        qGuardMaxExt[i]=ub.data[i]-qGuard[i];
+        qGuardMaxExt[i]=chain.getMax(i)-qGuard[i];
         qGuardMaxInt[i]=qGuardMaxExt[i]-qGuard[i];
         qGuardMaxCOG[i]=0.5*(qGuardMaxExt[i]+qGuardMaxInt[i]);
     }

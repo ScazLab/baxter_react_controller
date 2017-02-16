@@ -26,70 +26,9 @@ CtrlThread::CtrlThread(const std::string& _base_link, const std::string& _tip_li
     node_handle.param(full_urdf_xml,xml_string,std::string());
     robot_model.initString(xml_string);
 
-    ROS_DEBUG_STREAM_NAMED("trac_ik","Reading joints and links from URDF");
+    std::vector<double> vec = {0, 0, 0, 0, 0, 0, 0};
 
-    KDL::Tree tree;
-
-    if (!kdl_parser::treeFromUrdfModel(robot_model, tree))
-      ROS_FATAL("Failed to extract kdl tree from xml robot description");
-
-    KDL::Chain kdl_chain;
-
-    if(!tree.getChain(_base_link, _tip_link, kdl_chain))
-      ROS_FATAL("Couldn't find chain %s to %s",_base_link.c_str(),_tip_link.c_str());
-
-    std::vector<KDL::Segment> kdl_chain_segs = kdl_chain.segments;
-
-    boost::shared_ptr<const urdf::Joint> joint;
-
-    std::vector<double> l_bounds, u_bounds;
-
-    lb.resize(kdl_chain.getNrOfJoints());
-    ub.resize(kdl_chain.getNrOfJoints());
-
-    uint joint_num=0;
-    for(unsigned int i = 0; i < kdl_chain_segs.size(); ++i)
-    {
-        joint = robot_model.getJoint(kdl_chain_segs[i].getJoint().getName());
-
-        if (joint->type != urdf::Joint::UNKNOWN && joint->type != urdf::Joint::FIXED)
-        {
-            joint_num++;
-            float lower, upper;
-            int hasLimits = 0;
-
-            if ( joint->type != urdf::Joint::CONTINUOUS )
-            {
-                if(joint->safety)
-                {
-                    lower = std::max(joint->limits->lower, joint->safety->soft_lower_limit);
-                    upper = std::min(joint->limits->upper, joint->safety->soft_upper_limit);
-                }
-                else
-                {
-                    lower = joint->limits->lower;
-                    upper = joint->limits->upper;
-                }
-
-                hasLimits = 1;
-            }
-
-            if(hasLimits)
-            {
-                lb(joint_num-1)=lower;
-                ub(joint_num-1)=upper;
-            }
-            else
-            {
-                lb(joint_num-1)=std::numeric_limits<float>::lowest();
-                ub(joint_num-1)=std::numeric_limits<float>::max();
-            }
-
-            ROS_INFO_STREAM("IK Using joint "<<joint->name<<" "<<lb(joint_num-1)<<" "<<ub(joint_num-1));
-        }
-    }
-
-    chain = new BaxterChain(kdl_chain);
+    chain = new BaxterChain(robot_model, vec, _base_link, _tip_link);
 
     x_0.resize(3); x_0.setZero();
     x_t.resize(3); x_t.setZero();
@@ -142,7 +81,7 @@ VectorXd CtrlThread::solveIK(int &_exit_code)
     app->Initialize();
 
     Ipopt::SmartPtr<ControllerNLP> nlp;
-    nlp=new ControllerNLP(*chain, lb, ub);
+    nlp=new ControllerNLP(*chain);
     nlp->set_hitting_constraints(hittingConstraints);
     nlp->set_orientation_control(orientationControl);
     nlp->set_dt(dT);
