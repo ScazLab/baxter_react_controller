@@ -191,7 +191,7 @@ void ControllerNLP::set_v0InDegPerSecond(const VectorXd &_v0)
 /****************************************************************/
 void ControllerNLP::init()
 {
-    ROS_INFO("IN INIT");
+    ROS_INFO("ControllerNLP::init");
     q0=chain.getAng();
     H0=chain.getH();
     R0=H0.block(0,0,3,3);

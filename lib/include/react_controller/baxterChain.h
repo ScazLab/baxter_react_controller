@@ -31,7 +31,6 @@ class BaxterChain : public KDL::Chain
 private:
     std::vector<double> q;
     KDL::JntArray lb, ub;
-    KDL::Chain chain;
 
 public:
     // TODO documentation
@@ -48,14 +47,15 @@ public:
               const std::string& _base_link,
                const std::string& _tip_link);
 
-    Eigen::VectorXd getAng();
+    Eigen::MatrixXd GeoJacobian();
+    Eigen::MatrixXd GeoJacobian(const unsigned int _i);
+
     bool     setAng(std::vector<double> _q);
+
+    Eigen::VectorXd     getAng();
 
     Eigen::MatrixXd getH();
     Eigen::MatrixXd getH(const unsigned int _i);
-
-    Eigen::MatrixXd GeoJacobian();
-    Eigen::MatrixXd GeoJacobian(const unsigned int _i);
 
     double getMax(const unsigned int _i);
     double getMin(const unsigned int _i);

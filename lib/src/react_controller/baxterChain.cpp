@@ -44,7 +44,9 @@ BaxterChain::BaxterChain(urdf::Model _robot_model,
 
     for (size_t i = 0; i < getNrOfJoints(); ++i)
     {
-        q.push_back(0.0);
+        // This will initialize the joint in the
+        // middle of its operational range
+        q.push_back((lb.data[i]+ub.data[i])/2);
     }
 }
 
@@ -57,7 +59,7 @@ BaxterChain::BaxterChain(urdf::Model _robot_model,
 
     // TODO : better interface: instead of assert, just
     // place a ROS_ERROR and fill q with zeros.
-    assert(getNrOfJoints() == _q_0.size());
+    ROS_ASSERT(getNrOfJoints() == _q_0.size());
 
     for (size_t i = 0; i < getNrOfJoints(); ++i)
     {
@@ -69,23 +71,23 @@ void BaxterChain::initChain(urdf::Model _robot_model,
                        const std::string& _base_link,
                         const std::string& _tip_link)
 {
-    ROS_DEBUG("Reading joints and links from URDF");
+    ROS_INFO("Reading joints and links from URDF");
     KDL::Tree tree;
 
     if (!kdl_parser::treeFromUrdfModel(_robot_model, tree))
       ROS_FATAL("Failed to extract kdl tree from xml robot description");
 
-    if(!tree.getChain(_base_link, _tip_link, chain))
+    if(!tree.getChain(_base_link, _tip_link, *this))
       ROS_FATAL("Couldn't find chain %s to %s",_base_link.c_str(),_tip_link.c_str());
 
-    std::vector<KDL::Segment> kdl_chain_segs = chain.segments;
+    std::vector<KDL::Segment> kdl_chain_segs = segments;
 
     boost::shared_ptr<const urdf::Joint> joint;
 
     std::vector<double> l_bounds, u_bounds;
 
-    lb.resize(chain.getNrOfJoints());
-    ub.resize(chain.getNrOfJoints());
+    lb.resize(getNrOfJoints());
+    ub.resize(getNrOfJoints());
 
     uint joint_num=0;
     for(unsigned int i = 0; i < kdl_chain_segs.size(); ++i)
@@ -224,7 +226,7 @@ MatrixXd BaxterChain::getH(const unsigned int _i)
 
     // TODO also here, remove the assert, place a ROS_ERROR, and return
     // if i > than num_joints
-    assert(_i < num_joints);
+    ROS_ASSERT_MSG(_i < num_joints, "_i %i, num_joints %lu", _i, num_joints);
 
     return KDLFrameToEigen(getSegment(_i).pose(0.0));
 }
