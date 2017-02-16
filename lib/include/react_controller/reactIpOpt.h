@@ -22,6 +22,7 @@ using namespace Eigen;
 class ControllerNLP : public Ipopt::TNLP
 {
     BaxterChain chain;
+
     KDL::JntArray lb, ub;
     bool hitting_constraints;
     bool orientation_control;

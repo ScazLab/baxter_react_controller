@@ -41,32 +41,22 @@ BaxterChain::BaxterChain()
 
 BaxterChain::BaxterChain(KDL::Chain _chain) : KDL::Chain(_chain)
 {
-    // cycle through the chain to get the number of joints
-    // int nS = ?chain numbersegments
-    int num_joints = _chain.getNrOfJoints();
-
-    for (int i = 0; i < num_joints; ++i)
+    for (size_t i = 0; i < getNrOfJoints(); ++i)
     {
         q.push_back(0.0);
     }
-
-
 }
 
 BaxterChain::BaxterChain(KDL::Chain _chain, std::vector<double> _q_0)  : KDL::Chain(_chain)
 {
-    int num_joints = _chain.getNrOfJoints();
-
     // TODO : better interface: instead of assert, just
     // place a ROS_ERROR and fill q with zeros.
-    assert(num_joints == _q_0.size());
+    assert(getNrOfJoints() == _q_0.size());
 
-    for (int i = 0; i < num_joints; ++i)
+    for (size_t i = 0; i < getNrOfJoints(); ++i)
     {
         q.push_back(_q_0[i]);
     }
-
-
 }
 
 // MatrixXd  BaxterChain::GeoJacobian(const unsigned int i)
@@ -80,14 +70,14 @@ BaxterChain::BaxterChain(KDL::Chain _chain, std::vector<double> _q_0)  : KDL::Ch
 //     deque<Matrix> intH;
 //     intH.push_back(H0);
 
-//     for (unsigned int j=0; j<=i; j++)
+//     for (size_t j=0; j<=i; j++)
 //         intH.push_back(intH[j]*_q[j].getH(true));
 
 //     PN=intH[i+1];
 //     if (i>=N-1)
 //         PN=PN*HN;
 
-//     for (unsigned int j=0; j<=i; j++)
+//     for (size_t j=0; j<=i; j++)
 //     {
 //         Z=intH[j];
 //         w=cross(Z,2,PN-Z,3);
@@ -105,7 +95,7 @@ BaxterChain::BaxterChain(KDL::Chain _chain, std::vector<double> _q_0)  : KDL::Ch
 
 MatrixXd BaxterChain::GeoJacobian()
 {
-    int DOF = q.size();
+    size_t DOF = q.size();
 
     MatrixXd J(6,DOF);
     MatrixXd PN,Z;
@@ -114,14 +104,14 @@ MatrixXd BaxterChain::GeoJacobian()
     std::deque<MatrixXd> intH;
     intH.push_back(getH(0));
 
-    for (unsigned int i=0; i<DOF; i++)
+    for (size_t i=0; i<DOF; i++)
     {
         intH.push_back(intH[i]*getH(i));
     }
 
     PN=intH[DOF];
 
-    for (unsigned int i=0; i<DOF; i++)
+    for (size_t i=0; i<DOF; i++)
     {
         Z=intH[i];
         w=cross(Z,2,PN-Z,3); // TODO define cross
@@ -155,7 +145,7 @@ MatrixXd BaxterChain::getH()
 MatrixXd BaxterChain::getH(const unsigned int _i)
 {
     //num joints in chain
-    int num_joints = q.size();
+    size_t num_joints = q.size();
 
     // TODO also here, remove the assert, place a ROS_ERROR, and return
     // if i > than num_joints

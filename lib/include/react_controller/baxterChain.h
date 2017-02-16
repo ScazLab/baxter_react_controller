@@ -1,6 +1,4 @@
 #include <kdl/chain.hpp>
-#include <kdl_parser/kdl_parser.hpp>
-#include <kdl/chainjnttojacsolver.hpp>
 #include <kdl/frames.hpp>
 #include <kdl/jacobian.hpp>
 #include <kdl/jntarray.hpp>

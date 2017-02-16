@@ -26,6 +26,5 @@ private:
 
 public:
     CtrlThread(const std::string& base_link, const std::string& tip_link);
-    void solveIK(double tol, double vMax);
-    void jointStatesCb(const sensor_msgs::JointState& msg);
+    VectorXd solveIK(int &_exit_code);
 };

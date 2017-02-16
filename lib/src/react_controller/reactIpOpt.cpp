@@ -5,6 +5,7 @@
 #include "react_controller/mathUtils.h"
 
 using namespace Eigen;
+
     /****************************************************************/
     void ControllerNLP::computeSelfAvoidanceConstraints()
     {
@@ -58,7 +59,7 @@ using namespace Eigen;
     {
         bounds.resize(chain.getNrOfJoints(), 2);
 
-        ROS_INFO("rows: %d, columns: %d", v_lim.rows(), v_lim.cols());
+        ROS_INFO("rows: %lu, columns: %lu", v_lim.rows(), v_lim.cols());
 
         for (size_t i=0; i<chain.getNrOfJoints(); i++)
         {
@@ -85,7 +86,7 @@ using namespace Eigen;
         }
     }
 
-//     /****************************************************************/
+    /****************************************************************/
     MatrixXd ControllerNLP::v2m(const VectorXd &x)
     {
         Vector4d ang; ang.setZero();
@@ -113,7 +114,7 @@ using namespace Eigen;
     }
 
     /****************************************************************/
-    ControllerNLP::ControllerNLP(BaxterChain chain_, KDL::JntArray &lb_, KDL::JntArray &ub_) : chain(chain_), ub(ub_), lb(lb_)
+    ControllerNLP::ControllerNLP(BaxterChain chain_, KDL::JntArray &lb_, KDL::JntArray &ub_) : chain(chain_), lb(lb_), ub(ub_)
     {
         xr.resize(6); xr.setZero();
         set_xr(xr);

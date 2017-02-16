@@ -32,7 +32,6 @@ CtrlThread::CtrlThread(const std::string& base_link, const std::string& tip_link
     if (!kdl_parser::treeFromUrdfModel(robot_model, tree))
       ROS_FATAL("Failed to extract kdl tree from xml robot description");
 
-
     KDL::Chain chain;
 
     if(!tree.getChain(base_link, tip_link, chain))
@@ -79,22 +78,25 @@ CtrlThread::CtrlThread(const std::string& base_link, const std::string& tip_link
       }
     }
 
-    _jntstate_sub  = node_handle.subscribe("/robot/joint_states",
-                                    SUBSCRIBER_BUFFER, &CtrlThread::jointStatesCb, this);
     _chain = BaxterChain(chain);
+
     x_0.resize(3); x_0.setZero();
     x_t.resize(3); x_t.setZero();
     x_n.resize(3); x_n.setZero();
     x_d.resize(3); x_d.setZero();
 
     o_n.resize(3); o_n.setZero();
+    // TODO REsize also the other orientations?
 
-    solveIK(1e-6, 45);
+    int exit_code;
+    solveIK(exit_code);
 }
 
-void CtrlThread::solveIK(double tol, double vMax)
+VectorXd CtrlThread::solveIK(int &_exit_code)
 {
-    double dT = 0.001;
+    double tol  =  1e-6;
+    double vMax =  45.0;
+    double dT   = 0.001;
     VectorXd xr(6);
     xr.block<3, 1>(0, 0) = x_n;
     xr.block<3, 1>(3, 0) = o_n;
@@ -109,11 +111,9 @@ void CtrlThread::solveIK(double tol, double vMax)
     VectorXd res(_chain.getNrOfJoints()); res.setZero();
 
     bool verbosity = true;
-    bool controlMode = true;
+    // bool controlMode = true;
     bool hittingConstraints = false;
     bool orientationControl = true;
-    int _exit_code;
-
 
     Ipopt::SmartPtr<Ipopt::IpoptApplication> app=new Ipopt::IpoptApplication;
     app->Options()->SetNumericValue("tol",tol);
@@ -143,35 +143,12 @@ void CtrlThread::solveIK(double tol, double vMax)
     res=nlp->get_resultInDegPerSecond();
 
     if(verbosity >= 1){
-        ROS_INFO("x_n: %d %d %d\tx_d: %d %d %d\tdT: %d", x_n[0], x_n[1], x_n[2], x_d[0], x_d[1], x_d[2], dT);
-        ROS_INFO("x_0: %d %d %d\tx_t: %d %d %d", x_0[0], x_0[1], x_0[2], x_t[0], x_t[1], x_t[2]);
+        ROS_INFO("x_n: %g %g %g\tx_d: %g %g %g\tdT: %g", x_n[0], x_n[1], x_n[2], x_d[0], x_d[1], x_d[2], dT);
+        ROS_INFO("x_0: %g %g %g\tx_t: %g %g %g", x_0[0], x_0[1], x_0[2], x_t[0], x_t[1], x_t[2]);
         ROS_INFO("norm(x_n-x_t): %g\tnorm(x_d-x_n): %g\tnorm(x_d-x_t): %g",
                     (x_n-x_t).norm(), (x_d-x_n).norm(), (x_d-x_t).norm());
-        ROS_INFO("Result (solved velocities (deg/s)): %d %d %d %d %d %d %d",res[0], res[1], res[2], res[3], res[4], res[5], res[6]);
-    }
-}
-
-void CtrlThread::jointStatesCb(const sensor_msgs::JointState& msg)
-{
-    JointCommand joint_cmd;
-
-    if (msg.name.size() >= joint_cmd.names.size())
-    {
-        pthread_mutex_lock(&_mutex_jnts);
-        std::vector<double> angles;
-        for (size_t i = 0; i < joint_cmd.names.size(); ++i)
-        {
-            for (size_t j = 0; j < msg.name.size(); ++j)
-            {
-                if (joint_cmd.names[i] == msg.name[j])
-                {
-                    angles.push_back(msg.position[j]);
-                }
-            }
-        }
-        _chain.setAng(angles);
-        pthread_mutex_unlock(&_mutex_jnts);
+        ROS_INFO("Result (solved velocities (deg/s)): %g %g %g %g %g %g %g",res[0], res[1], res[2], res[3], res[4], res[5], res[6]);
     }
 
-    return;
+    return res;
 }
