@@ -43,6 +43,7 @@ VectorXd CtrlThread::solveIK(int &_exit_code)
     double tol  =  1e-6;
     double vMax =  45.0;
     double dT   =  0.01;
+
     VectorXd xr(6);
     xr.block<3, 1>(0, 0) = x_n;
     xr.block<3, 1>(3, 0) = o_n;
