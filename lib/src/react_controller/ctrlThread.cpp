@@ -52,7 +52,8 @@ VectorXd CtrlThread::solveIK(int &_exit_code)
     updateJointAngles();
     double tol  =  1e-6;
     double vMax =  45.0;
-    double dT   = 0.001;
+    double dT   =  0.01;
+
     VectorXd xr(6);
     xr.block<3, 1>(0, 0) = x_n;
     xr.block<3, 1>(3, 0) = o_n;
@@ -79,7 +80,7 @@ VectorXd CtrlThread::solveIK(int &_exit_code)
     app->Options()->SetIntegerValue("acceptable_iter",0);
     app->Options()->SetStringValue("mu_strategy","adaptive");
     app->Options()->SetIntegerValue("max_iter",std::numeric_limits<int>::max());
-    app->Options()->SetNumericValue("max_cpu_time",0.75*dT);
+    app->Options()->SetNumericValue("max_cpu_time", dT);
     app->Options()->SetStringValue("nlp_scaling_method","gradient-based");
     app->Options()->SetStringValue("hessian_approximation","limited-memory");
     app->Options()->SetStringValue("derivative_test",verbosity?"first-order":"none");
