@@ -24,6 +24,8 @@ private:
 public:
     CtrlThread(const std::string& _base_link, const std::string& _tip_link);
 
+    void updateJointAngles();
+
     Eigen::VectorXd solveIK(int &_exit_code);
 
     ~CtrlThread();

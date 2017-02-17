@@ -92,8 +92,6 @@ void ControllerNLP::computeBounds()
 {
     bounds.resize(chain.getNrOfJoints(), 2);
 
-    ROS_INFO("rows: %lu, columns: %lu", v_lim.rows(), v_lim.cols());
-
     for (size_t i=0; i<chain.getNrOfJoints(); i++)
     {
         double qi=q0[i];
@@ -191,7 +189,6 @@ void ControllerNLP::set_v0InDegPerSecond(const VectorXd &_v0)
 /****************************************************************/
 void ControllerNLP::init()
 {
-    ROS_INFO("ControllerNLP::init");
     q0=chain.getAng();
     H0=chain.getH();
     R0=H0.block(0,0,3,3);
