@@ -21,8 +21,12 @@ private:
 
     Eigen::MatrixXd vLimAdapted;
 
+    ros::Subscriber ctrl_sub;
+
 public:
     CtrlThread(const std::string& _base_link, const std::string& _tip_link);
+
+    void ctrlCb(const baxter_collaboration_msgs::GoToPose& msg);
 
     void updateJointAngles();
 

@@ -3,6 +3,7 @@
 #include <kdl/jacobian.hpp>
 #include <kdl/jntarray.hpp>
 #include <urdf/model.h>
+#include <sensor_msgs/JointState.h>
 
 // Things to remember:
 //  1 allList == quickList
@@ -50,9 +51,10 @@ public:
     Eigen::MatrixXd GeoJacobian();
     Eigen::MatrixXd GeoJacobian(const unsigned int _i);
 
-    bool     setAng(std::vector<double> _q);
-
     Eigen::VectorXd     getAng();
+
+    bool     setAng(std::vector<double> _q);
+    bool     setAng(sensor_msgs::JointState jnt_state);
 
     Eigen::MatrixXd getH();
     Eigen::MatrixXd getH(const unsigned int _i);

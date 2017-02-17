@@ -5,7 +5,7 @@ using namespace baxter_core_msgs;
 using namespace Eigen;
 
 CtrlThread::CtrlThread(const std::string& _base_link, const std::string& _tip_link) :
-                                  RobotInterface("baxter_react_controller", "left")
+                                  RobotInterface("baxter_react_controller", "right")
 {
     urdf::Model robot_model;
     std::string xml_string;
@@ -31,32 +31,36 @@ CtrlThread::CtrlThread(const std::string& _base_link, const std::string& _tip_li
     x_n.resize(3); x_n.setZero();
     x_d.resize(3); x_d.setZero();
 
-    o_n.resize(3); o_n.setZero();
+    o_n.resize(4); o_n.setZero();
+
+    std::string topic = "/baxter_react_controller/right/ipopt";
+    ctrl_sub      = _n.subscribe(topic, SUBSCRIBER_BUFFER, &CtrlThread::ctrlCb, this);
+    ROS_INFO("[%s] Created cartesian controller that listens to : %s", getLimb().c_str(), topic.c_str());
+}
+
+void CtrlThread::ctrlCb(const baxter_collaboration_msgs::GoToPose& msg) {
+    x_n[0] = msg.pose_stamp.pose.position.x;
+    x_n[1] = msg.pose_stamp.pose.position.y;
+    x_n[2] = msg.pose_stamp.pose.position.z;
+    o_n[0] = -0.128;
+    o_n[1] = 0.99;
+    o_n[2] = -0.018;
+    o_n[3] = 0.022;
 
     int exit_code;
     solveIK(exit_code);
 }
 
-void CtrlThread::updateJointAngles() {
-    std::vector<double> angles;
-    sensor_msgs::JointState curr_jnts = getJointStates();
-    for (size_t i = 0; i < chain->getNrOfJoints(); ++i) {
-        angles.push_back(curr_jnts.position[i]);
-    }
-    chain->setAng(angles);
-}
-
 VectorXd CtrlThread::solveIK(int &_exit_code)
 {
-    ros::Duration(1).sleep();
-    updateJointAngles();
+    chain->setAng(getJointStates());
     double tol  =  1e-6;
     double vMax =  45.0;
     double dT   =  0.01;
 
-    VectorXd xr(6);
+    VectorXd xr(7);
     xr.block<3, 1>(0, 0) = x_n;
-    xr.block<3, 1>(3, 0) = o_n;
+    xr.block<4, 1>(3, 0) = o_n;
 
     MatrixXd vLimAdapted;
     vLimAdapted.resize(chain->getNrOfJoints(), 2);
@@ -84,7 +88,7 @@ VectorXd CtrlThread::solveIK(int &_exit_code)
     app->Options()->SetStringValue("nlp_scaling_method","gradient-based");
     app->Options()->SetStringValue("hessian_approximation","limited-memory");
     app->Options()->SetStringValue("derivative_test",verbosity?"first-order":"none");
-    app->Options()->SetIntegerValue("print_level",verbosity?5:0);
+    app->Options()->SetIntegerValue("print_level",verbosity?10:0);
     app->Initialize();
 
     Ipopt::SmartPtr<ControllerNLP> nlp;

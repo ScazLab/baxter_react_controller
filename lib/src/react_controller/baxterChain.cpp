@@ -208,6 +208,15 @@ VectorXd BaxterChain::getAng()
     return Map<VectorXd>(q.data(), q.size());
 }
 
+bool BaxterChain::setAng(sensor_msgs::JointState jnt_state) {
+    std::vector<double> angles;
+    for (size_t i = 0; i < getNrOfJoints(); ++i) {
+        angles.push_back(jnt_state.position[i]);
+    }
+    setAng(angles);
+    return true;
+}
+
 bool BaxterChain::setAng(std::vector<double> _q)
 {
     q = _q;
