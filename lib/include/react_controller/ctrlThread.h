@@ -1,6 +1,6 @@
+#include <robot_utils/utils.h>
 #include <robot_interface/robot_interface.h>
 #include <react_controller/controllerNLP.h>
-#include <baxter_core_msgs/JointCommand.h>
 
 class CtrlThread : public RobotInterface
 {
@@ -24,7 +24,8 @@ private:
     ros::Subscriber ctrl_sub;
 
 public:
-    CtrlThread(const std::string& _name, const std::string& _limb, const std::string& _base_link, const std::string& _tip_link);
+    CtrlThread(const std::string& _name, const std::string& _limb, bool _no_robot,
+               const std::string& _base_link, const std::string& _tip_link);
 
     void ctrlCb(const baxter_collaboration_msgs::GoToPose& _msg);
 

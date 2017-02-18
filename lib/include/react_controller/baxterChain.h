@@ -35,27 +35,27 @@ private:
 
 public:
     // TODO documentation
-    BaxterChain(urdf::Model _robot_model,
-           const std::string& _base_link,
-           const std::string&  _tip_link);
+    BaxterChain(urdf::Model      _robot_model,
+                const std::string& _base_link,
+                const std::string&  _tip_link);
 
-    BaxterChain(urdf::Model _robot_model,
-           const std::string& _base_link,
-           const std::string&  _tip_link,
-                std::vector<double> _q_0);
+    BaxterChain(urdf::Model      _robot_model,
+                const std::string& _base_link,
+                const std::string&  _tip_link,
+                std::vector<double>      _q_0);
 
-    void initChain(urdf::Model _robot_model,
-              const std::string& _base_link,
-               const std::string& _tip_link);
+    void initChain(urdf::Model      _robot_model,
+                   const std::string& _base_link,
+                   const std::string&  _tip_link);
 
     Eigen::MatrixXd GeoJacobian();
     Eigen::MatrixXd GeoJacobian(const unsigned int _i);
 
     Eigen::VectorXd     getAng();
 
-    bool     setAng(std::vector<double> _q);
-    bool     setAng(Eigen::VectorXd _q);
-    bool     setAng(sensor_msgs::JointState jnt_state);
+    bool     setAng(std::vector<double>     _q);
+    bool     setAng(Eigen::VectorXd         _q);
+    bool     setAng(sensor_msgs::JointState _q);
 
     Eigen::MatrixXd getH();
     Eigen::MatrixXd getH(const unsigned int _i);

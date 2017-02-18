@@ -1,11 +1,13 @@
 #include <react_controller/ctrlThread.h>
 
-using namespace sensor_msgs;
+using namespace              std;
+using namespace      sensor_msgs;
 using namespace baxter_core_msgs;
-using namespace Eigen;
+using namespace            Eigen;
 
-CtrlThread::CtrlThread(const std::string& _name, const std::string& _limb, const std::string& _base_link, const std::string& _tip_link) :
-                                  RobotInterface(_name, _limb)
+CtrlThread::CtrlThread(const std::string& _name, const std::string& _limb, bool _no_robot,
+                       const std::string& _base_link, const std::string& _tip_link) :
+                       RobotInterface(_name, _limb)
 {
     urdf::Model robot_model;
     std::string xml_string;
@@ -27,25 +29,25 @@ CtrlThread::CtrlThread(const std::string& _name, const std::string& _limb, const
     chain = new BaxterChain(robot_model, _base_link, _tip_link);
 
     MatrixXd H = chain->getH();
-
     VectorXd q = chain->getAng();
 
-    std::cout << H << "\n";
-
-    std::cout << q << "\n";
-
+    ROS_INFO("H: %s", vectorOfDoubleToString(vector<double>(H.data(),
+                                             H.data() + H.rows() * H.cols())).c_str());
+    ROS_INFO("q: %s", vectorOfDoubleToString(vector<double>(q.data(),
+                                             q.data() + q.size())).c_str());
     q[3] = 0;
+    ROS_INFO("q: %s", vectorOfDoubleToString(vector<double>(q.data(),
+                                             q.data() + q.size())).c_str());
 
     chain->setAng(q);
-    std::cout << q << "\n";
 
     H = chain->getH();
-
     q = chain->getAng();
 
-    std::cout << H << "\n";
-
-    std::cout << q << "\n";
+    ROS_INFO("H: %s", vectorOfDoubleToString(vector<double>(H.data(),
+                                             H.data() + H.rows() * H.cols())).c_str());
+    ROS_INFO("q: %s", vectorOfDoubleToString(vector<double>(q.data(),
+                                             q.data() + q.size())).c_str());
 
     x_0.resize(3); x_0.setZero();
     x_t.resize(3); x_t.setZero();
@@ -56,7 +58,8 @@ CtrlThread::CtrlThread(const std::string& _name, const std::string& _limb, const
 
     std::string topic = "/" + getName() + "/" + getLimb() + "/ipopt";
     ctrl_sub      = _n.subscribe(topic, SUBSCRIBER_BUFFER, &CtrlThread::ctrlCb, this);
-    ROS_INFO("[%s] Created cartesian controller that listens to : %s", getLimb().c_str(), topic.c_str());
+    ROS_INFO("[%s] Created cartesian controller that listens to : %s",
+                                    getLimb().c_str(), topic.c_str());
 }
 
 void CtrlThread::ctrlCb(const baxter_collaboration_msgs::GoToPose& _msg)
@@ -134,11 +137,14 @@ VectorXd CtrlThread::solveIK(int &_exit_code)
 
     if(verbosity >= 1)
     {
-        ROS_INFO("x_n: %g %g %g\tx_d: %g %g %g\tdT: %g", x_n[0], x_n[1], x_n[2], x_d[0], x_d[1], x_d[2], dT);
-        ROS_INFO("x_0: %g %g %g\tx_t: %g %g %g", x_0[0], x_0[1], x_0[2], x_t[0], x_t[1], x_t[2]);
+        ROS_INFO("x_n: %g %g %g\tx_d: %g %g %g\tdT: %g",
+                  x_n[0], x_n[1], x_n[2], x_d[0], x_d[1], x_d[2], dT);
+        ROS_INFO("x_0: %g %g %g\tx_t: %g %g %g",
+                  x_0[0], x_0[1], x_0[2], x_t[0], x_t[1], x_t[2]);
         ROS_INFO("norm(x_n-x_t): %g\tnorm(x_d-x_n): %g\tnorm(x_d-x_t): %g",
                     (x_n-x_t).norm(), (x_d-x_n).norm(), (x_d-x_t).norm());
-        ROS_INFO("Result (solved velocities (deg/s)): %g %g %g %g %g %g %g",res[0], res[1], res[2], res[3], res[4], res[5], res[6]);
+        ROS_INFO("Result (solved velocities (deg/s)): %g %g %g %g %g %g %g",
+                    res[0], res[1], res[2], res[3], res[4], res[5], res[6]);
     }
 
     return res;
