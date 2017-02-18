@@ -26,6 +26,27 @@ CtrlThread::CtrlThread(const std::string& _name, const std::string& _limb, const
 
     chain = new BaxterChain(robot_model, _base_link, _tip_link);
 
+    MatrixXd H = chain->getH();
+
+    VectorXd q = chain->getAng();
+
+    std::cout << H << "\n";
+
+    std::cout << q << "\n";
+
+    q[3] = 0;
+
+    chain->setAng(q);
+    std::cout << q << "\n";
+
+    H = chain->getH();
+
+    q = chain->getAng();
+
+    std::cout << H << "\n";
+
+    std::cout << q << "\n";
+
     x_0.resize(3); x_0.setZero();
     x_t.resize(3); x_t.setZero();
     x_n.resize(3); x_n.setZero();
@@ -52,33 +73,11 @@ void CtrlThread::ctrlCb(const baxter_collaboration_msgs::GoToPose& _msg)
     solveIK(exit_code);
 }
 
-bool CtrlThread::waitForJointAngles(double _wait_time)
-{
-    ros::Time _init = ros::Time::now();
-
-    ros::Rate r(100);
-    while (RobotInterface::ok())
-    {
-        sensor_msgs::JointState _jnt_state = getJointStates();
-        if (_jnt_state.position.size() > 0)      return true;
-
-        r.sleep();
-
-        if ((ros::Time::now()-_init).toSec() > _wait_time)
-        {
-            ROS_ERROR("No joint angle initialization in %gs!",_wait_time);
-            return false;
-        }
-    }
-
-    return false;
-}
-
 VectorXd CtrlThread::solveIK(int &_exit_code)
 {
     VectorXd res(chain->getNrOfJoints()); res.setZero();
 
-    if (!waitForJointAngles(20)) {
+    if (!waitForJointAngles()) {
         return res;
     }
 

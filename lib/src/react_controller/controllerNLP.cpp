@@ -193,6 +193,7 @@ void ControllerNLP::init()
     H0=chain.getH();
     R0=H0.block(0,0,3,3);
     p0=H0.col(3).block(0, 0, 3, 1);
+    std::cout << H0 << "\n";
 
     MatrixXd J0=chain.GeoJacobian();
     J0_xyz=J0.block(0,0,3,chain.getNrOfJoints());
@@ -302,6 +303,9 @@ void ControllerNLP::computeQuantities(const Ipopt::Number *x, const bool new_x)
         for (size_t i=0; i<6; i++)
             v[i]=x[i];
 
+        std::cout << v << "\n";
+        std::cout << "Just printed v\n";
+
         MatrixXd sub = R0+dt*(skew(J0_ang*v)*R0);
         He.block<3,3>(0, 0) = sub;
         VectorXd pe=p0+dt*(J0_xyz*v);
@@ -310,6 +314,12 @@ void ControllerNLP::computeQuantities(const Ipopt::Number *x, const bool new_x)
         He(2,3)=pe[2];
 
         err_xyz=pr-pe;
+        std::cout << p0 << "\n";
+        std::cout << "Just printed p0\n";
+        std::cout << pr << "\n";
+        std::cout << "Just printed pr\n";
+        std::cout << pe << "\n";
+        std::cout << "Just printed pe\n";
         err_ang=dcm2axis(Hr*He.transpose());
         err_ang*=err_ang[3];
         err_ang.resize(3);

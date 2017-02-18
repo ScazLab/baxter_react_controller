@@ -28,8 +28,6 @@ public:
 
     void ctrlCb(const baxter_collaboration_msgs::GoToPose& _msg);
 
-    bool waitForJointAngles(double _wait_time);
-
     Eigen::VectorXd solveIK(int &_exit_code);
 
     ~CtrlThread();

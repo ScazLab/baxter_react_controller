@@ -217,6 +217,13 @@ bool BaxterChain::setAng(sensor_msgs::JointState jnt_state) {
     return true;
 }
 
+bool BaxterChain::setAng(Eigen::VectorXd _q)
+{
+    std::vector<double> v(*_q.data(), _q.size());
+    q = v;
+    return true;
+}
+
 bool BaxterChain::setAng(std::vector<double> _q)
 {
     q = _q;
@@ -237,7 +244,7 @@ MatrixXd BaxterChain::getH(const unsigned int _i)
     // if i > than num_joints
     ROS_ASSERT_MSG(_i < num_joints, "_i %i, num_joints %lu", _i, num_joints);
 
-    return KDLFrameToEigen(getSegment(_i).pose(0.0));
+    return KDLFrameToEigen(getSegment(_i).pose(q[_i]));
 }
 
 double BaxterChain::getMax(const unsigned int _i) {

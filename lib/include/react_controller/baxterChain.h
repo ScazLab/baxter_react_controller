@@ -54,6 +54,7 @@ public:
     Eigen::VectorXd     getAng();
 
     bool     setAng(std::vector<double> _q);
+    bool     setAng(Eigen::VectorXd _q);
     bool     setAng(sensor_msgs::JointState jnt_state);
 
     Eigen::MatrixXd getH();
