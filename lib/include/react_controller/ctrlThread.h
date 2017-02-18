@@ -24,11 +24,11 @@ private:
     ros::Subscriber ctrl_sub;
 
 public:
-    CtrlThread(const std::string& _base_link, const std::string& _tip_link);
+    CtrlThread(const std::string& _name, const std::string& _limb, const std::string& _base_link, const std::string& _tip_link);
 
-    void ctrlCb(const baxter_collaboration_msgs::GoToPose& msg);
+    void ctrlCb(const baxter_collaboration_msgs::GoToPose& _msg);
 
-    void updateJointAngles();
+    bool waitForJointAngles(double _wait_time);
 
     Eigen::VectorXd solveIK(int &_exit_code);
 

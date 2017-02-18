@@ -9,7 +9,7 @@ int main(int argc, char ** argv)
 {
     ros::init(argc, argv, "baxter_react_controller");
     ros::NodeHandle _n("baxter_react_controller");
-    CtrlThread arm("base", "right_gripper");
+    CtrlThread arm("baxter_react_controller", "right", "base", "right_gripper");
 
     printf("\n");
     ROS_INFO("READY! Waiting for control messages..\n");

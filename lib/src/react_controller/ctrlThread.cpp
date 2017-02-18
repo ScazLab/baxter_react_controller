@@ -4,8 +4,8 @@ using namespace sensor_msgs;
 using namespace baxter_core_msgs;
 using namespace Eigen;
 
-CtrlThread::CtrlThread(const std::string& _base_link, const std::string& _tip_link) :
-                                  RobotInterface("baxter_react_controller", "right")
+CtrlThread::CtrlThread(const std::string& _name, const std::string& _limb, const std::string& _base_link, const std::string& _tip_link) :
+                                  RobotInterface(_name, _limb)
 {
     urdf::Model robot_model;
     std::string xml_string;
@@ -33,15 +33,16 @@ CtrlThread::CtrlThread(const std::string& _base_link, const std::string& _tip_li
 
     o_n.resize(4); o_n.setZero();
 
-    std::string topic = "/baxter_react_controller/right/ipopt";
+    std::string topic = "/" + getName() + "/" + getLimb() + "/ipopt";
     ctrl_sub      = _n.subscribe(topic, SUBSCRIBER_BUFFER, &CtrlThread::ctrlCb, this);
     ROS_INFO("[%s] Created cartesian controller that listens to : %s", getLimb().c_str(), topic.c_str());
 }
 
-void CtrlThread::ctrlCb(const baxter_collaboration_msgs::GoToPose& msg) {
-    x_n[0] = msg.pose_stamp.pose.position.x;
-    x_n[1] = msg.pose_stamp.pose.position.y;
-    x_n[2] = msg.pose_stamp.pose.position.z;
+void CtrlThread::ctrlCb(const baxter_collaboration_msgs::GoToPose& _msg)
+{
+    x_n[0] = _msg.pose_stamp.pose.position.x;
+    x_n[1] = _msg.pose_stamp.pose.position.y;
+    x_n[2] = _msg.pose_stamp.pose.position.z;
     o_n[0] = -0.128;
     o_n[1] = 0.99;
     o_n[2] = -0.018;
@@ -51,8 +52,36 @@ void CtrlThread::ctrlCb(const baxter_collaboration_msgs::GoToPose& msg) {
     solveIK(exit_code);
 }
 
+bool CtrlThread::waitForJointAngles(double _wait_time)
+{
+    ros::Time _init = ros::Time::now();
+
+    ros::Rate r(100);
+    while (RobotInterface::ok())
+    {
+        sensor_msgs::JointState _jnt_state = getJointStates();
+        if (_jnt_state.position.size() > 0)      return true;
+
+        r.sleep();
+
+        if ((ros::Time::now()-_init).toSec() > _wait_time)
+        {
+            ROS_ERROR("No joint angle initialization in %gs!",_wait_time);
+            return false;
+        }
+    }
+
+    return false;
+}
+
 VectorXd CtrlThread::solveIK(int &_exit_code)
 {
+    VectorXd res(chain->getNrOfJoints()); res.setZero();
+
+    if (!waitForJointAngles(20)) {
+        return res;
+    }
+
     chain->setAng(getJointStates());
     double tol  =  1e-6;
     double vMax =  45.0;
@@ -71,12 +100,11 @@ VectorXd CtrlThread::solveIK(int &_exit_code)
     }
     q_dot.resize(chain->getNrOfJoints());
     q_dot.setZero();
-    VectorXd res(chain->getNrOfJoints()); res.setZero();
 
     bool verbosity = true;
     // bool controlMode = true;
     bool hittingConstraints = false;
-    bool orientationControl = true;
+    bool orientationControl = false;
 
     Ipopt::SmartPtr<Ipopt::IpoptApplication> app=new Ipopt::IpoptApplication;
     app->Options()->SetNumericValue("tol",tol);
@@ -88,7 +116,7 @@ VectorXd CtrlThread::solveIK(int &_exit_code)
     app->Options()->SetStringValue("nlp_scaling_method","gradient-based");
     app->Options()->SetStringValue("hessian_approximation","limited-memory");
     app->Options()->SetStringValue("derivative_test",verbosity?"first-order":"none");
-    app->Options()->SetIntegerValue("print_level",verbosity?10:0);
+    app->Options()->SetIntegerValue("print_level",verbosity?5:0);
     app->Initialize();
 
     Ipopt::SmartPtr<ControllerNLP> nlp;

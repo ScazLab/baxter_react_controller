@@ -34,7 +34,7 @@ ControllerNLP::ControllerNLP(BaxterChain chain_) : chain(chain_)
     computeSelfAvoidanceConstraints();
     computeGuard();
 
-    hitting_constraints=true;
+    hitting_constraints=false;
     orientation_control=true;
     dt=0.01;
 }
@@ -327,6 +327,7 @@ bool ControllerNLP::eval_f(Ipopt::Index n, const Ipopt::Number *x, bool new_x,
 {
     computeQuantities(x,new_x);
     obj_value=(orientation_control?err_ang.squaredNorm():0.0);
+    ROS_INFO("obj_value: %g", obj_value);
     return true;
 }
 
@@ -338,6 +339,8 @@ bool ControllerNLP::eval_grad_f(Ipopt::Index n, const Ipopt::Number* x, bool new
     for (Ipopt::Index i=0; i<n; i++) {
         grad_f[i]=(orientation_control?2.0*err_ang.dot(Derr_ang.col(i)):0.0);
     }
+
+    ROS_INFO("grad_f: %g %g %g %g %g %g %g", grad_f[0], grad_f[1], grad_f[2], grad_f[3], grad_f[4], grad_f[5], grad_f[6]);
     return true;
 }
 
@@ -349,6 +352,7 @@ bool ControllerNLP::eval_g(Ipopt::Index n, const Ipopt::Number *x, bool new_x,
 
     // reaching in position
     g[0]=err_xyz.squaredNorm();
+    ROS_INFO("err_xyz norm: %g", g[0]);
 
     if (hitting_constraints)
     {
@@ -420,6 +424,7 @@ bool ControllerNLP::eval_jac_g(Ipopt::Index n, const Ipopt::Number *x, bool new_
             values[i]=-2.0*dt*(err_xyz.dot(J0_xyz.col(i)));
             idx++;
         }
+        ROS_INFO("values: %g %g %g %g %g %g %g", values[0], values[1], values[2], values[3], values[4], values[5], values[6]);
 
         if (hitting_constraints)
         {
