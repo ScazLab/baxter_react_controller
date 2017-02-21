@@ -93,6 +93,7 @@ void BaxterChain::initChain(urdf::Model _robot_model,
     ub.resize(getNrOfJoints());
 
     uint joint_num=0;
+
     for(unsigned int i = 0; i < kdl_chain_segs.size(); ++i)
     {
         joint = _robot_model.getJoint(kdl_chain_segs[i].getJoint().getName());

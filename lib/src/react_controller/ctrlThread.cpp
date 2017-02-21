@@ -44,9 +44,9 @@ CtrlThread::CtrlThread(const std::string& _name, const std::string& _limb, bool 
 
 void CtrlThread::ctrlCb(const baxter_collaboration_msgs::GoToPose& _msg)
 {
-    x_n[0] = _msg.pose_stamp.pose.position.x;
-    x_n[1] = _msg.pose_stamp.pose.position.y;
-    x_n[2] = _msg.pose_stamp.pose.position.z;
+    x_d[0] = _msg.pose_stamp.pose.position.x;
+    x_d[1] = _msg.pose_stamp.pose.position.y;
+    x_d[2] = _msg.pose_stamp.pose.position.z;
     o_n[0] = -0.128;
     o_n[1] = 0.99;
     o_n[2] = -0.018;
