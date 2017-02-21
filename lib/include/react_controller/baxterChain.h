@@ -53,7 +53,7 @@ private:
      *
      * return:     true if successful, false if error
      */
-    bool JntToCart(const KDL::JntArray& _q_in, KDL::Frame& _p_out, int _segmentNr=-1);
+    bool JntToCart(const KDL::JntArray& _q_in, KDL::Frame& _p_out, int _segNr=-1);
 
 public:
     /**

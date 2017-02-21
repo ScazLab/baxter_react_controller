@@ -238,17 +238,17 @@ bool BaxterChain::setAng(std::vector<double> _q)
     return true;
 }
 
-bool BaxterChain::JntToCart(const JntArray& q_in, Frame& p_out, int seg_nr)
+bool BaxterChain::JntToCart(const JntArray& _q_in, Frame& _p_out, int _seg_nr)
 {
     unsigned int segmentNr;
-    if(seg_nr<0)
+    if(_seg_nr<0)
         segmentNr=getNrOfSegments();
     else
-        segmentNr = seg_nr;
+        segmentNr = _seg_nr;
 
-    p_out = Frame::Identity();
+    _p_out = Frame::Identity();
 
-    if(q_in.rows()!=getNrOfJoints())
+    if(_q_in.rows()!=getNrOfJoints())
         return false;
     else if(segmentNr>getNrOfSegments())
         return false;
@@ -259,12 +259,12 @@ bool BaxterChain::JntToCart(const JntArray& q_in, Frame& p_out, int seg_nr)
         {
             if(getSegment(i).getJoint().getType()!=Joint::None)
             {
-                p_out = p_out*getSegment(i).pose(q_in(j));
+                _p_out = _p_out*getSegment(i).pose(_q_in(j));
                 j++;
             }
             else
             {
-                p_out = p_out*getSegment(i).pose(0.0);
+                _p_out = _p_out*getSegment(i).pose(0.0);
             }
         }
         return true;
