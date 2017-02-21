@@ -6,8 +6,9 @@ using namespace baxter_core_msgs;
 using namespace            Eigen;
 
 CtrlThread::CtrlThread(const std::string& _name, const std::string& _limb, bool _no_robot,
-                       const std::string& _base_link, const std::string& _tip_link) :
-                       RobotInterface(_name, _limb)
+                        const std::string& _base_link, const std::string& _tip_link, double _tol,
+                        double _vMax, double _dT) : RobotInterface(_name, _limb), tol(_tol), vMax(_vMax),
+                        dT(_dT)
 {
     urdf::Model robot_model;
     std::string xml_string;
@@ -27,27 +28,6 @@ CtrlThread::CtrlThread(const std::string& _name, const std::string& _limb, bool 
     robot_model.initString(xml_string);
 
     chain = new BaxterChain(robot_model, _base_link, _tip_link);
-
-    MatrixXd H = chain->getH();
-    VectorXd q = chain->getAng();
-
-    ROS_INFO("H: %s", vectorOfDoubleToString(vector<double>(H.data(),
-                                             H.data() + H.rows() * H.cols())).c_str());
-    ROS_INFO("q: %s", vectorOfDoubleToString(vector<double>(q.data(),
-                                             q.data() + q.size())).c_str());
-    q[3] = 0;
-    ROS_INFO("q: %s", vectorOfDoubleToString(vector<double>(q.data(),
-                                             q.data() + q.size())).c_str());
-
-    chain->setAng(q);
-
-    H = chain->getH();
-    q = chain->getAng();
-
-    ROS_INFO("H: %s", vectorOfDoubleToString(vector<double>(H.data(),
-                                             H.data() + H.rows() * H.cols())).c_str());
-    ROS_INFO("q: %s", vectorOfDoubleToString(vector<double>(q.data(),
-                                             q.data() + q.size())).c_str());
 
     x_0.resize(3); x_0.setZero();
     x_t.resize(3); x_t.setZero();
@@ -85,9 +65,6 @@ VectorXd CtrlThread::solveIK(int &_exit_code)
     }
 
     chain->setAng(getJointStates());
-    double tol  =  1e-6;
-    double vMax =  45.0;
-    double dT   =  0.01;
 
     VectorXd xr(7);
     xr.block<3, 1>(0, 0) = x_n;

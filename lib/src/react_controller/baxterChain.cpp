@@ -6,7 +6,10 @@
 #include <react_controller/mathUtils.h>
 #include <eigen_conversions/eigen_kdl.h>
 
+#include <kdl/chainfksolverpos_recursive.hpp>
+
 using namespace Eigen;
+using namespace   KDL;
 using namespace   std;
 
 Matrix4d KDLFrameToEigen(KDL::Frame _f)
@@ -132,6 +135,8 @@ void BaxterChain::initChain(urdf::Model _robot_model,
                                                ub(joint_num-1));
         }
     }
+
+
 }
 
 // MatrixXd  BaxterChain::GeoJacobian(const unsigned int i)
@@ -222,6 +227,7 @@ bool BaxterChain::setAng(sensor_msgs::JointState _q)
 bool BaxterChain::setAng(Eigen::VectorXd _q)
 {
     q = std::vector<double>(_q.data(), _q.data()+_q.size());
+    // ROS_INFO("size: %d", q.size());
     return true;
 }
 
@@ -229,6 +235,39 @@ bool BaxterChain::setAng(std::vector<double> _q)
 {
     q = _q;
     return true;
+}
+
+bool BaxterChain::JntToCart(const JntArray& q_in, Frame& p_out, int seg_nr)
+{
+    unsigned int segmentNr;
+    if(seg_nr<0)
+        segmentNr=getNrOfSegments();
+    else
+        segmentNr = seg_nr;
+
+    p_out = Frame::Identity();
+
+    if(q_in.rows()!=getNrOfJoints())
+        return false;
+    else if(segmentNr>getNrOfSegments())
+        return false;
+    else
+    {
+        int j=0;
+        for(unsigned int i=0;i<segmentNr;i++)
+        {
+            if(getSegment(i).getJoint().getType()!=Joint::None)
+            {
+                p_out = p_out*getSegment(i).pose(q_in(j));
+                j++;
+            }
+            else
+            {
+                p_out = p_out*getSegment(i).pose(0.0);
+            }
+        }
+        return true;
+    }
 }
 
 MatrixXd BaxterChain::getH()
@@ -245,7 +284,27 @@ MatrixXd BaxterChain::getH(const unsigned int _i)
     // if i > than num_joints
     ROS_ASSERT_MSG(_i < num_joints, "_i %i, num_joints %lu", _i, num_joints);
 
-    return KDLFrameToEigen(getSegment(_i).pose(q[_i]));
+    KDL::JntArray jnts(getNrOfJoints());
+
+    for (size_t i = 0; i < _i; ++i)
+    {
+        jnts(i) = q[i];
+    }
+
+    KDL::ChainFkSolverPos_recursive fksolver(*this);
+    KDL::Frame frame;
+    // fksolver.JntToCart(jnts,frame,getNrOfSegments());
+    JntToCart(jnts,frame);
+
+    // if (!JntToCart(jnts, frame))
+    // {
+    //     ROS_ERROR("Something went wrong with jnt to cart");
+    //     ROS_ERROR("getNrOfJoints %u getNrOfSegments %u jnts.size() %u",
+    //                      getNrOfJoints(), getNrOfSegments(), jnts.rows());
+    // }
+
+    // return KDLFrameToEigen(getSegment(_i).pose(q[_i]));
+    return KDLFrameToEigen(frame);
 }
 
 double BaxterChain::getMax(const unsigned int _i) {

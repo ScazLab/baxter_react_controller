@@ -4,6 +4,7 @@
 #include <kdl/jntarray.hpp>
 #include <urdf/model.h>
 #include <sensor_msgs/JointState.h>
+#include <robot_utils/utils.h>
 
 // Things to remember:
 //  1 allList == quickList
@@ -32,6 +33,8 @@ class BaxterChain : public KDL::Chain
 private:
     std::vector<double> q;
     KDL::JntArray lb, ub;
+
+    bool JntToCart(const KDL::JntArray& q_in, KDL::Frame& p_out, int segmentNr=-1);
 
 public:
     // TODO documentation

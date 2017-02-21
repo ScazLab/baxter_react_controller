@@ -193,7 +193,6 @@ void ControllerNLP::init()
     H0=chain.getH();
     R0=H0.block(0,0,3,3);
     p0=H0.col(3).block(0, 0, 3, 1);
-    std::cout << H0 << "\n";
 
     MatrixXd J0=chain.GeoJacobian();
     J0_xyz=J0.block(0,0,3,chain.getNrOfJoints());
@@ -220,7 +219,6 @@ VectorXd ControllerNLP::get_resultInDegPerSecond() const
 bool ControllerNLP::get_nlp_info(Ipopt::Index &n, Ipopt::Index &m, Ipopt::Index &nnz_jac_g,
                   Ipopt::Index &nnz_h_lag, IndexStyleEnum &index_style)
 {
-    ROS_INFO("get_nlp_info");
 
     n=chain.getNrOfJoints();
 
@@ -248,7 +246,6 @@ bool ControllerNLP::get_nlp_info(Ipopt::Index &n, Ipopt::Index &m, Ipopt::Index 
 bool ControllerNLP::get_bounds_info(Ipopt::Index n, Ipopt::Number *x_l, Ipopt::Number *x_u,
                      Ipopt::Index m, Ipopt::Number *g_l, Ipopt::Number *g_u)
 {
-    ROS_INFO("get_bounds_info");
 
     for (Ipopt::Index i=0; i<n; i++)
     {
@@ -296,15 +293,11 @@ bool ControllerNLP::get_starting_point(Ipopt::Index n, bool init_x, Ipopt::Numbe
 /************************************************************************/
 void ControllerNLP::computeQuantities(const Ipopt::Number *x, const bool new_x)
 {
-    // ROS_INFO("computeQuantities");
 
     if (new_x)
     {
         for (size_t i=0; i<6; i++)
             v[i]=x[i];
-
-        std::cout << v << "\n";
-        std::cout << "Just printed v\n";
 
         MatrixXd sub = R0+dt*(skew(J0_ang*v)*R0);
         He.block<3,3>(0, 0) = sub;
@@ -314,12 +307,6 @@ void ControllerNLP::computeQuantities(const Ipopt::Number *x, const bool new_x)
         He(2,3)=pe[2];
 
         err_xyz=pr-pe;
-        std::cout << p0 << "\n";
-        std::cout << "Just printed p0\n";
-        std::cout << pr << "\n";
-        std::cout << "Just printed pr\n";
-        std::cout << pe << "\n";
-        std::cout << "Just printed pe\n";
         err_ang=dcm2axis(Hr*He.transpose());
         err_ang*=err_ang[3];
         err_ang.resize(3);
@@ -337,7 +324,6 @@ bool ControllerNLP::eval_f(Ipopt::Index n, const Ipopt::Number *x, bool new_x,
 {
     computeQuantities(x,new_x);
     obj_value=(orientation_control?err_ang.squaredNorm():0.0);
-    ROS_INFO("obj_value: %g", obj_value);
     return true;
 }
 
@@ -350,7 +336,6 @@ bool ControllerNLP::eval_grad_f(Ipopt::Index n, const Ipopt::Number* x, bool new
         grad_f[i]=(orientation_control?2.0*err_ang.dot(Derr_ang.col(i)):0.0);
     }
 
-    ROS_INFO("grad_f: %g %g %g %g %g %g %g", grad_f[0], grad_f[1], grad_f[2], grad_f[3], grad_f[4], grad_f[5], grad_f[6]);
     return true;
 }
 
@@ -362,7 +347,6 @@ bool ControllerNLP::eval_g(Ipopt::Index n, const Ipopt::Number *x, bool new_x,
 
     // reaching in position
     g[0]=err_xyz.squaredNorm();
-    ROS_INFO("err_xyz norm: %g", g[0]);
 
     if (hitting_constraints)
     {
@@ -434,7 +418,6 @@ bool ControllerNLP::eval_jac_g(Ipopt::Index n, const Ipopt::Number *x, bool new_
             values[i]=-2.0*dt*(err_xyz.dot(J0_xyz.col(i)));
             idx++;
         }
-        ROS_INFO("values: %g %g %g %g %g %g %g", values[0], values[1], values[2], values[3], values[4], values[5], values[6]);
 
         if (hitting_constraints)
         {
