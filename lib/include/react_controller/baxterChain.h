@@ -88,6 +88,14 @@ public:
                    const std::string& _base_link,
                    const std::string&  _tip_link);
 
+    /**
+     * Function to return the geometric Jacobian of the _i'th segment
+     * in the chain, or the end effector if no parameter given.
+     *
+     * @param _i [index of segment to return]
+     *
+     * @return geometric Jacobian in he form of an Eigen Matrix
+     */
     Eigen::MatrixXd GeoJacobian();
     Eigen::MatrixXd GeoJacobian(const unsigned int _i);
 

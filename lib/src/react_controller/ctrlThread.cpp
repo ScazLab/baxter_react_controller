@@ -44,16 +44,45 @@ CtrlThread::CtrlThread(const std::string& _name, const std::string& _limb, bool 
 
 void CtrlThread::ctrlCb(const baxter_collaboration_msgs::GoToPose& _msg)
 {
-    x_d[0] = _msg.pose_stamp.pose.position.x;
-    x_d[1] = _msg.pose_stamp.pose.position.y;
-    x_d[2] = _msg.pose_stamp.pose.position.z;
-    o_n[0] = -0.128;
-    o_n[1] = 0.99;
-    o_n[2] = -0.018;
-    o_n[3] = 0.022;
+    // x_d[0] = _msg.pose_stamp.pose.position.x;
+    // x_d[1] = _msg.pose_stamp.pose.position.y;
+    // x_d[2] = _msg.pose_stamp.pose.position.z;
+    // o_n[0] = -0.128;
+    // o_n[1] = 0.99;
+    // o_n[2] = -0.018;
+    // o_n[3] = 0.022;
+
+    // int exit_code;
+    // solveIK(exit_code);
+}
+
+bool CtrlThread::goToPoseNoCheck(double px, double py, double pz,
+                                 double ox, double oy, double oz, double ow)
+{
+    x_n[0] = px;
+    x_n[1] = py;
+    x_n[2] = pz;
+    o_n[0] = ox;
+    o_n[1] = oy;
+    o_n[2] = oz;
+    o_n[3] = ow;
 
     int exit_code;
-    solveIK(exit_code);
+    Eigen::VectorXd joint_velocities_eigen = solveIK(exit_code);
+
+    std::vector<double> joint_velocities_std;
+
+    for (int i = 0; i < joint_velocities_eigen.col(0).size(); i++)
+    {
+        joint_velocities_std.push_back(joint_velocities_eigen[i]);
+    }
+
+    ROS_INFO_THROTTLE(0.25, "%g %g %g %g %g %g %g", joint_velocities_std[0], joint_velocities_std[1], joint_velocities_std[2], joint_velocities_std[3], joint_velocities_std[4], joint_velocities_std[5], joint_velocities_std[6]);
+
+    // if (!goToJointConfNoCheck(joint_velocities_std)) return false;
+
+    return true;
+
 }
 
 VectorXd CtrlThread::solveIK(int &_exit_code)
@@ -80,7 +109,7 @@ VectorXd CtrlThread::solveIK(int &_exit_code)
     q_dot.resize(chain->getNrOfJoints());
     q_dot.setZero();
 
-    bool verbosity = true;
+    bool verbosity = false;
     // bool controlMode = true;
     bool hittingConstraints = false;
     bool orientationControl = false;
