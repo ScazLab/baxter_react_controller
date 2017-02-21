@@ -1,17 +1,28 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(baxter_react_controller)
 
+if(CMAKE_COMPILER_IS_GNUCXX OR ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang"))
+    set(CMAKE_CXX_FLAGS "-std=c++11 ${CMAKE_CXX_FLAGS}")
+endif()
+
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED
                     cmake_modules
-                    roscpp)
+                    roscpp
+                    baxter_core_msgs
+                    baxter_collaboration_lib
+                    baxter_collaboration_msgs
+                    eigen_conversions)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}")
 
 find_package(IPOPT REQUIRED)
 find_package(Eigen REQUIRED)
+find_package(orocos_kdl REQUIRED)
+
+add_definitions(${IPOPT_DEFINITIONS})
 
 ################################################
 ## Declare ROS messages, services and actions ##
@@ -77,17 +88,21 @@ catkin_package(
    INCLUDE_DIRS lib/include
    LIBRARIES react_controller
 #  CATKIN_DEPENDS other_catkin_pkg
-   DEPENDS Eigen
+   DEPENDS Eigen orocos_kdl
 )
 
 ###########
 ## Build ##
 ###########
+
+ADD_DEFINITIONS ( -Wall -Wextra -Wno-unused-parameter -Werror)
+
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(lib/include
                     ${IPOPT_INCLUDE_DIRS}
                     ${Eigen_INCLUDE_DIRS}
+                    ${orocos_kdl_INCLUDE_DIRS}
                     ${catkin_INCLUDE_DIRS})
 
 
@@ -109,10 +124,11 @@ add_executable(baxter_react_controller src/baxter_react_controller.cpp)
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above
-add_dependencies(baxter_react_controller ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(baxter_react_controller ${${PROJECT_NAME}_EXPORTED_TARGETS} react_controller ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(baxter_react_controller               react_controller
+                                                            ${IPOPT_LIBRARIES}
                                                             ${catkin_LIBRARIES})
 
 #############
