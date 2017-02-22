@@ -292,7 +292,7 @@ MatrixXd BaxterChain::getH(const unsigned int _i)
         jnts(i) = q[i];
     }
 
-    KDL::ChainFkSolverPos_recursive fksolver(*this);
+    // KDL::ChainFkSolverPos_recursive fksolver(*this);
     KDL::Frame frame;
     // fksolver.JntToCart(jnts,frame,getNrOfSegments());
     JntToCart(jnts,frame);

@@ -7,7 +7,8 @@
 using namespace Eigen;
 
 /****************************************************************/
-ControllerNLP::ControllerNLP(BaxterChain chain_) : chain(chain_)
+ControllerNLP::ControllerNLP(BaxterChain chain_, double dt_, bool hitting_constraints_, bool orientation_control_) :
+                                chain(chain_), dt(dt_), hitting_constraints(hitting_constraints_), orientation_control(orientation_control_)
 {
     xr.resize(6); xr.setZero();
     set_xr(xr);
@@ -33,10 +34,6 @@ ControllerNLP::ControllerNLP(BaxterChain chain_) : chain(chain_)
 
     computeSelfAvoidanceConstraints();
     computeGuard();
-
-    hitting_constraints=false;
-    orientation_control=true;
-    dt=0.01;
 }
 
 /****************************************************************/
@@ -73,7 +70,7 @@ void ControllerNLP::computeGuard()
     qGuardMaxInt.resize(chain.getNrOfJoints());
     qGuardMaxCOG.resize(chain.getNrOfJoints());
 
-    for (size_t i=0; i<chain.getNrOfJoints(); i++)
+    for (size_t i=0, DOF=chain.getNrOfJoints(); i<DOF; i++)
     {
         qGuard[i]=0.25*guardRatio*(chain.getMax(i)-chain.getMin(i));
 
@@ -92,7 +89,7 @@ void ControllerNLP::computeBounds()
 {
     bounds.resize(chain.getNrOfJoints(), 2);
 
-    for (size_t i=0; i<chain.getNrOfJoints(); i++)
+    for (size_t i=0, DOF=chain.getNrOfJoints(); i<DOF; i++)
     {
         double qi=q0[i];
         if ((qi>=qGuardMinInt[i]) && (qi<=qGuardMaxInt[i]))
@@ -121,7 +118,7 @@ void ControllerNLP::computeBounds()
 MatrixXd ControllerNLP::v2m(const VectorXd &x)
 {
     Vector4d ang; ang.setZero();
-    ang.block(0, 0, 3, 1) = x.tail(3);
+    ang.block<3,1>(0, 0) = x.tail(3);
     double ang_mag=ang.norm();
     if (ang_mag>0.0)
         ang/=ang_mag;
@@ -150,14 +147,14 @@ void ControllerNLP::set_xr(const VectorXd &_xr)
     xr=_xr;
 
     Hr=v2m(xr);
-    pr=xr.block(0, 0, 3, 1);
+    pr=xr.block<3,1>(0, 0);
     skew_nr=skew(Hr.col(0));
     skew_sr=skew(Hr.col(1));
     skew_ar=skew(Hr.col(2));
 }
 
 /****************************************************************/
-void ControllerNLP::set_v_limInDegPerSecond(const MatrixXd &_v_lim)
+void ControllerNLP::set_v_lim(const MatrixXd &_v_lim)
 {
     v_lim=CTRL_DEG2RAD*_v_lim;
 }
@@ -181,7 +178,7 @@ void ControllerNLP::set_dt(const double _dt)
 }
 
 /****************************************************************/
-void ControllerNLP::set_v0InDegPerSecond(const VectorXd &_v0)
+void ControllerNLP::set_v0(const VectorXd &_v0)
 {
     v0=CTRL_DEG2RAD*_v0;
 }
@@ -192,7 +189,7 @@ void ControllerNLP::init()
     q0=chain.getAng();
     H0=chain.getH();
     R0=H0.block(0,0,3,3);
-    p0=H0.col(3).block(0, 0, 3, 1);
+    p0=H0.col(3).block<3,1>(0, 0);
 
     MatrixXd J0=chain.GeoJacobian();
     J0_xyz=J0.block(0,0,3,chain.getNrOfJoints());
@@ -202,9 +199,9 @@ void ControllerNLP::init()
 }
 
 /****************************************************************/
-VectorXd ControllerNLP::get_resultInDegPerSecond() const
+VectorXd ControllerNLP::get_result() const
 {
-    return CTRL_RAD2DEG*v;
+    return v;
 }
 
 //     /****************************************************************/
@@ -244,7 +241,7 @@ bool ControllerNLP::get_nlp_info(Ipopt::Index &n, Ipopt::Index &m, Ipopt::Index 
 
 /****************************************************************/
 bool ControllerNLP::get_bounds_info(Ipopt::Index n, Ipopt::Number *x_l, Ipopt::Number *x_u,
-                     Ipopt::Index m, Ipopt::Number *g_l, Ipopt::Number *g_u)
+                                    Ipopt::Index m, Ipopt::Number *g_l, Ipopt::Number *g_u)
 {
 
     for (Ipopt::Index i=0; i<n; i++)
@@ -301,7 +298,7 @@ void ControllerNLP::computeQuantities(const Ipopt::Number *x, const bool new_x)
 
         MatrixXd sub = R0+dt*(skew(J0_ang*v)*R0);
         He.block<3,3>(0, 0) = sub;
-        VectorXd pe=p0+dt*(J0_xyz*v);
+        pe=p0+dt*(J0_xyz*v);
         He(0,3)=pe[0];
         He(1,3)=pe[1];
         He(2,3)=pe[2];
@@ -309,7 +306,7 @@ void ControllerNLP::computeQuantities(const Ipopt::Number *x, const bool new_x)
         err_xyz=pr-pe;
         err_ang=dcm2axis(Hr*He.transpose());
         err_ang*=err_ang[3];
-        err_ang.resize(3);
+        err_ang = err_ang.block<3, 1>(0, 0);
 
         MatrixXd L=-0.5*(skew_nr*skew(He.col(0))+
                        skew_sr*skew(He.col(1))+
@@ -458,9 +455,26 @@ void ControllerNLP::finalize_solution(Ipopt::SolverReturn status, Ipopt::Index n
 {
     for (Ipopt::Index i=0; i<n; i++)
         v[i]=x[i];
+
+    KDL::JntArray jnts(chain.getNrOfJoints());
+    VectorXd angles = chain.getAng();
+
+    for (size_t i = 0, _i = chain.getNrOfJoints(); i < _i; ++i)
+    {
+        jnts(i) = q0[i] + (dt * v[i]);
+    }
+
+    ROS_WARN("p0: %g %g %g", p0[0], p0[1], p0[2]);
+    ROS_WARN("pr: %g %g %g", pr[0], pr[1], pr[2]);
+    ROS_WARN("pe: %g %g %g", pe[0], pe[1], pe[2]);
+    ROS_WARN("q0  getAng: %g %g %g %g %g %g %g", q0[0], q0[1], q0[2], q0[3], q0[4], q0[5], q0[6]);
+    ROS_WARN("computed v: %g %g %g %g %g %g %g", v[0], v[1], v[2], v[3], v[4], v[5], v[6]);
+    ROS_WARN("next state: %g %g %g %g %g %g %g\n", jnts(0), jnts(1), jnts(2), jnts(3),
+        jnts(4), jnts(5), jnts(6));
 }
 
-ControllerNLP::~ControllerNLP() {
+ControllerNLP::~ControllerNLP()
+{
     return;
 }
 

@@ -42,6 +42,7 @@ private:
     std::vector<double> q;    // vector of joint angles in the arm chain
     KDL::JntArray lb, ub;     // lower bound, upper bound joint arrays
 
+public:
 
     /**
      * Takes an arm chain and returns the KDL::Frame of the end effector w.r.t
@@ -55,7 +56,6 @@ private:
      */
     bool JntToCart(const KDL::JntArray& _q_in, KDL::Frame& _p_out, int _segNr=-1);
 
-public:
     /**
      * Constructor for Baxter Chain. Takes a urdf robot model and base/tip link to
      * intialize KDL::Chain. Automatically initializes q to average of lower and

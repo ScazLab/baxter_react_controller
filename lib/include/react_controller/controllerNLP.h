@@ -20,17 +20,18 @@ class ControllerNLP : public Ipopt::TNLP
 {
     BaxterChain chain;
 
+    double dt;
     bool hitting_constraints;
     bool orientation_control;
 
     Eigen::VectorXd xr,pr;
+    Eigen::VectorXd    pe;
     Eigen::MatrixXd Hr,skew_nr,skew_sr,skew_ar;
     Eigen::MatrixXd q_lim,v_lim;
     Eigen::VectorXd p0, q0, v0, v;
     Eigen::MatrixXd H0,R0,He,J0_xyz,J0_ang,Derr_ang;
     Eigen::VectorXd err_xyz,err_ang;
     Eigen::MatrixXd bounds;
-    double dt;
 
     double shou_m,shou_n;
     double elb_m,elb_n;
@@ -51,10 +52,10 @@ class ControllerNLP : public Ipopt::TNLP
     Eigen::MatrixXd skew(const Eigen::VectorXd &w);
 
     public:
-    ControllerNLP(BaxterChain chain_);
+    ControllerNLP(BaxterChain chain_, double dt_, bool hitting_constraints_, bool orientation_control_);
 
     void init();
-    Eigen::VectorXd get_resultInDegPerSecond() const;
+    Eigen::VectorXd get_result() const;
 
     void computeQuantities(const Ipopt::Number *x, const bool new_x);
     bool eval_f(Ipopt::Index n, const Ipopt::Number *x, bool new_x, Ipopt::Number &obj_value);
@@ -67,11 +68,11 @@ class ControllerNLP : public Ipopt::TNLP
                            Ipopt::Number obj_value, const Ipopt::IpoptData *ip_data, Ipopt::IpoptCalculatedQuantities *ip_cq);
 
     void set_xr(const Eigen::VectorXd &_xr);
-    void set_v_limInDegPerSecond(const Eigen::MatrixXd &_v_lim);
+    void set_v_lim(const Eigen::MatrixXd &_v_lim);
     void set_hitting_constraints(const bool _hitting_constraints);
     void set_orientation_control(const bool _orientation_control);
     void set_dt(const double _dt);
-    void set_v0InDegPerSecond(const Eigen::VectorXd &_v0);
+    void set_v0(const Eigen::VectorXd &_v0);
 
     // Property getParameters() const;
     bool get_nlp_info(Ipopt::Index &n, Ipopt::Index &m, Ipopt::Index &nnz_jac_g,

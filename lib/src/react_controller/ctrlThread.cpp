@@ -67,19 +67,45 @@ bool CtrlThread::goToPoseNoCheck(double px, double py, double pz,
     o_n[2] = oz;
     o_n[3] = ow;
 
-    int exit_code;
+    int exit_code = -1;
     Eigen::VectorXd joint_velocities_eigen = solveIK(exit_code);
+
+    KDL::JntArray jnts(chain->getNrOfJoints());
+    VectorXd angles = chain->getAng();
+
+    for (size_t i = 0, _i = chain->getNrOfJoints(); i < _i; ++i)
+    {
+        jnts(i) = angles[i] + (dT * joint_velocities_eigen(i));
+    }
+
+    KDL::Frame frame;
+    chain->JntToCart(jnts,frame);
+
+    sensor_msgs::JointState cj = getJointStates();
+
+    ROS_INFO("x_c: %g %g %g", getPos().x, getPos().y, getPos().z);
+    ROS_INFO("x_n: %g %g %g", px, py, pz);
+    ROS_INFO("x_f: %g %g %g\n", frame.p[0], frame.p[1], frame.p[2]);
+
+    ROS_INFO("joint_angles    getAng: %g %g %g %g %g %g %g", angles[0], angles[1], angles[2], angles[3], angles[4], angles[5], angles[6]);
+    ROS_INFO("joint_angles JntStates: %g %g %g %g %g %g %g", cj.position[0], cj.position[1], cj.position[2], cj.position[3], cj.position[4], cj.position[5], cj.position[6]);
+    ROS_INFO("joint       velocities: %g %g %g %g %g %g %g", joint_velocities_eigen(0), joint_velocities_eigen(1), joint_velocities_eigen(2), joint_velocities_eigen(3), joint_velocities_eigen(4), joint_velocities_eigen(5), joint_velocities_eigen(6));
+    ROS_INFO("joint_angles nextState: %g %g %g %g %g %g %g\n", jnts(0), jnts(1), jnts(2), jnts(3), jnts(4), jnts(5), jnts(6));
+
+    if (exit_code != 0) return false;
 
     std::vector<double> joint_velocities_std;
 
     for (int i = 0; i < joint_velocities_eigen.col(0).size(); i++)
     {
-        joint_velocities_std.push_back(joint_velocities_eigen[i]);
+        // if (i == 0) {
+            joint_velocities_std.push_back(joint_velocities_eigen[i]);
+        // } else {
+        //     joint_velocities_std.push_back(0.0);
+        // }
     }
 
-    ROS_INFO_THROTTLE(0.25, "%g %g %g %g %g %g %g", joint_velocities_std[0], joint_velocities_std[1], joint_velocities_std[2], joint_velocities_std[3], joint_velocities_std[4], joint_velocities_std[5], joint_velocities_std[6]);
-
-    // if (!goToJointConfNoCheck(joint_velocities_std)) return false;
+    if (!goToJointConfNoCheck(joint_velocities_std)) return false;
 
     return true;
 
@@ -120,28 +146,28 @@ VectorXd CtrlThread::solveIK(int &_exit_code)
     app->Options()->SetIntegerValue("acceptable_iter",0);
     app->Options()->SetStringValue("mu_strategy","adaptive");
     app->Options()->SetIntegerValue("max_iter",std::numeric_limits<int>::max());
-    app->Options()->SetNumericValue("max_cpu_time", dT);
+    app->Options()->SetNumericValue("max_cpu_time", 0.95 * dT);
     app->Options()->SetStringValue("nlp_scaling_method","gradient-based");
     app->Options()->SetStringValue("hessian_approximation","limited-memory");
     app->Options()->SetStringValue("derivative_test",verbosity?"first-order":"none");
-    app->Options()->SetIntegerValue("print_level",verbosity?5:0);
+    app->Options()->SetIntegerValue("print_level",verbosity?7:0);
     app->Initialize();
 
     Ipopt::SmartPtr<ControllerNLP> nlp;
-    nlp=new ControllerNLP(*chain);
-    nlp->set_hitting_constraints(hittingConstraints);
-    nlp->set_orientation_control(orientationControl);
-    nlp->set_dt(dT);
+    nlp=new ControllerNLP(*chain, dT, hittingConstraints, orientationControl);
+    // nlp->set_hitting_constraints(hittingConstraints);
+    // nlp->set_orientation_control(orientationControl);
+    // nlp->set_dt(dT);
     nlp->set_xr(xr);
-    nlp->set_v_limInDegPerSecond(vLimAdapted);
-    nlp->set_v0InDegPerSecond(q_dot);
+    nlp->set_v_lim(vLimAdapted);
+    nlp->set_v0(q_dot);
     nlp->init();
 
     _exit_code=app->OptimizeTNLP(GetRawPtr(nlp));
 
-    res=nlp->get_resultInDegPerSecond();
+    res=nlp->get_result();
 
-    if(verbosity >= 1)
+    if(verbosity)
     {
         ROS_INFO("x_n: %g %g %g\tx_d: %g %g %g\tdT: %g",
                   x_n[0], x_n[1], x_n[2], x_d[0], x_d[1], x_d[2], dT);
