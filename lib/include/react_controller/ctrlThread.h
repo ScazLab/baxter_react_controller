@@ -21,8 +21,6 @@ private:
 
     Eigen::MatrixXd vLimAdapted; // matrix of maximum joint velocities per joint
 
-    ros::Subscriber ctrl_sub;
-
     double tol;         // tolerance for constraint violations
     double vMax;        // maximum velocity of joints
     double dT;          // time constraint for IpOpt solver time per optimization
@@ -31,9 +29,6 @@ public:
     CtrlThread(const std::string& _name, const std::string& _limb, bool _no_robot,
                const std::string& _base_link, const std::string& _tip_link, double tol = 1e-6,
                double vMax = 15.0, double dT = 0.01);
-
-    void ctrlCb(const baxter_collaboration_msgs::GoToPose& _msg);
-
 
     /**
      * Overridden version of the robot_interfact function. Takes position and
@@ -46,9 +41,7 @@ public:
      * @return: true if successful, false if error
     */
     bool goToPoseNoCheck(double px, double py, double pz,
-                                 double ox, double oy, double oz, double ow);
-
-    void publishVelocities(Eigen::VectorXd _joint_velocities);
+                         double ox, double oy, double oz, double ow);
 
     Eigen::VectorXd solveIK(int &_exit_code);
 

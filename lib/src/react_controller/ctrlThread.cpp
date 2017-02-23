@@ -35,25 +35,6 @@ CtrlThread::CtrlThread(const std::string& _name, const std::string& _limb, bool 
     x_d.resize(3); x_d.setZero();
 
     o_n.resize(4); o_n.setZero();
-
-    std::string topic = "/" + getName() + "/" + getLimb() + "/ipopt";
-    ctrl_sub      = _n.subscribe(topic, SUBSCRIBER_BUFFER, &CtrlThread::ctrlCb, this);
-    ROS_INFO("[%s] Created cartesian controller that listens to : %s",
-                                    getLimb().c_str(), topic.c_str());
-}
-
-void CtrlThread::ctrlCb(const baxter_collaboration_msgs::GoToPose& _msg)
-{
-    // x_d[0] = _msg.pose_stamp.pose.position.x;
-    // x_d[1] = _msg.pose_stamp.pose.position.y;
-    // x_d[2] = _msg.pose_stamp.pose.position.z;
-    // o_n[0] = -0.128;
-    // o_n[1] = 0.99;
-    // o_n[2] = -0.018;
-    // o_n[3] = 0.022;
-
-    // int exit_code;
-    // solveIK(exit_code);
 }
 
 bool CtrlThread::goToPoseNoCheck(double px, double py, double pz,
@@ -98,11 +79,7 @@ bool CtrlThread::goToPoseNoCheck(double px, double py, double pz,
 
     for (int i = 0; i < joint_velocities_eigen.col(0).size(); i++)
     {
-        // if (i == 0) {
-            joint_velocities_std.push_back(joint_velocities_eigen[i]);
-        // } else {
-        //     joint_velocities_std.push_back(0.0);
-        // }
+        joint_velocities_std.push_back(joint_velocities_eigen[i]);
     }
 
     if (!goToJointConfNoCheck(joint_velocities_std)) return false;
