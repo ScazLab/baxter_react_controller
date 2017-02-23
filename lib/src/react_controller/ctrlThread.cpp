@@ -114,7 +114,7 @@ VectorXd CtrlThread::solveIK(int &_exit_code)
 
     bool verbosity = false;
     // bool controlMode = true;
-    bool orientationControl = false;
+    bool ctrlOri = false;
 
     Ipopt::SmartPtr<Ipopt::IpoptApplication> app=new Ipopt::IpoptApplication;
     app->Options()->SetNumericValue("tol",tol);
@@ -130,12 +130,12 @@ VectorXd CtrlThread::solveIK(int &_exit_code)
     app->Initialize();
 
     Ipopt::SmartPtr<ControllerNLP> nlp;
-    nlp=new ControllerNLP(*chain, dT, orientationControl);
-    // nlp->set_orientation_control(orientationControl);
-    // nlp->set_dt(dT);
+    nlp=new ControllerNLP(*chain);
+    nlp->set_ctrl_ori(ctrlOri);
+    nlp->set_dt(dT);
     nlp->set_xr(xr);
     nlp->set_v_lim(vLimAdapted);
-    nlp->set_v0(q_dot);
+    nlp->set_v_0(q_dot);
     nlp->init();
 
     _exit_code=app->OptimizeTNLP(GetRawPtr(nlp));

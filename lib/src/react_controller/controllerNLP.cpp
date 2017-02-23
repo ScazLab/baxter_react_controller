@@ -7,14 +7,14 @@
 using namespace Eigen;
 
 /****************************************************************/
-ControllerNLP::ControllerNLP(BaxterChain chain_, double dt_, bool orientation_control_) :
-                                chain(chain_), dt(dt_), orientation_control(orientation_control_)
+ControllerNLP::ControllerNLP(BaxterChain chain_, double dt_, bool ctrl_ori_) :
+                                chain(chain_), dt(dt_), ctrl_ori(ctrl_ori_)
 {
     xr.resize(6); xr.setZero();
     set_xr(xr);
 
-    v0.resize(chain.getNrOfJoints()); v0.setZero();
-    v=v0;
+    v_0.resize(chain.getNrOfJoints()); v_0.setZero();
+    v=v_0;
     He.resize(4, 4);
     He.setZero();
     He(3,3)=1.0;
@@ -32,30 +32,7 @@ ControllerNLP::ControllerNLP(BaxterChain chain_, double dt_, bool orientation_co
     }
     bounds=v_lim;
 
-    computeSelfAvoidanceConstraints();
     computeGuard();
-}
-
-/****************************************************************/
-void ControllerNLP::computeSelfAvoidanceConstraints()
-{
-    double joint1_0, joint1_1;
-    double joint2_0, joint2_1;
-    joint1_0= 28.0*CTRL_DEG2RAD;
-    joint1_1= 23.0*CTRL_DEG2RAD;
-    joint2_0=-37.0*CTRL_DEG2RAD;
-    joint2_1= 80.0*CTRL_DEG2RAD;
-    shou_m=(joint1_1-joint1_0)/(joint2_1-joint2_0);
-    shou_n=joint1_0-shou_m*joint2_0;
-
-    double joint3_0, joint3_1;
-    double joint4_0, joint4_1;
-    joint3_0= 85.0*CTRL_DEG2RAD;
-    joint3_1=105.0*CTRL_DEG2RAD;
-    joint4_0= 90.0*CTRL_DEG2RAD;
-    joint4_1= 40.0*CTRL_DEG2RAD;
-    elb_m=(joint4_1-joint4_0)/(joint3_1-joint3_0);
-    elb_n=joint4_0-elb_m*joint3_0;
 }
 
 /****************************************************************/
@@ -91,7 +68,7 @@ void ControllerNLP::computeBounds()
 
     for (size_t i=0, DOF=chain.getNrOfJoints(); i<DOF; i++)
     {
-        double qi=q0[i];
+        double qi=q_0[i];
         if ((qi>=qGuardMinInt[i]) && (qi<=qGuardMaxInt[i]))
             bounds(i,0)=bounds(i,1)=1.0;
         else if (qi<qGuardMinInt[i])
@@ -160,9 +137,9 @@ void ControllerNLP::set_v_lim(const MatrixXd &_v_lim)
 }
 
 /****************************************************************/
-void ControllerNLP::set_orientation_control(const bool _orientation_control)
+void ControllerNLP::set_ctrl_ori(const bool _ctrl_ori)
 {
-    orientation_control=_orientation_control;
+    ctrl_ori=_ctrl_ori;
 }
 
 /****************************************************************/
@@ -172,22 +149,29 @@ void ControllerNLP::set_dt(const double _dt)
 }
 
 /****************************************************************/
-void ControllerNLP::set_v0(const VectorXd &_v0)
+void ControllerNLP::set_v_0(const VectorXd &_v_0)
 {
-    v0=CTRL_DEG2RAD*_v0;
+    v_0=_v_0;
 }
 
 /****************************************************************/
 void ControllerNLP::init()
 {
-    q0=chain.getAng();
-    H0=chain.getH();
-    R0=H0.block(0,0,3,3);
-    p0=H0.col(3).block<3,1>(0, 0);
+    q_0= chain.getAng();
+    H_0=   chain.getH();
+    R_0= H_0.block(0,0,3,3);
+    x_0= H_0.col(3).block<3,1>(0, 0);
 
     MatrixXd J0=chain.GeoJacobian();
     J0_xyz=J0.block(0,0,3,chain.getNrOfJoints());
     J0_ang=J0.block(3,0,3,chain.getNrOfJoints());
+
+    ROS_INFO("           q_0: %s", vectorOfDoubleToString(std::vector<double>(q_0.data(),
+                                                          q_0.data() + q_0.size())).c_str());
+    // ROS_INFO("           H_0: %s", vectorOfDoubleToString(std::vector<double>(H_0.data(),
+    //                                                       H_0.data() + H_0.size())).c_str());
+    ROS_INFO("           x_0: %s", vectorOfDoubleToString(std::vector<double>(x_0.data(),
+                                                          x_0.data() + x_0.size())).c_str());
 
     computeBounds();
 }
@@ -236,7 +220,7 @@ bool ControllerNLP::get_starting_point(Ipopt::Index n, bool init_x, Ipopt::Numbe
                         Ipopt::Index m, bool init_lambda, Ipopt::Number *lambda)
 {
     for (Ipopt::Index i=0; i<n; i++)
-        x[i]=std::min(std::max(bounds(i,0),v0[i]),bounds(i,1));
+        x[i]=std::min(std::max(bounds(i,0),v_0[i]),bounds(i,1));
     return true;
 }
 
@@ -249,9 +233,9 @@ void ControllerNLP::computeQuantities(const Ipopt::Number *x, const bool new_x)
         for (size_t i=0; i<6; i++)
             v[i]=x[i];
 
-        MatrixXd sub = R0+dt*(skew(J0_ang*v)*R0);
+        MatrixXd sub = R_0+dt*(skew(J0_ang*v)*R_0);
         He.block<3,3>(0, 0) = sub;
-        pe=p0+dt*(J0_xyz*v);
+        pe=x_0+dt*(J0_xyz*v);
         He(0,3)=pe[0];
         He(1,3)=pe[1];
         He(2,3)=pe[2];
@@ -273,7 +257,7 @@ bool ControllerNLP::eval_f(Ipopt::Index n, const Ipopt::Number *x, bool new_x,
             Ipopt::Number &obj_value)
 {
     computeQuantities(x,new_x);
-    obj_value=(orientation_control?err_ang.squaredNorm():0.0);
+    obj_value=(ctrl_ori?err_ang.squaredNorm():0.0);
     return true;
 }
 
@@ -283,7 +267,7 @@ bool ControllerNLP::eval_grad_f(Ipopt::Index n, const Ipopt::Number* x, bool new
 {
     computeQuantities(x,new_x);
     for (Ipopt::Index i=0; i<n; i++) {
-        grad_f[i]=(orientation_control?2.0*err_ang.dot(Derr_ang.col(i)):0.0);
+        grad_f[i]=(ctrl_ori?2.0*err_ang.dot(Derr_ang.col(i)):0.0);
     }
 
     return true;
@@ -350,13 +334,11 @@ void ControllerNLP::finalize_solution(Ipopt::SolverReturn status, Ipopt::Index n
 
     for (size_t i = 0, _i = chain.getNrOfJoints(); i < _i; ++i)
     {
-        jnts(i) = q0[i] + (dt * v[i]);
+        jnts(i) = q_0[i] + (dt * v[i]);
     }
 
-    ROS_WARN("p0: %g %g %g", p0[0], p0[1], p0[2]);
     ROS_WARN("pr: %g %g %g", pr[0], pr[1], pr[2]);
     ROS_WARN("pe: %g %g %g", pe[0], pe[1], pe[2]);
-    ROS_WARN("q0  getAng: %g %g %g %g %g %g %g", q0[0], q0[1], q0[2], q0[3], q0[4], q0[5], q0[6]);
     ROS_WARN("computed v: %g %g %g %g %g %g %g", v[0], v[1], v[2], v[3], v[4], v[5], v[6]);
     ROS_WARN("next state: %g %g %g %g %g %g %g\n", jnts(0), jnts(1), jnts(2), jnts(3),
         jnts(4), jnts(5), jnts(6));

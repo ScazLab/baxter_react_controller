@@ -23,19 +23,33 @@ private:
     BaxterChain chain;
 
     double dt;
-    bool orientation_control;
 
-    Eigen::VectorXd xr,pr;
-    Eigen::VectorXd    pe;
-    Eigen::MatrixXd Hr,skew_nr,skew_sr,skew_ar;
-    Eigen::MatrixXd q_lim,v_lim;
-    Eigen::VectorXd p0, q0, v0, v;
-    Eigen::MatrixXd H0,R0,He,J0_xyz,J0_ang,Derr_ang;
-    Eigen::VectorXd err_xyz,err_ang;
+    bool ctrl_ori;
+
+    Eigen::VectorXd x_0;
+    Eigen::VectorXd q_0;
+    Eigen::VectorXd v_0;
+
+    Eigen::VectorXd xr;
+    Eigen::VectorXd pr;
+    Eigen::MatrixXd Hr;
+
+    Eigen::VectorXd pe;
+    Eigen::MatrixXd skew_nr;
+    Eigen::MatrixXd skew_sr;
+    Eigen::MatrixXd skew_ar;
+    Eigen::MatrixXd q_lim;
+    Eigen::MatrixXd v_lim;
+    Eigen::VectorXd v;
+    Eigen::MatrixXd H_0;
+    Eigen::MatrixXd R_0;
+    Eigen::MatrixXd He;
+    Eigen::MatrixXd J0_xyz;
+    Eigen::MatrixXd J0_ang;
+    Eigen::MatrixXd Derr_ang;
+    Eigen::VectorXd err_xyz;
+    Eigen::VectorXd err_ang;
     Eigen::MatrixXd bounds;
-
-    double shou_m,shou_n;
-    double elb_m,elb_n;
 
     Eigen::VectorXd qGuard;
     Eigen::VectorXd qGuardMinExt;
@@ -46,14 +60,13 @@ private:
     Eigen::VectorXd qGuardMaxCOG;
 
     /****************************************************************/
-    void computeSelfAvoidanceConstraints();
     void computeGuard();
     void computeBounds();
     Eigen::MatrixXd v2m(const Eigen::VectorXd &x);
     Eigen::MatrixXd skew(const Eigen::VectorXd &w);
 
 public:
-    ControllerNLP(BaxterChain chain_, double dt_, bool orientation_control_);
+    ControllerNLP(BaxterChain chain_, double dt_ = 0.01, bool ctrl_ori_ = false);
 
     void init();
     Eigen::VectorXd get_result() const;
@@ -70,9 +83,9 @@ public:
 
     void set_xr(const Eigen::VectorXd &_xr);
     void set_v_lim(const Eigen::MatrixXd &_v_lim);
-    void set_orientation_control(const bool _orientation_control);
+    void set_ctrl_ori(const bool _ctrl_ori);
     void set_dt(const double _dt);
-    void set_v0(const Eigen::VectorXd &_v0);
+    void set_v_0(const Eigen::VectorXd &_v_0);
 
     // Property getParameters() const;
     bool get_nlp_info(Ipopt::Index &n, Ipopt::Index &m, Ipopt::Index &nnz_jac_g,
