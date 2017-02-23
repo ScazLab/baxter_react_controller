@@ -18,10 +18,11 @@
 /****************************************************************/
 class ControllerNLP : public Ipopt::TNLP
 {
+private:
+
     BaxterChain chain;
 
     double dt;
-    bool hitting_constraints;
     bool orientation_control;
 
     Eigen::VectorXd xr,pr;
@@ -51,8 +52,8 @@ class ControllerNLP : public Ipopt::TNLP
     Eigen::MatrixXd v2m(const Eigen::VectorXd &x);
     Eigen::MatrixXd skew(const Eigen::VectorXd &w);
 
-    public:
-    ControllerNLP(BaxterChain chain_, double dt_, bool hitting_constraints_, bool orientation_control_);
+public:
+    ControllerNLP(BaxterChain chain_, double dt_, bool orientation_control_);
 
     void init();
     Eigen::VectorXd get_result() const;
@@ -69,7 +70,6 @@ class ControllerNLP : public Ipopt::TNLP
 
     void set_xr(const Eigen::VectorXd &_xr);
     void set_v_lim(const Eigen::MatrixXd &_v_lim);
-    void set_hitting_constraints(const bool _hitting_constraints);
     void set_orientation_control(const bool _orientation_control);
     void set_dt(const double _dt);
     void set_v0(const Eigen::VectorXd &_v0);

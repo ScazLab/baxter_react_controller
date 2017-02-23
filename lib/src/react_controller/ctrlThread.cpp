@@ -137,25 +137,23 @@ VectorXd CtrlThread::solveIK(int &_exit_code)
 
     bool verbosity = false;
     // bool controlMode = true;
-    bool hittingConstraints = false;
     bool orientationControl = false;
 
     Ipopt::SmartPtr<Ipopt::IpoptApplication> app=new Ipopt::IpoptApplication;
     app->Options()->SetNumericValue("tol",tol);
     app->Options()->SetNumericValue("constr_viol_tol",1e-6);
     app->Options()->SetIntegerValue("acceptable_iter",0);
-    app->Options()->SetStringValue("mu_strategy","adaptive");
+    app->Options()->SetStringValue ("mu_strategy","adaptive");
     app->Options()->SetIntegerValue("max_iter",std::numeric_limits<int>::max());
     app->Options()->SetNumericValue("max_cpu_time", 0.95 * dT);
-    app->Options()->SetStringValue("nlp_scaling_method","gradient-based");
-    app->Options()->SetStringValue("hessian_approximation","limited-memory");
-    app->Options()->SetStringValue("derivative_test",verbosity?"first-order":"none");
+    app->Options()->SetStringValue ("nlp_scaling_method","gradient-based");
+    app->Options()->SetStringValue ("hessian_approximation","limited-memory");
+    app->Options()->SetStringValue ("derivative_test",verbosity?"first-order":"none");
     app->Options()->SetIntegerValue("print_level",verbosity?7:0);
     app->Initialize();
 
     Ipopt::SmartPtr<ControllerNLP> nlp;
-    nlp=new ControllerNLP(*chain, dT, hittingConstraints, orientationControl);
-    // nlp->set_hitting_constraints(hittingConstraints);
+    nlp=new ControllerNLP(*chain, dT, orientationControl);
     // nlp->set_orientation_control(orientationControl);
     // nlp->set_dt(dT);
     nlp->set_xr(xr);

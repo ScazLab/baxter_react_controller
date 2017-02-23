@@ -7,8 +7,8 @@
 using namespace Eigen;
 
 /****************************************************************/
-ControllerNLP::ControllerNLP(BaxterChain chain_, double dt_, bool hitting_constraints_, bool orientation_control_) :
-                                chain(chain_), dt(dt_), hitting_constraints(hitting_constraints_), orientation_control(orientation_control_)
+ControllerNLP::ControllerNLP(BaxterChain chain_, double dt_, bool orientation_control_) :
+                                chain(chain_), dt(dt_), orientation_control(orientation_control_)
 {
     xr.resize(6); xr.setZero();
     set_xr(xr);
@@ -160,12 +160,6 @@ void ControllerNLP::set_v_lim(const MatrixXd &_v_lim)
 }
 
 /****************************************************************/
-void ControllerNLP::set_hitting_constraints(const bool _hitting_constraints)
-{
-    hitting_constraints=_hitting_constraints;
-}
-
-/****************************************************************/
 void ControllerNLP::set_orientation_control(const bool _orientation_control)
 {
     orientation_control=_orientation_control;
@@ -204,14 +198,6 @@ VectorXd ControllerNLP::get_result() const
     return v;
 }
 
-//     /****************************************************************/
-//     Property ControllerNLP::getParameters() const
-//     {
-//         Property parameters;
-//         parameters.put("dt",dt);
-//         return parameters;
-//     }
-
 /****************************************************************/
 bool ControllerNLP::get_nlp_info(Ipopt::Index &n, Ipopt::Index &m, Ipopt::Index &nnz_jac_g,
                   Ipopt::Index &nnz_h_lag, IndexStyleEnum &index_style)
@@ -221,18 +207,6 @@ bool ControllerNLP::get_nlp_info(Ipopt::Index &n, Ipopt::Index &m, Ipopt::Index 
 
     // reaching in position
     m=1; nnz_jac_g=n;
-
-    if (hitting_constraints)
-    {
-        // shoulder's cables length
-        m+=3; nnz_jac_g+=2+3+2;
-
-        // avoid hitting torso
-        m+=1; nnz_jac_g+=2;
-
-        // avoid hitting forearm
-        m+=2; nnz_jac_g+=2+2;
-    }
 
     nnz_h_lag=0;
     index_style=TNLP::C_STYLE;
@@ -252,27 +226,6 @@ bool ControllerNLP::get_bounds_info(Ipopt::Index n, Ipopt::Number *x_l, Ipopt::N
 
     // reaching in position
     g_l[0]=g_u[0]=0.0;
-
-    if (hitting_constraints)
-    {
-        // shoulder's cables length
-        g_l[1]=-347.00*CTRL_DEG2RAD;
-        g_u[1]=std::numeric_limits<double>::max();
-        g_l[2]=-366.57*CTRL_DEG2RAD;
-        g_u[2]=112.42*CTRL_DEG2RAD;
-        g_l[3]=-66.60*CTRL_DEG2RAD;
-        g_u[3]=213.30*CTRL_DEG2RAD;
-
-        // avoid hitting torso
-        g_l[4]=shou_n;
-        g_u[4]=std::numeric_limits<double>::max();
-
-        // avoid hitting forearm
-        g_l[5]=-std::numeric_limits<double>::max();
-        g_u[5]=elb_n;
-        g_l[6]=-elb_n;
-        g_u[6]=std::numeric_limits<double>::max();
-    }
 
     return true;
 }
@@ -345,20 +298,6 @@ bool ControllerNLP::eval_g(Ipopt::Index n, const Ipopt::Number *x, bool new_x,
     // reaching in position
     g[0]=err_xyz.squaredNorm();
 
-    if (hitting_constraints)
-    {
-        // shoulder's cables length
-        g[1]=1.71*(q0[3+0]+dt*x[3+0]-(q0[3+1]+dt*x[3+1]));
-        g[2]=1.71*(q0[3+0]+dt*x[3+0]-(q0[3+1]+dt*x[3+1])-(q0[3+2]+dt*x[3+2]));
-        g[3]=q0[3+1]+dt*x[3+1]+q0[3+2]+dt*x[3+2];
-
-        // avoid hitting torso
-        g[4]=q0[3+1]+dt*x[3+1]-shou_m*(q0[3+2]+dt*x[3+2]);
-
-        // avoid hitting forearm
-        g[5]=-elb_m*(q0[3+3+0]+dt*x[3+3+0])+q0[3+3+1]+dt*x[3+3+1];
-        g[6]=elb_m*(q0[3+3+0]+dt*x[3+3+0])+q0[3+3+1]+dt*x[3+3+1];
-    }
     return true;
 }
 
@@ -377,31 +316,6 @@ bool ControllerNLP::eval_jac_g(Ipopt::Index n, const Ipopt::Number *x, bool new_
             iRow[i]=0; jCol[i]=i;
             idx++;
         }
-
-        if (hitting_constraints)
-        {
-            // shoulder's cables length
-            iRow[idx]=1; jCol[idx]=3+0; idx++;
-            iRow[idx]=1; jCol[idx]=3+1; idx++;
-
-            iRow[idx]=2; jCol[idx]=3+0; idx++;
-            iRow[idx]=2; jCol[idx]=3+1; idx++;
-            iRow[idx]=2; jCol[idx]=3+2; idx++;
-
-            iRow[idx]=3; jCol[idx]=3+1; idx++;
-            iRow[idx]=3; jCol[idx]=3+2; idx++;
-
-            // avoid hitting torso
-            iRow[idx]=4; jCol[idx]=3+1; idx++;
-            iRow[idx]=4; jCol[idx]=3+2; idx++;
-
-            // avoid hitting forearm
-            iRow[idx]=5; jCol[idx]=3+3+0; idx++;
-            iRow[idx]=5; jCol[idx]=3+3+1; idx++;
-
-            iRow[idx]=6; jCol[idx]=3+3+0; idx++;
-            iRow[idx]=6; jCol[idx]=3+3+1; idx++;
-        }
     }
     else
     {
@@ -415,31 +329,6 @@ bool ControllerNLP::eval_jac_g(Ipopt::Index n, const Ipopt::Number *x, bool new_
             values[i]=-2.0*dt*(err_xyz.dot(J0_xyz.col(i)));
             idx++;
         }
-
-        if (hitting_constraints)
-        {
-            // shoulder's cables length
-            values[idx++]=1.71*dt;
-            values[idx++]=-1.71*dt;
-
-            values[idx++]=1.71*dt;
-            values[idx++]=-1.71*dt;
-            values[idx++]=-1.71*dt;
-
-            values[idx++]=dt;
-            values[idx++]=dt;
-
-            // avoid hitting torso
-            values[idx++]=dt;
-            values[idx++]=-shou_m*dt;
-
-            // avoid hitting forearm
-            values[idx++]=-elb_m*dt;
-            values[idx++]=dt;
-
-            values[idx++]=elb_m*dt;
-            values[idx++]=dt;
-        }
     }
 
     return true;
@@ -447,11 +336,11 @@ bool ControllerNLP::eval_jac_g(Ipopt::Index n, const Ipopt::Number *x, bool new_
 
 /****************************************************************/
 void ControllerNLP::finalize_solution(Ipopt::SolverReturn status, Ipopt::Index n,
-                       const Ipopt::Number *x, const Ipopt::Number *z_L,
-                       const Ipopt::Number *z_U, Ipopt::Index m,
-                       const Ipopt::Number *g, const Ipopt::Number *lambda,
-                       Ipopt::Number obj_value, const Ipopt::IpoptData *ip_data,
-                       Ipopt::IpoptCalculatedQuantities *ip_cq)
+                                      const Ipopt::Number *x, const Ipopt::Number *z_L,
+                                      const Ipopt::Number *z_U, Ipopt::Index m,
+                                      const Ipopt::Number *g, const Ipopt::Number *lambda,
+                                      Ipopt::Number obj_value, const Ipopt::IpoptData *ip_data,
+                                      Ipopt::IpoptCalculatedQuantities *ip_cq)
 {
     for (Ipopt::Index i=0; i<n; i++)
         v[i]=x[i];
