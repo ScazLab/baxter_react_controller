@@ -98,8 +98,4 @@ public:
     ~ControllerNLP();
 };
 
-
-
-
 #endif
-

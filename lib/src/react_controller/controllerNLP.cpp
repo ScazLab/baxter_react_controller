@@ -94,6 +94,7 @@ void ControllerNLP::computeBounds()
 /****************************************************************/
 MatrixXd ControllerNLP::v2m(const VectorXd &x)
 {
+    ROS_ASSERT(x.size()>=6);
     Vector4d ang; ang.setZero();
     ang.block<3,1>(0, 0) = x.tail(3);
     double ang_mag=ang.norm();
@@ -110,6 +111,7 @@ MatrixXd ControllerNLP::v2m(const VectorXd &x)
 /****************************************************************/
 MatrixXd ControllerNLP::skew(const VectorXd &w)
 {
+    ROS_ASSERT(w.size()>=3);
     MatrixXd S(3,3);
     S(0,0)=S(1,1)=S(2,2)=0.0;
     S(1,0)= w[2]; S(0,1)=-S(1,0);
@@ -121,6 +123,7 @@ MatrixXd ControllerNLP::skew(const VectorXd &w)
 /****************************************************************/
 void ControllerNLP::set_xr(const VectorXd &_xr)
 {
+    ROS_ASSERT(xr.size() == _xr.size());
     xr=_xr;
 
     Hr=v2m(xr);
@@ -145,6 +148,7 @@ void ControllerNLP::set_ctrl_ori(const bool _ctrl_ori)
 /****************************************************************/
 void ControllerNLP::set_dt(const double _dt)
 {
+    ROS_ASSERT(dt>0.0);
     dt=_dt;
 }
 
@@ -166,12 +170,12 @@ void ControllerNLP::init()
     J0_xyz=J0.block(0,0,3,chain.getNrOfJoints());
     J0_ang=J0.block(3,0,3,chain.getNrOfJoints());
 
-    ROS_INFO("           q_0: %s", vectorOfDoubleToString(std::vector<double>(q_0.data(),
-                                                          q_0.data() + q_0.size())).c_str());
-    // ROS_INFO("           H_0: %s", vectorOfDoubleToString(std::vector<double>(H_0.data(),
-    //                                                       H_0.data() + H_0.size())).c_str());
-    ROS_INFO("           x_0: %s", vectorOfDoubleToString(std::vector<double>(x_0.data(),
-                                                          x_0.data() + x_0.size())).c_str());
+    ROS_INFO("           q_0: %s", toString(std::vector<double>(q_0.data(),
+                                            q_0.data() + q_0.size())).c_str());
+    // ROS_INFO("           H_0: %s", toString(std::vector<double>(H_0.data(),
+    //                                         H_0.data() + H_0.size())).c_str());
+    ROS_INFO("           x_0: %s", toString(std::vector<double>(x_0.data(),
+                                            x_0.data() + x_0.size())).c_str());
 
     computeBounds();
 }
@@ -329,19 +333,19 @@ void ControllerNLP::finalize_solution(Ipopt::SolverReturn status, Ipopt::Index n
     for (Ipopt::Index i=0; i<n; i++)
         v[i]=x[i];
 
-    KDL::JntArray jnts(chain.getNrOfJoints());
-    VectorXd angles = chain.getAng();
+    VectorXd j(chain.getNrOfJoints());
 
     for (size_t i = 0, _i = chain.getNrOfJoints(); i < _i; ++i)
     {
-        jnts(i) = q_0[i] + (dt * v[i]);
+        j(i) = q_0[i] + (dt * v[i]);
     }
 
     ROS_WARN("pr: %g %g %g", pr[0], pr[1], pr[2]);
     ROS_WARN("pe: %g %g %g", pe[0], pe[1], pe[2]);
-    ROS_WARN("computed v: %g %g %g %g %g %g %g", v[0], v[1], v[2], v[3], v[4], v[5], v[6]);
-    ROS_WARN("next state: %g %g %g %g %g %g %g\n", jnts(0), jnts(1), jnts(2), jnts(3),
-        jnts(4), jnts(5), jnts(6));
+    ROS_WARN("computed v: %s", toString(std::vector<double>(v.data(),
+                                        v.data() + v.size())).c_str());
+    ROS_WARN("next state: %s", toString(std::vector<double>(j.data(),
+                                        j.data() + j.size())).c_str());
 }
 
 ControllerNLP::~ControllerNLP()
