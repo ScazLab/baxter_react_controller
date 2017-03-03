@@ -56,6 +56,8 @@ public:
      */
     bool JntToCart(const KDL::JntArray& _q_in, KDL::Frame& _p_out, int _segNr=-1);
 
+    bool JntToJac(const KDL::JntArray& q_in, KDL::Jacobian& jac, int seg_nr=-1);
+
     /**
      * Constructor for Baxter Chain. Takes a urdf robot model and base/tip link to
      * intialize KDL::Chain. Automatically initializes q to average of lower and

@@ -34,7 +34,7 @@ CtrlThread::CtrlThread(const std::string& _name, const std::string& _limb, bool 
     x_n.resize(3); x_n.setZero();
     x_d.resize(3); x_d.setZero();
 
-    o_n.resize(4); o_n.setZero();
+    o_n.resize(3); o_n.setZero();
 }
 
 bool CtrlThread::goToPoseNoCheck(double px, double py, double pz,
@@ -43,10 +43,14 @@ bool CtrlThread::goToPoseNoCheck(double px, double py, double pz,
     x_n[0] = px;
     x_n[1] = py;
     x_n[2] = pz;
-    o_n[0] = ox;
-    o_n[1] = oy;
-    o_n[2] = oz;
-    o_n[3] = ow;
+
+    tf::Quaternion q(ox, oy, oz, ow);
+    tf::Matrix3x3 m(q);
+    double roll, pitch, yaw;
+    m.getRPY(roll, pitch, yaw);
+    o_n[0] = roll;
+    o_n[1] = pitch;
+    o_n[2] = yaw;
 
     int exit_code = -1;
     Eigen::VectorXd joint_velocities_eigen = solveIK(exit_code);
@@ -98,9 +102,9 @@ VectorXd CtrlThread::solveIK(int &_exit_code)
 
     chain->setAng(getJointStates());
 
-    VectorXd xr(7);
+    VectorXd xr(6);
     xr.block<3, 1>(0, 0) = x_n;
-    xr.block<4, 1>(3, 0) = o_n;
+    xr.block<3, 1>(3, 0) = o_n;
 
     MatrixXd vLimAdapted;
     vLimAdapted.resize(chain->getNrOfJoints(), 2);

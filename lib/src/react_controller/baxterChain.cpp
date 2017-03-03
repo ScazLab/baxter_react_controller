@@ -178,35 +178,47 @@ void BaxterChain::initChain(urdf::Model _robot_model,
 
 MatrixXd BaxterChain::GeoJacobian()
 {
-    size_t DOF = q.size();
+    // size_t DOF = q.size();
 
-    MatrixXd J(6,DOF);
-    MatrixXd PN,Z;
-    VectorXd w;
+    // MatrixXd J(6,DOF);
+    // MatrixXd PN,Z;
+    // VectorXd w;
 
-    std::deque<MatrixXd> intH;
-    intH.push_back(getH(0));
+    // std::deque<MatrixXd> intH;
+    // intH.push_back(getH(0));
 
-    for (size_t i=0; i<DOF; i++)
+    // for (size_t i=0; i<DOF; i++)
+    // {
+    //     intH.push_back(intH[i]*getH(i));
+    // }
+
+    // PN=intH[DOF];
+
+    // for (size_t i=0; i<DOF; i++)
+    // {
+    //     Z=intH[i];
+    //     w=cross(Z,2,PN-Z,3); // TODO define cross
+
+    //     J(0,i)=w[0];
+    //     J(1,i)=w[1];
+    //     J(2,i)=w[2];
+    //     J(3,i)=Z(0,2);
+    //     J(4,i)=Z(1,2);
+    //     J(5,i)=Z(2,2);
+    // }
+
+    KDL::Jacobian J;
+    J.resize(getNrOfJoints());
+    KDL::JntArray jnts(getNrOfJoints());
+
+    for (size_t i = 0, _i = getNrOfJoints(); i < _i; ++i)
     {
-        intH.push_back(intH[i]*getH(i));
+        jnts(i) = q[i];
     }
 
-    PN=intH[DOF];
-
-    for (size_t i=0; i<DOF; i++)
-    {
-        Z=intH[i];
-        w=cross(Z,2,PN-Z,3); // TODO define cross
-
-        J(0,i)=w[0];
-        J(1,i)=w[1];
-        J(2,i)=w[2];
-        J(3,i)=Z(0,2);
-        J(4,i)=Z(1,2);
-        J(5,i)=Z(2,2);
-    }
-    return J;
+    JntToJac(jnts, J);
+    ROS_WARN("%li %li", J.data.rows(), J.data.cols());
+    return J.data;
 }
 
 VectorXd BaxterChain::getAng()
@@ -269,6 +281,61 @@ bool BaxterChain::JntToCart(const JntArray& _q_in, Frame& _p_out, int _seg_nr)
         }
         return true;
     }
+}
+
+bool BaxterChain::JntToJac(const JntArray& q_in, Jacobian& jac, int seg_nr)
+{
+    unsigned int segmentNr;
+    if(seg_nr<0)
+         segmentNr=getNrOfSegments();
+    else
+         segmentNr = seg_nr;
+
+    //Initialize Jacobian to zero since only segmentNr colunns are computed
+    SetToZero(jac) ;
+
+    if(q_in.rows()!=getNrOfJoints()||getNrOfJoints()!=jac.columns())
+        return false;
+    else if(segmentNr>getNrOfSegments())
+        return false;
+
+    KDL::Frame T_tmp;
+    KDL::Twist t_tmp;
+    std::vector<bool> locked_joints_(getNrOfJoints(), false);
+
+    T_tmp = KDL::Frame::Identity();
+    SetToZero(t_tmp);
+    int j=0;
+    int k=0;
+    Frame total;
+    for (unsigned int i=0;i<segmentNr;i++) {
+        //Calculate new Frame_base_ee
+        if(getSegment(i).getJoint().getType()!=KDL::Joint::None){
+            //pose of the new end-point expressed in the base
+            total = T_tmp*getSegment(i).pose(q_in(j));
+            //changing base of new segment's twist to base frame if it is not locked
+            //t_tmp = T_tmp.M*chain.getSegment(i).twist(1.0);
+            if(!locked_joints_[j])
+                t_tmp = T_tmp.M*getSegment(i).twist(q_in(j),1.0);
+        }else{
+            total = T_tmp*getSegment(i).pose(0.0);
+
+        }
+
+        //Changing Refpoint of all columns to new ee
+        changeRefPoint(jac,total.p-T_tmp.p,jac);
+
+        //Only increase jointnr if the segment has a joint
+        if(getSegment(i).getJoint().getType()!=KDL::Joint::None){
+            //Only put the twist inside if it is not locked
+            if(!locked_joints_[j])
+                jac.setColumn(k++,t_tmp);
+            j++;
+        }
+
+        T_tmp = total;
+    }
+    return true;
 }
 
 MatrixXd BaxterChain::getH()

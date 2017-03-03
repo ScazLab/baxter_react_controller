@@ -170,12 +170,12 @@ void ControllerNLP::init()
     J0_xyz=J0.block(0,0,3,chain.getNrOfJoints());
     J0_ang=J0.block(3,0,3,chain.getNrOfJoints());
 
-    ROS_INFO("           q_0: %s", toString(std::vector<double>(q_0.data(),
-                                            q_0.data() + q_0.size())).c_str());
+    // ROS_INFO("           q_0: %s", toString(std::vector<double>(q_0.data(),
+    //                                         q_0.data() + q_0.size())).c_str());
     // ROS_INFO("           H_0: %s", toString(std::vector<double>(H_0.data(),
     //                                         H_0.data() + H_0.size())).c_str());
-    ROS_INFO("           x_0: %s", toString(std::vector<double>(x_0.data(),
-                                            x_0.data() + x_0.size())).c_str());
+    // ROS_INFO("           x_0: %s", toString(std::vector<double>(x_0.data(),
+    //                                         x_0.data() + x_0.size())).c_str());
 
     computeBounds();
 }
@@ -344,8 +344,28 @@ void ControllerNLP::finalize_solution(Ipopt::SolverReturn status, Ipopt::Index n
     ROS_WARN("pe: %g %g %g", pe[0], pe[1], pe[2]);
     ROS_WARN("computed v: %s", toString(std::vector<double>(v.data(),
                                         v.data() + v.size())).c_str());
-    ROS_WARN("next state: %s", toString(std::vector<double>(j.data(),
+    ROS_WARN("computed next state: %s", toString(std::vector<double>(j.data(),
                                         j.data() + j.size())).c_str());
+
+    KDL::JntArray jnts(chain.getNrOfJoints());
+
+    for (size_t i = 0, _i = chain.getNrOfJoints(); i < _i; ++i)
+    {
+        jnts(i) = j[i];
+    }
+
+    KDL::Frame frame;
+    chain.JntToCart(jnts,frame);
+    Vector3d norm;
+    norm[0] = pe[0] - frame.p.x();
+    norm[1] = pe[1] - frame.p.y();
+    norm[2] = pe[2] - frame.p.z();
+
+    ROS_ASSERT(norm.squaredNorm() < 1e-6);
+
+    ROS_WARN("computed next ee pos: %f %f %f", frame.p.x(), frame.p.y(), frame.p.z());
+
+
 }
 
 ControllerNLP::~ControllerNLP()
