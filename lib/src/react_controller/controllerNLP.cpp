@@ -5,6 +5,7 @@
 #include "react_controller/mathUtils.h"
 
 using namespace Eigen;
+using namespace   std;
 
 /****************************************************************/
 ControllerNLP::ControllerNLP(BaxterChain chain_, double dt_, bool ctrl_ori_) :
@@ -174,8 +175,6 @@ void ControllerNLP::init()
     //                                         q_0.data() + q_0.size())).c_str());
     // ROS_INFO("           H_0: %s", toString(std::vector<double>(H_0.data(),
     //                                         H_0.data() + H_0.size())).c_str());
-    // ROS_INFO("           x_0: %s", toString(std::vector<double>(x_0.data(),
-    //                                         x_0.data() + x_0.size())).c_str());
 
     computeBounds();
 }
@@ -333,6 +332,13 @@ void ControllerNLP::finalize_solution(Ipopt::SolverReturn status, Ipopt::Index n
     for (Ipopt::Index i=0; i<n; i++)
         v[i]=x[i];
 
+    ROS_WARN("  initial  position: %s", toString(std::vector<double>(x_0.data(),
+                                              x_0.data() + x_0.size())).c_str());
+    ROS_WARN("  desired  position: %s", toString(std::vector<double>(pr.data(),
+                                               pr.data() + pr.size())).c_str());
+    ROS_WARN("  computed position: %s", toString(std::vector<double>(pe.data(),
+                                               pe.data() + pe.size())).c_str());
+
     VectorXd j(chain.getNrOfJoints());
 
     for (size_t i = 0, _i = chain.getNrOfJoints(); i < _i; ++i)
@@ -340,32 +346,31 @@ void ControllerNLP::finalize_solution(Ipopt::SolverReturn status, Ipopt::Index n
         j(i) = q_0[i] + (dt * v[i]);
     }
 
-    ROS_WARN("pr: %g %g %g", pr[0], pr[1], pr[2]);
-    ROS_WARN("pe: %g %g %g", pe[0], pe[1], pe[2]);
-    ROS_WARN("computed v: %s", toString(std::vector<double>(v.data(),
-                                        v.data() + v.size())).c_str());
+    ROS_WARN("initial joint state: %s", toString(std::vector<double>(q_0.data(),
+                                              q_0.data() + q_0.size())).c_str());
+    ROS_WARN("computed joint vels: %s", toString(std::vector<double>(v.data(),
+                                                v.data() + v.size())).c_str());
     ROS_WARN("computed next state: %s", toString(std::vector<double>(j.data(),
-                                        j.data() + j.size())).c_str());
+                                                j.data() + j.size())).c_str());
 
-    KDL::JntArray jnts(chain.getNrOfJoints());
+    // KDL::JntArray jnts(chain.getNrOfJoints());
 
-    for (size_t i = 0, _i = chain.getNrOfJoints(); i < _i; ++i)
-    {
-        jnts(i) = j[i];
-    }
+    // for (size_t i = 0, _i = chain.getNrOfJoints(); i < _i; ++i)
+    // {
+    //     jnts(i) = j[i];
+    // }
 
-    KDL::Frame frame;
-    chain.JntToCart(jnts,frame);
-    Vector3d norm;
-    norm[0] = pe[0] - frame.p.x();
-    norm[1] = pe[1] - frame.p.y();
-    norm[2] = pe[2] - frame.p.z();
+    // KDL::Frame frame;
+    // chain.JntToCart(jnts,frame);
+    // Vector3d norm;
+    // norm[0] = pe[0] - frame.p.x();
+    // norm[1] = pe[1] - frame.p.y();
+    // norm[2] = pe[2] - frame.p.z();
 
-    ROS_ASSERT(norm.squaredNorm() < 1e-6);
+    // ROS_ASSERT(norm.squaredNorm() < 1e-6);
 
-    ROS_WARN("computed next ee pos: %f %f %f", frame.p.x(), frame.p.y(), frame.p.z());
-
-
+    // ROS_WARN("  computed position: [%f, %f, %f]", frame.p.x(), frame.p.y(), frame.p.z());
+    printf("\n");
 }
 
 ControllerNLP::~ControllerNLP()
