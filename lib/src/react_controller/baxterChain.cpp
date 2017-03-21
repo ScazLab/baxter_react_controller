@@ -217,7 +217,6 @@ MatrixXd BaxterChain::GeoJacobian()
     }
 
     JntToJac(jnts, J);
-    ROS_WARN("%li %li", J.data.rows(), J.data.cols());
     return J.data;
 }
 

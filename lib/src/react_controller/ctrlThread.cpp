@@ -116,7 +116,7 @@ VectorXd CtrlThread::solveIK(int &_exit_code)
     q_dot.resize(chain->getNrOfJoints());
     q_dot.setZero();
 
-    bool verbosity = false;
+    bool verbosity = true;
     // bool controlMode = true;
     bool ctrlOri = false;
 
@@ -130,7 +130,7 @@ VectorXd CtrlThread::solveIK(int &_exit_code)
     app->Options()->SetStringValue ("nlp_scaling_method","gradient-based");
     app->Options()->SetStringValue ("hessian_approximation","limited-memory");
     app->Options()->SetStringValue ("derivative_test",verbosity?"first-order":"none");
-    app->Options()->SetIntegerValue("print_level",verbosity?7:0);
+    app->Options()->SetIntegerValue("print_level",verbosity?5:0);
     app->Initialize();
 
     Ipopt::SmartPtr<ControllerNLP> nlp;
@@ -144,7 +144,7 @@ VectorXd CtrlThread::solveIK(int &_exit_code)
 
     _exit_code=app->OptimizeTNLP(GetRawPtr(nlp));
 
-    res=nlp->get_result();
+    res=CTRL_RAD2DEG * nlp->get_result();
 
     if(verbosity)
     {

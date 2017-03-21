@@ -29,7 +29,7 @@ private:
 public:
     CtrlThread(const std::string& _name, const std::string& _limb, bool _no_robot,
                const std::string& _base_link, const std::string& _tip_link, double tol = 1e-6,
-               double vMax = 15.0, double dT = 0.01);
+               double vMax = 45.0, double dT = 0.01);
 
     /**
      * Overridden version of the robot_interfact function. Takes position and
