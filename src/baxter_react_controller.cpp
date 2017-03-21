@@ -18,9 +18,16 @@ int main(int argc, char ** argv)
     printf("\n");
     CtrlThread arm("baxter_react_controller", "right", !use_robot, "base", "right_gripper");
     printf("\n");
-    ROS_INFO("READY! Waiting for control messages..\n");
 
+    if (use_robot == false)
+    {
+        ROS_INFO("Debug mode enabled! Closing.");
+        return 0;
+    }
+
+    ROS_INFO("READY! Waiting for control messages..\n");
     ros::spin();
+
     return 0;
 }
 
