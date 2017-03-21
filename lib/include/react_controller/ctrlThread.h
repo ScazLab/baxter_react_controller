@@ -32,17 +32,26 @@ public:
                double vMax = 45.0, double dT = 0.01);
 
     /**
-     * Overridden version of the robot_interfact function. Takes position and
+     * Overridden version of the robot_interface function. Takes position and
      * orientation values and updates the variables x_n and o_n to be used by
      * IpOpt to obtain velocites for the next pose.
      *
      * @param p_ [position in the _ direction]
      * @param o_ [orientation in the _ direction]
      *
-     * @return: true if successful, false if error
+     * @return true/false if success/failure
     */
     bool goToPoseNoCheck(double px, double py, double pz,
                          double ox, double oy, double oz, double ow);
+
+    /**
+     * Method used to debug IPOPT. Does not take any input arguments, because it
+     * asks the solver to find a joint configuration suitable for the current
+     * state of the chain, i.e. for the current position and orientation.
+     *
+     * @return true/false if success/failure
+    */
+    bool goToPoseNoCheck();
 
     Eigen::VectorXd solveIK(int &_exit_code);
 

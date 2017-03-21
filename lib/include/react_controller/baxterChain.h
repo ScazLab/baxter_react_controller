@@ -56,6 +56,13 @@ public:
      */
     bool JntToCart(const KDL::JntArray& _q_in, KDL::Frame& _p_out, int _segNr=-1);
 
+    /**
+     * TODO
+     * @param  q_in   [description]
+     * @param  jac    [description]
+     * @param  seg_nr [description]
+     * @return        [description]
+     */
     bool JntToJac(const KDL::JntArray& q_in, KDL::Jacobian& jac, int seg_nr=-1);
 
     /**
@@ -86,6 +93,12 @@ public:
                 const std::string&  _tip_link,
                 std::vector<double>      _q_0);
 
+    /**
+     * TODO
+     * @param _robot_model [description]
+     * @param _base_link   [description]
+     * @param _tip_link    [description]
+     */
     void initChain(urdf::Model      _robot_model,
                    const std::string& _base_link,
                    const std::string&  _tip_link);
@@ -101,14 +114,12 @@ public:
     Eigen::MatrixXd GeoJacobian();
     Eigen::MatrixXd GeoJacobian(const unsigned int _i);
 
-
     /**
      * Function to get array of joint angles for the chain
      *
      * return: array of joint angles in the form of Eigen::Vector
      */
     Eigen::VectorXd     getAng();
-
 
     /**
      * Functions to set the joint angles of the arm chain. Used
@@ -128,7 +139,6 @@ public:
      */
     Eigen::MatrixXd getH();
     Eigen::MatrixXd getH(const unsigned int _i);
-
 
     /**
      * Functions to get joint angle limits for the _i'th joint

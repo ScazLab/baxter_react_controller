@@ -35,6 +35,37 @@ CtrlThread::CtrlThread(const std::string& _name, const std::string& _limb, bool 
     x_d.resize(3); x_d.setZero();
 
     o_n.resize(3); o_n.setZero();
+
+    if (_no_robot == true)
+    {
+        goToPoseNoCheck();
+
+        VectorXd j = chain->getAng();
+        ROS_INFO("BaxterChain getAng %s", toString(std::vector<double>(j.data(),
+                                                  j.data() + j.size())).c_str());
+
+        delete chain;
+        chain = 0;
+    }
+}
+
+bool CtrlThread::goToPoseNoCheck()
+{
+    KDL::JntArray jnts(chain->getNrOfJoints());
+    VectorXd angles = chain->getAng();
+
+    for (size_t i = 0, _i = chain->getNrOfJoints(); i < _i; ++i)
+    {
+        jnts(i) = angles[i];
+    }
+
+    KDL::Frame frame;
+    chain->JntToCart(jnts,frame);
+
+    double ox, oy, oz, ow;
+    frame.M.GetQuaternion(ox, oy, oz, ow);
+
+    return goToPoseNoCheck(frame.p[0], frame.p[1], frame.p[2], ox, oy, oz, ow);
 }
 
 bool CtrlThread::goToPoseNoCheck(double px, double py, double pz,
@@ -96,11 +127,15 @@ VectorXd CtrlThread::solveIK(int &_exit_code)
 {
     VectorXd res(chain->getNrOfJoints()); res.setZero();
 
-    if (!waitForJointAngles()) {
-        return res;
-    }
+    if (!noRobot())
+    {
+        if (!waitForJointAngles()) {
+            _exit_code = -100;
+            return res;
+        }
 
-    chain->setAng(getJointStates());
+        chain->setAng(getJointStates());
+    }
 
     VectorXd xr(6);
     xr.block<3, 1>(0, 0) = x_n;
@@ -145,18 +180,6 @@ VectorXd CtrlThread::solveIK(int &_exit_code)
     _exit_code=app->OptimizeTNLP(GetRawPtr(nlp));
 
     res=CTRL_RAD2DEG * nlp->get_result();
-
-    if(verbosity)
-    {
-        ROS_INFO("x_n: %g %g %g\tx_d: %g %g %g\tdT: %g",
-                  x_n[0], x_n[1], x_n[2], x_d[0], x_d[1], x_d[2], dT);
-        ROS_INFO("x_0: %g %g %g\tx_t: %g %g %g",
-                  x_0[0], x_0[1], x_0[2], x_t[0], x_t[1], x_t[2]);
-        ROS_INFO("norm(x_n-x_t): %g\tnorm(x_d-x_n): %g\tnorm(x_d-x_t): %g",
-                    (x_n-x_t).norm(), (x_d-x_n).norm(), (x_d-x_t).norm());
-        ROS_INFO("Result (solved velocities (deg/s)): %g %g %g %g %g %g %g",
-                    res[0], res[1], res[2], res[3], res[4], res[5], res[6]);
-    }
 
     return res;
 }
