@@ -113,44 +113,34 @@ bool CtrlThread::goToPoseNoCheck(double px, double py, double pz,
     int exit_code = -1;
     Eigen::VectorXd est_vels = solveIK(exit_code);
 
-    KDL::JntArray jnts(chain->getNrOfJoints());
-    VectorXd angles = chain->getAng();
+    // KDL::JntArray jnts(chain->getNrOfJoints());
+    // VectorXd angles = chain->getAng();
 
-    for (size_t i = 0, _i = chain->getNrOfJoints(); i < _i; ++i)
-    {
-        jnts(i) = angles[i] + (dT * est_vels(i));
-    }
+    // for (size_t i = 0, _i = chain->getNrOfJoints(); i < _i; ++i)
+    // {
+    //     jnts(i) = angles[i] + (dT * est_vels(i));
+    // }
 
-    KDL::Frame frame;
-    chain->JntToCart(jnts,frame);
+    // KDL::Frame frame;
+    // chain->JntToCart(jnts,frame);
 
-    sensor_msgs::JointState curr_jnts = getJointStates();
+    // sensor_msgs::JointState curr_jnts = getJointStates();
 
-    ROS_INFO("current  position: [%g, %g, %g]", getPos().x, getPos().y, getPos().z);
-    ROS_INFO("desired  position: [%g, %g, %g]", px, py, pz);
-    ROS_INFO("computed position: [%g, %g, %g]", frame.p[0], frame.p[1], frame.p[2]);
+    // ROS_INFO("current  position: [%g, %g, %g]", getPos().x, getPos().y, getPos().z);
+    // ROS_INFO("desired  position: [%g, %g, %g]", px, py, pz);
+    // ROS_INFO("computed position: [%g, %g, %g]", frame.p[0], frame.p[1], frame.p[2]);
 
-    angles *= CTRL_RAD2DEG;
-    ROS_INFO("initial joint state [deg/s]: %s", toString(std::vector<double>(angles.data(),
-                                                   angles.data() + angles.size())).c_str());
-    est_vels *= CTRL_RAD2DEG;
-    ROS_INFO("computed joint vels [deg/s]: %s"  , toString(std::vector<double>(est_vels.data(),
-                                                   est_vels.data() + est_vels.size())).c_str());
-    jnts.data *= CTRL_RAD2DEG;
-    ROS_INFO("computed next state [deg/s]: %s\n", toString(std::vector<double>(jnts.data.data(),
-                                                  jnts.data.data() + jnts.data.size())).c_str());
+    // ROS_INFO("initial joint state   [rad]: %s  ", toString(std::vector<double>(angles.data(),
+    //                                                  angles.data() + angles.size())).c_str());
+    // ROS_INFO("computed joint vels [rad/s]: %s  ", toString(std::vector<double>(est_vels.data(),
+    //                                                est_vels.data() + est_vels.size())).c_str());
+    // ROS_INFO("computed next state   [rad]: %s\n", toString(std::vector<double>(jnts.data.data(),
+    //                                               jnts.data.data() + jnts.data.size())).c_str());
 
-    if (exit_code != 0) return false;
+    if (exit_code != 0 && exit_code != -4) return false;
     if (is_debug)       return  true;
 
-    std::vector<double> joint_velocities_std;
-
-    for (int i = 0; i < est_vels.col(0).size(); i++)
-    {
-        joint_velocities_std.push_back(est_vels[i]);
-    }
-
-    if (!goToJointConfNoCheck(joint_velocities_std)) return false;
+    if (!goToJointConfNoCheck(std::vector<double>(est_vels.data(), est_vels.data() + est_vels.size()))) return false;
 
     return true;
 
@@ -158,25 +148,24 @@ bool CtrlThread::goToPoseNoCheck(double px, double py, double pz,
 
 VectorXd CtrlThread::solveIK(int &_exit_code)
 {
-    VectorXd res(chain->getNrOfJoints()); res.setZero();
+    size_t DoFs = chain->getNrOfJoints();
+    VectorXd res(DoFs); res.setZero();
 
     VectorXd xr(6);
     xr.block<3, 1>(0, 0) = x_n;
     xr.block<3, 1>(3, 0) = o_n;
 
-    MatrixXd vLimAdapted;
-    vLimAdapted.resize(chain->getNrOfJoints(), 2);
-    for (size_t r = 0, DOF = chain->getNrOfJoints(); r < DOF; ++r)
+    MatrixXd vLimAdapted(DoFs, 2);
+    for (size_t r = 0; r < DoFs; ++r)
     {
         vLimAdapted(r, 0) = -vMax;
         vLimAdapted(r, 1) =  vMax;
     }
-    q_dot.resize(chain->getNrOfJoints());
+    q_dot.resize(DoFs);
     q_dot.setZero();
 
-    bool verbosity = true;
-    // bool controlMode = true;
-    bool ctrlOri = false;
+    bool verbosity =  true;
+    bool ctrlOri   = false;
 
     Ipopt::SmartPtr<Ipopt::IpoptApplication> app=new Ipopt::IpoptApplication;
     app->Options()->SetNumericValue("tol",tol);
@@ -184,8 +173,7 @@ VectorXd CtrlThread::solveIK(int &_exit_code)
     // app->Options()->SetIntegerValue("acceptable_iter",0);
     app->Options()->SetStringValue ("mu_strategy","adaptive");
     app->Options()->SetIntegerValue("max_iter",std::numeric_limits<int>::max());
-    // app->Options()->SetNumericValue("max_cpu_time", 0.95 * dT);
-    app->Options()->SetNumericValue("max_cpu_time", 0.95 * dT * 10);
+    app->Options()->SetNumericValue("max_cpu_time", 0.97 * dT);
     // app->Options()->SetStringValue ("nlp_scaling_method","gradient-based");
     app->Options()->SetStringValue ("hessian_approximation","limited-memory");
     // app->Options()->SetStringValue ("derivative_test",verbosity?"first-order":"none");

@@ -230,11 +230,9 @@ bool ControllerNLP::get_starting_point(Ipopt::Index n, bool init_x, Ipopt::Numbe
 /************************************************************************/
 void ControllerNLP::computeQuantities(const Ipopt::Number *x, const bool new_x)
 {
-
     if (new_x)
     {
-        for (size_t i=0; i<6; i++)
-            v[i]=x[i];
+        for (int i=0; i<v.size(); i++) v[i]=x[i];
 
         MatrixXd sub = R_0+dt*(skew(J0_ang*v)*R_0);
         He.block<3,3>(0, 0) = sub;
@@ -332,11 +330,20 @@ void ControllerNLP::finalize_solution(Ipopt::SolverReturn status, Ipopt::Index n
     for (Ipopt::Index i=0; i<n; i++)
         v[i]=x[i];
 
-    ROS_WARN("  initial  position: %s", toString(std::vector<double>(x_0.data(),
+    switch(status) {
+        case Ipopt::SUCCESS             : break;
+        case Ipopt::CPUTIME_EXCEEDED    : ROS_WARN("Maximum CPU time exceeded.");  break;
+        case Ipopt::LOCAL_INFEASIBILITY : ROS_WARN("Algorithm converged to a point of local infeasibility. "
+                                                   "Problem may be infeasible.");  break;
+        default                         : ROS_WARN("IPOPT Failed. Error code: %i", status);
+        // Error codes: https://www.coin-or.org/Ipopt/doxygen/classorg_1_1coinor_1_1Ipopt.html
+    }
+
+    ROS_INFO("  initial  position: %s", toString(std::vector<double>(x_0.data(),
                                               x_0.data() + x_0.size())).c_str());
-    ROS_WARN("  desired  position: %s", toString(std::vector<double>(pr.data(),
+    ROS_INFO("  desired  position: %s", toString(std::vector<double>(pr.data(),
                                                pr.data() + pr.size())).c_str());
-    ROS_WARN("  computed position: %s", toString(std::vector<double>(pe.data(),
+    ROS_INFO("  computed position: %s", toString(std::vector<double>(pe.data(),
                                                pe.data() + pe.size())).c_str());
 
     VectorXd j(chain.getNrOfJoints());
@@ -346,30 +353,13 @@ void ControllerNLP::finalize_solution(Ipopt::SolverReturn status, Ipopt::Index n
         j(i) = q_0[i] + (dt * v[i]);
     }
 
-    ROS_WARN("initial joint state: %s", toString(std::vector<double>(q_0.data(),
+    ROS_INFO("initial joint state: %s", toString(std::vector<double>(q_0.data(),
                                               q_0.data() + q_0.size())).c_str());
-    ROS_WARN("computed joint vels: %s", toString(std::vector<double>(v.data(),
+    ROS_INFO("computed joint vels: %s", toString(std::vector<double>(v.data(),
                                                 v.data() + v.size())).c_str());
-    ROS_WARN("computed next state: %s", toString(std::vector<double>(j.data(),
+    ROS_INFO("computed next state: %s", toString(std::vector<double>(j.data(),
                                                 j.data() + j.size())).c_str());
 
-    // KDL::JntArray jnts(chain.getNrOfJoints());
-
-    // for (size_t i = 0, _i = chain.getNrOfJoints(); i < _i; ++i)
-    // {
-    //     jnts(i) = j[i];
-    // }
-
-    // KDL::Frame frame;
-    // chain.JntToCart(jnts,frame);
-    // Vector3d norm;
-    // norm[0] = pe[0] - frame.p.x();
-    // norm[1] = pe[1] - frame.p.y();
-    // norm[2] = pe[2] - frame.p.z();
-
-    // ROS_ASSERT(norm.squaredNorm() < 1e-6);
-
-    // ROS_WARN("  computed position: [%f, %f, %f]", frame.p.x(), frame.p.y(), frame.p.z());
     printf("\n");
 }
 
