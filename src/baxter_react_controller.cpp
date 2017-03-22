@@ -18,8 +18,13 @@ int main(int argc, char ** argv)
     _n.param<bool>("is_debug", is_debug, false);
     ROS_INFO("is_debug flag set to %s", is_debug==true?"true":"false");
 
+    string limb;
+    _n.param<string>("limb", limb, "right");
+    limb!="left"?limb="right":limb="left";
+    ROS_INFO("Limb to be used set to %s", limb.c_str());
+
     printf("\n");
-    CtrlThread arm("baxter_react_controller", "right", !use_robot, "base", "right_gripper", is_debug);
+    CtrlThread arm("baxter_react_controller", limb, !use_robot, "base", limb+"_gripper", is_debug);
     printf("\n");
 
     if (is_debug == true)

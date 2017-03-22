@@ -160,7 +160,7 @@ VectorXd CtrlThread::solveIK(int &_exit_code)
     for (size_t r = 0, DOF = chain->getNrOfJoints(); r < DOF; ++r)
     {
         vLimAdapted(r, 0) = -vMax;
-        vLimAdapted(r, 1) = vMax;
+        vLimAdapted(r, 1) =  vMax;
     }
     q_dot.resize(chain->getNrOfJoints());
     q_dot.setZero();
