@@ -8,6 +8,8 @@ class CtrlThread : public RobotInterface
 private:
     BaxterChain *chain;
 
+    bool is_debug;        // Flag to enable debug mode (without using the robot)
+
     Eigen::VectorXd x_0;  // Initial end-effector position
     Eigen::VectorXd x_t;  // Current end-effector position
     Eigen::VectorXd x_n;  // Desired next end-effector position
@@ -28,8 +30,8 @@ private:
 
 public:
     CtrlThread(const std::string& _name, const std::string& _limb, bool _no_robot,
-               const std::string& _base_link, const std::string& _tip_link, double tol = 1e-6,
-               double vMax = 45.0, double dT = 0.01);
+               const std::string& _base_link, const std::string& _tip_link, bool _is_debug = false,
+               double tol = 1e-6, double vMax = 45.0, double dT = 0.01);
 
     /**
      * Overridden version of the robot_interface function. Takes position and

@@ -6,9 +6,9 @@ using namespace baxter_core_msgs;
 using namespace            Eigen;
 
 CtrlThread::CtrlThread(const std::string& _name, const std::string& _limb, bool _no_robot,
-                       const std::string& _base_link, const std::string& _tip_link, double _tol,
-                       double _vMax, double _dT) : RobotInterface(_name, _limb, _no_robot),
-                       tol(_tol), vMax(_vMax), dT(_dT)
+                       const std::string& _base_link, const std::string& _tip_link, bool _is_debug,
+                       double _tol, double _vMax, double _dT) : RobotInterface(_name, _limb, _no_robot),
+                       is_debug(_is_debug), tol(_tol), vMax(_vMax), dT(_dT)
 {
     urdf::Model robot_model;
     std::string xml_string;
@@ -36,7 +36,7 @@ CtrlThread::CtrlThread(const std::string& _name, const std::string& _limb, bool 
 
     o_n.resize(3); o_n.setZero();
 
-    if (_no_robot == true)
+    if (is_debug == true)
     {
         if (goToPoseNoCheck()) ROS_INFO("Success! IPOPT works.");
         else                   ROS_ERROR("IPOPT does not work!");
@@ -48,6 +48,16 @@ CtrlThread::CtrlThread(const std::string& _name, const std::string& _limb, bool 
 
 bool CtrlThread::goToPoseNoCheck()
 {
+    if (!noRobot())
+    {
+        if (!waitForJointAngles())
+        {
+            return false;
+        }
+
+        chain->setAng(getJointStates());
+    }
+
     KDL::JntArray jnts(chain->getNrOfJoints());
     VectorXd angles = chain->getAng();
 
@@ -62,8 +72,8 @@ bool CtrlThread::goToPoseNoCheck()
     double ox, oy, oz, ow;
     frame.M.GetQuaternion(ox, oy, oz, ow);
 
-    // return goToPoseNoCheck(frame.p[0], frame.p[1], frame.p[2]+0.002, ox, oy, oz, ow);
-    return goToPoseNoCheck(frame.p[0], frame.p[1], frame.p[2], ox, oy, oz, ow);
+    return goToPoseNoCheck(frame.p[0], frame.p[1], frame.p[2]+0.001, ox, oy, oz, ow);
+    // return goToPoseNoCheck(frame.p[0], frame.p[1], frame.p[2], ox, oy, oz, ow);
 }
 
 bool CtrlThread::goToPoseNoCheck(double px, double py, double pz,
@@ -80,6 +90,16 @@ bool CtrlThread::goToPoseNoCheck(double px, double py, double pz,
     o_n[0] = roll;
     o_n[1] = pitch;
     o_n[2] = yaw;
+
+    if (!noRobot())
+    {
+        if (!waitForJointAngles())
+        {
+            return false;
+        }
+
+        chain->setAng(getJointStates());
+    }
 
     int exit_code = -1;
     Eigen::VectorXd est_vels = solveIK(exit_code);
@@ -101,21 +121,18 @@ bool CtrlThread::goToPoseNoCheck(double px, double py, double pz,
     ROS_INFO("desired  position: [%g, %g, %g]", px, py, pz);
     ROS_INFO("computed position: [%g, %g, %g]", frame.p[0], frame.p[1], frame.p[2]);
 
-    ROS_INFO("initial joint state: %s", toString(std::vector<double>(angles.data(),
-                                              angles.data() + angles.size())).c_str());
-    if (!noRobot())
-    {
-        ROS_INFO("joint_angles JntStates: %g %g %g %g %g %g %g", curr_jnts.position[0], curr_jnts.position[1], curr_jnts.position[2],
-                                          curr_jnts.position[3], curr_jnts.position[4], curr_jnts.position[5], curr_jnts.position[6]);
-    }
-
-    ROS_INFO("computed joint vels: %s"  , toString(std::vector<double>(est_vels.data(),
-                                           est_vels.data() + est_vels.size())).c_str());
-    ROS_INFO("computed next state: %s\n", toString(std::vector<double>(jnts.data.data(),
-                                          jnts.data.data() + jnts.data.size())).c_str());
+    angles *= CTRL_RAD2DEG;
+    ROS_INFO("initial joint state [deg/s]: %s", toString(std::vector<double>(angles.data(),
+                                                   angles.data() + angles.size())).c_str());
+    est_vels *= CTRL_RAD2DEG;
+    ROS_INFO("computed joint vels [deg/s]: %s"  , toString(std::vector<double>(est_vels.data(),
+                                                   est_vels.data() + est_vels.size())).c_str());
+    jnts.data *= CTRL_RAD2DEG;
+    ROS_INFO("computed next state [deg/s]: %s\n", toString(std::vector<double>(jnts.data.data(),
+                                                  jnts.data.data() + jnts.data.size())).c_str());
 
     if (exit_code != 0) return false;
-    if (noRobot())      return  true;
+    if (is_debug)       return  true;
 
     std::vector<double> joint_velocities_std;
 
@@ -133,16 +150,6 @@ bool CtrlThread::goToPoseNoCheck(double px, double py, double pz,
 VectorXd CtrlThread::solveIK(int &_exit_code)
 {
     VectorXd res(chain->getNrOfJoints()); res.setZero();
-
-    if (!noRobot())
-    {
-        if (!waitForJointAngles()) {
-            _exit_code = -100;
-            return res;
-        }
-
-        chain->setAng(getJointStates());
-    }
 
     VectorXd xr(6);
     xr.block<3, 1>(0, 0) = x_n;
