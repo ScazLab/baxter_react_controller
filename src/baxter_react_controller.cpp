@@ -14,6 +14,7 @@ int main(int argc, char ** argv)
     bool use_robot;
     _n.param<bool>("use_robot", use_robot, true);
     ROS_INFO("use_robot flag set to %s", use_robot==true?"true":"false");
+
     bool is_debug;
     _n.param<bool>("is_debug", is_debug, false);
     ROS_INFO("is_debug flag set to %s", is_debug==true?"true":"false");

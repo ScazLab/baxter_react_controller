@@ -7,7 +7,8 @@ using namespace            Eigen;
 
 CtrlThread::CtrlThread(const std::string& _name, const std::string& _limb, bool _no_robot,
                        const std::string& _base_link, const std::string& _tip_link, bool _is_debug,
-                       double _tol, double _vMax, double _dT) : RobotInterface(_name, _limb, _no_robot),
+                       double _tol, double _vMax, double _dT) :
+                       RobotInterface(_name, _limb, _no_robot, true, false, true, true),
                        is_debug(_is_debug), tol(_tol), vMax(_vMax), dT(_dT)
 {
     urdf::Model robot_model;
@@ -43,6 +44,14 @@ CtrlThread::CtrlThread(const std::string& _name, const std::string& _limb, bool 
 
         delete chain;
         chain = 0;
+    }
+
+    if (!noRobot())
+    {
+        waitForJointAngles();
+        chain->setAng(getJointStates());
+
+        ROS_INFO("Current Pose: %s", toString(getPose()).c_str());
     }
 }
 
