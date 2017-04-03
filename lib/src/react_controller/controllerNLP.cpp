@@ -353,6 +353,8 @@ void ControllerNLP::finalize_solution(Ipopt::SolverReturn status, Ipopt::Index n
         j(i) = q_0[i] + (dt * v[i]);
     }
 
+    ROS_INFO("initial  joint vels: %s", toString(std::vector<double>(v_0.data(),
+                                                v_0.data() + v_0.size())).c_str());
     ROS_INFO("initial joint state: %s", toString(std::vector<double>(q_0.data(),
                                               q_0.data() + q_0.size())).c_str());
     ROS_INFO("computed joint vels: %s", toString(std::vector<double>(v.data(),

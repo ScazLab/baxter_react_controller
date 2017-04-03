@@ -37,13 +37,19 @@ CtrlThread::CtrlThread(const std::string& _name, const std::string& _limb, bool 
 
     o_n.resize(3); o_n.setZero();
 
+    q_dot.resize(chain->getNrOfJoints());
+    q_dot.setZero();
+
     if (is_debug == true)
     {
         if (goToPoseNoCheck()) ROS_INFO("Success! IPOPT works.");
         else                   ROS_ERROR("IPOPT does not work!");
 
-        delete chain;
-        chain = 0;
+        if (chain)
+        {
+            delete chain;
+            chain = 0;
+        }
     }
 
     if (!noRobot())
@@ -81,7 +87,7 @@ bool CtrlThread::goToPoseNoCheck()
     double ox, oy, oz, ow;
     frame.M.GetQuaternion(ox, oy, oz, ow);
 
-    return goToPoseNoCheck(frame.p[0], frame.p[1], frame.p[2]+0.001, ox, oy, oz, ow);
+    return goToPoseNoCheck(frame.p[0], frame.p[1], frame.p[2]+0.025, ox, oy, oz, ow);
     // return goToPoseNoCheck(frame.p[0], frame.p[1], frame.p[2], ox, oy, oz, ow);
 }
 
@@ -112,6 +118,7 @@ bool CtrlThread::goToPoseNoCheck(double px, double py, double pz,
 
     int exit_code = -1;
     Eigen::VectorXd est_vels = solveIK(exit_code);
+    q_dot = est_vels;
 
     // KDL::JntArray jnts(chain->getNrOfJoints());
     // VectorXd angles = chain->getAng();
@@ -137,8 +144,13 @@ bool CtrlThread::goToPoseNoCheck(double px, double py, double pz,
     // ROS_INFO("computed next state   [rad]: %s\n", toString(std::vector<double>(jnts.data.data(),
     //                                               jnts.data.data() + jnts.data.size())).c_str());
 
-    if (exit_code != 0 && exit_code != -4) return false;
-    if (is_debug)       return  true;
+    // if (exit_code != 0 && exit_code != -4)  return false;
+    if (exit_code != 0)                     return false;
+    if (is_debug)                           return  true;
+
+    // VectorXd est_vels(chain->getNrOfJoints());
+    // est_vels.setZero();
+    // est_vels[5] = 0.1;
 
     if (!goToJointConfNoCheck(std::vector<double>(est_vels.data(), est_vels.data() + est_vels.size()))) return false;
 
@@ -161,8 +173,6 @@ VectorXd CtrlThread::solveIK(int &_exit_code)
         vLimAdapted(r, 0) = -vMax;
         vLimAdapted(r, 1) =  vMax;
     }
-    q_dot.resize(DoFs);
-    q_dot.setZero();
 
     bool verbosity =  true;
     bool ctrlOri   = false;
@@ -172,8 +182,9 @@ VectorXd CtrlThread::solveIK(int &_exit_code)
     app->Options()->SetNumericValue("constr_viol_tol",1e-6);
     // app->Options()->SetIntegerValue("acceptable_iter",0);
     app->Options()->SetStringValue ("mu_strategy","adaptive");
+    app->Options()->SetStringValue ("linear_solver", "ma57");
     app->Options()->SetIntegerValue("max_iter",std::numeric_limits<int>::max());
-    app->Options()->SetNumericValue("max_cpu_time", 0.97 * dT);
+    app->Options()->SetNumericValue("max_cpu_time", 0.95 * dT);
     // app->Options()->SetStringValue ("nlp_scaling_method","gradient-based");
     app->Options()->SetStringValue ("hessian_approximation","limited-memory");
     // app->Options()->SetStringValue ("derivative_test",verbosity?"first-order":"none");

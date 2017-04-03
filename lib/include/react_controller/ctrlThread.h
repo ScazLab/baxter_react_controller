@@ -31,7 +31,7 @@ private:
 public:
     CtrlThread(const std::string& _name, const std::string& _limb, bool _no_robot,
                const std::string& _base_link, const std::string& _tip_link, bool _is_debug = false,
-               double tol = 1e-6, double vMax = 45.0, double dT = 0.01);
+               double tol = 1e-6, double vMax = 25.0, double dT = 0.01);
 
     /**
      * Overridden version of the robot_interface function. Takes position and
