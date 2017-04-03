@@ -47,6 +47,8 @@
   <depend>baxter_core_msgs</depend>
   <depend>eigen_conversions</depend>
 
+  <test_depend>baxter_description</test_depend>
+
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>

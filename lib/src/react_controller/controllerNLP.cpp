@@ -339,6 +339,7 @@ void ControllerNLP::finalize_solution(Ipopt::SolverReturn status, Ipopt::Index n
         // Error codes: https://www.coin-or.org/Ipopt/doxygen/classorg_1_1coinor_1_1Ipopt.html
     }
 
+    printf("\n");
     ROS_INFO("  initial  position: %s", toString(std::vector<double>(x_0.data(),
                                               x_0.data() + x_0.size())).c_str());
     ROS_INFO("  desired  position: %s", toString(std::vector<double>(pr.data(),
@@ -361,8 +362,6 @@ void ControllerNLP::finalize_solution(Ipopt::SolverReturn status, Ipopt::Index n
                                                 v.data() + v.size())).c_str());
     ROS_INFO("computed next state: %s", toString(std::vector<double>(j.data(),
                                                 j.data() + j.size())).c_str());
-
-    printf("\n");
 }
 
 ControllerNLP::~ControllerNLP()

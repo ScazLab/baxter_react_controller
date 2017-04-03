@@ -10,6 +10,8 @@ private:
 
     bool is_debug;        // Flag to enable debug mode (without using the robot)
 
+    bool internal_state;  // Flag to know the internal state. True if OK.
+
     Eigen::VectorXd x_0;  // Initial end-effector position
     Eigen::VectorXd x_t;  // Current end-effector position
     Eigen::VectorXd x_n;  // Desired next end-effector position
@@ -30,8 +32,7 @@ private:
 
 public:
     CtrlThread(const std::string& _name, const std::string& _limb, bool _no_robot,
-               const std::string& _base_link, const std::string& _tip_link, bool _is_debug = false,
-               double tol = 1e-6, double vMax = 25.0, double dT = 0.01);
+               bool _is_debug = false, double tol = 1e-6, double vMax = 45.0, double dT = 0.01);
 
     /**
      * Overridden version of the robot_interface function. Takes position and
@@ -53,7 +54,13 @@ public:
      *
      * @return true/false if success/failure
     */
-    bool goToPoseNoCheck();
+    bool debugIPOPT();
+
+    /**
+     * Method used to get the internal state of the controller.
+     * @return true/false if OK/notOK
+     */
+    bool getInternalState() { return internal_state; };
 
     Eigen::VectorXd solveIK(int &_exit_code);
 
