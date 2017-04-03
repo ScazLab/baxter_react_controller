@@ -1,5 +1,3 @@
-#include <stdio.h>
-
 #include <ros/ros.h>
 #include "react_controller/ctrlThread.h"
 
