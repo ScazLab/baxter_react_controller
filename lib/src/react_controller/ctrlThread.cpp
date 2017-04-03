@@ -42,6 +42,11 @@ CtrlThread::CtrlThread(const std::string& _name, const std::string& _limb, bool 
     q_dot.resize(chain->getNrOfJoints());
     q_dot.setZero();
 
+    bool verbosity =  true;
+    // bool ctrlOri = false;
+    initializeApp(verbosity);
+    // initializeNLP(ctrlOri);
+
     if (is_debug == true)
     {
         if (debugIPOPT()) ROS_INFO("Success! IPOPT works.");
@@ -61,6 +66,39 @@ CtrlThread::CtrlThread(const std::string& _name, const std::string& _limb, bool 
 
         ROS_INFO("Current Pose: %s", toString(getPose()).c_str());
     }
+}
+
+void CtrlThread::initializeApp(bool verbosity) {
+    app=new Ipopt::IpoptApplication;
+    app->Options()->SetNumericValue("tol",tol);
+    app->Options()->SetNumericValue("constr_viol_tol",1e-6);
+    // app->Options()->SetIntegerValue("acceptable_iter",0);
+    app->Options()->SetStringValue ("mu_strategy","adaptive");
+    app->Options()->SetStringValue ("linear_solver", "ma57");
+    app->Options()->SetIntegerValue("max_iter",std::numeric_limits<int>::max());
+    app->Options()->SetNumericValue("max_cpu_time", 0.95 * dT);
+    // app->Options()->SetStringValue ("nlp_scaling_method","gradient-based");
+    app->Options()->SetStringValue ("hessian_approximation","limited-memory");
+    // app->Options()->SetStringValue ("derivative_test",verbosity?"first-order":"none");
+    app->Options()->SetStringValue ("derivative_test","none");
+    app->Options()->SetIntegerValue("print_level",verbosity & !is_debug?5:0);
+    app->Initialize();
+}
+
+void CtrlThread::initializeNLP(bool ctrlOri) {
+
+    nlp=new ControllerNLP(*chain);
+    nlp->set_ctrl_ori(ctrlOri);
+    nlp->set_dt(dT);
+    MatrixXd vLimAdapted(chain->getNrOfJoints(), 2);
+
+    for (size_t r = 0, DoFs = chain->getNrOfJoints(); r < DoFs; ++r)
+    {
+        vLimAdapted(r, 0) = -vMax;
+        vLimAdapted(r, 1) =  vMax;
+    }
+
+    nlp->set_v_lim(vLimAdapted);
 }
 
 bool CtrlThread::debugIPOPT()
@@ -172,37 +210,20 @@ VectorXd CtrlThread::solveIK(int &_exit_code)
     xr.block<3, 1>(0, 0) = x_n;
     xr.block<3, 1>(3, 0) = o_n;
 
-    MatrixXd vLimAdapted(DoFs, 2);
-    for (size_t r = 0; r < DoFs; ++r)
+
+    nlp=new ControllerNLP(*chain);
+    nlp->set_ctrl_ori(false);
+    nlp->set_dt(dT);
+    MatrixXd vLimAdapted(chain->getNrOfJoints(), 2);
+
+    for (size_t r = 0, DoFs = chain->getNrOfJoints(); r < DoFs; ++r)
     {
         vLimAdapted(r, 0) = -vMax;
         vLimAdapted(r, 1) =  vMax;
     }
 
-    bool verbosity =  true;
-    bool ctrlOri   = false;
-
-    Ipopt::SmartPtr<Ipopt::IpoptApplication> app=new Ipopt::IpoptApplication;
-    app->Options()->SetNumericValue("tol",tol);
-    app->Options()->SetNumericValue("constr_viol_tol",1e-6);
-    // app->Options()->SetIntegerValue("acceptable_iter",0);
-    app->Options()->SetStringValue ("mu_strategy","adaptive");
-    app->Options()->SetStringValue ("linear_solver", "ma57");
-    app->Options()->SetIntegerValue("max_iter",std::numeric_limits<int>::max());
-    app->Options()->SetNumericValue("max_cpu_time", 0.95 * dT);
-    // app->Options()->SetStringValue ("nlp_scaling_method","gradient-based");
-    app->Options()->SetStringValue ("hessian_approximation","limited-memory");
-    // app->Options()->SetStringValue ("derivative_test",verbosity?"first-order":"none");
-    app->Options()->SetStringValue ("derivative_test","none");
-    app->Options()->SetIntegerValue("print_level",verbosity & !is_debug?5:0);
-    app->Initialize();
-
-    Ipopt::SmartPtr<ControllerNLP> nlp;
-    nlp=new ControllerNLP(*chain);
-    nlp->set_ctrl_ori(ctrlOri);
-    nlp->set_dt(dT);
-    nlp->set_xr(xr);
     nlp->set_v_lim(vLimAdapted);
+    nlp->set_xr(xr);
     nlp->set_v_0(q_dot);
     nlp->init();
 
