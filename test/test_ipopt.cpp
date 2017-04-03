@@ -5,11 +5,16 @@
 using namespace std;
 
 // Declare a test
-TEST(IPOPTtest, myTest)
+TEST(IPOPTtest, testRightArm)
 {
-    string limb = "right";
+    CtrlThread arm("baxter_react_controller", "right", true, "base", "right_gripper", true);
 
-    CtrlThread arm("baxter_react_controller", limb, true, "base", limb+"_gripper", true);
+    EXPECT_TRUE(arm.getInternalState());
+}
+
+TEST(IPOPTtest, testLeftArm)
+{
+    CtrlThread arm("baxter_react_controller",  "left", true, "base",  "left_gripper", true);
 
     EXPECT_TRUE(arm.getInternalState());
 }
