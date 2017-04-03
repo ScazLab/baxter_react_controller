@@ -94,6 +94,7 @@ before_install:
   - cd $IPOPT_DIR
   - ../configure
   - make -j8
+  - sudo make install
 
 # Create a catkin workspace with the package under integration.
 install:
