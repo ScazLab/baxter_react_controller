@@ -22,7 +22,9 @@ find_package(IPOPT REQUIRED)
 find_package(Eigen REQUIRED)
 find_package(orocos_kdl REQUIRED)
 
-add_definitions(${IPOPT_DEFINITIONS})
+# This is for IPOPT used from repo to work
+add_definitions(-DHAVE_CSTDDEF)
+# add_definitions(${IPOPT_DEFINITIONS})
 
 ################################################
 ## Declare ROS messages, services and actions ##
@@ -128,7 +130,6 @@ add_dependencies(baxter_react_controller ${${PROJECT_NAME}_EXPORTED_TARGETS} rea
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(baxter_react_controller               react_controller
-                                                            ${IPOPT_LIBRARIES}
                                                             ${catkin_LIBRARIES})
 
 #############
@@ -176,7 +177,6 @@ if(CATKIN_ENABLE_TESTING)
   find_package(baxter_description REQUIRED)
   add_rostest_gtest(test_ipopt test/test_ipopt.launch test/test_ipopt.cpp)
   target_link_libraries(test_ipopt  react_controller
-                                    ${IPOPT_LIBRARIES}
                                     ${catkin_LIBRARIES})
 endif()
 

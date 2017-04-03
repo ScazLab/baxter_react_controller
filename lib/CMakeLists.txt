@@ -33,7 +33,8 @@ add_dependencies(react_controller    ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
 
-target_link_libraries(react_controller    ${Eigen_LIBRARIES}
+target_link_libraries(react_controller    ${IPOPT_LIBRARIES}
+                                          ${Eigen_LIBRARIES}
                                           ${catkin_LIBRARIES})
 
 ## Mark libraries for installation
