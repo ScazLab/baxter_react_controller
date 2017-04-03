@@ -10,6 +10,8 @@ private:
 
     bool is_debug;        // Flag to enable debug mode (without using the robot)
 
+    bool internal_state;  // Flag to know the internal state. True if OK.
+
     Eigen::VectorXd x_0;  // Initial end-effector position
     Eigen::VectorXd x_t;  // Current end-effector position
     Eigen::VectorXd x_n;  // Desired next end-effector position
@@ -53,7 +55,13 @@ public:
      *
      * @return true/false if success/failure
     */
-    bool goToPoseNoCheck();
+    bool debugIPOPT();
+
+    /**
+     * Method used to get the internal state of the controller.
+     * @return true/false if OK/notOK
+     */
+    bool getInternalState() { return internal_state; };
 
     Eigen::VectorXd solveIK(int &_exit_code);
 

@@ -9,7 +9,7 @@ CtrlThread::CtrlThread(const std::string& _name, const std::string& _limb, bool 
                        const std::string& _base_link, const std::string& _tip_link, bool _is_debug,
                        double _tol, double _vMax, double _dT) :
                        RobotInterface(_name, _limb, _no_robot, true, false, true, true),
-                       is_debug(_is_debug), tol(_tol), vMax(_vMax), dT(_dT)
+                       is_debug(_is_debug), internal_state(true), tol(_tol), vMax(_vMax), dT(_dT)
 {
     urdf::Model robot_model;
     std::string xml_string;
@@ -39,8 +39,8 @@ CtrlThread::CtrlThread(const std::string& _name, const std::string& _limb, bool 
 
     if (is_debug == true)
     {
-        if (goToPoseNoCheck()) ROS_INFO("Success! IPOPT works.");
-        else                   ROS_ERROR("IPOPT does not work!");
+        if (debugIPOPT()) ROS_INFO("Success! IPOPT works.");
+        else              ROS_ERROR("IPOPT does not work!");
 
         delete chain;
         chain = 0;
@@ -55,7 +55,7 @@ CtrlThread::CtrlThread(const std::string& _name, const std::string& _limb, bool 
     }
 }
 
-bool CtrlThread::goToPoseNoCheck()
+bool CtrlThread::debugIPOPT()
 {
     if (!noRobot())
     {
@@ -81,7 +81,39 @@ bool CtrlThread::goToPoseNoCheck()
     double ox, oy, oz, ow;
     frame.M.GetQuaternion(ox, oy, oz, ow);
 
-    return goToPoseNoCheck(frame.p[0], frame.p[1], frame.p[2]+0.001, ox, oy, oz, ow);
+    double offs_x =    0;
+    double offs_y =    0;
+    double offs_z =    0;
+    int     range =    2;
+    int   counter =    0;
+    bool   result = true;
+
+    // Let's do all the test together
+    // The number of test performed is 2^range
+    for (int i = 0; i < range; ++i)
+    {
+        offs_x = i * 0.001;
+
+        for (int j = 0; j < range; ++j)
+        {
+            offs_y = j * 0.001;
+
+            for (int k = 0; k < range; ++k)
+            {
+                offs_z = k * 0.001;
+                result = goToPoseNoCheck(frame.p[0] + offs_x,
+                                         frame.p[1] + offs_y,
+                                         frame.p[2] + offs_z,
+                                         ox, oy, oz, ow);
+                ROS_WARN("Test number %i , result %s", counter, result==true?"TRUE":"FALSE");
+
+                ++counter;
+                internal_state = internal_state & result;
+            }
+        }
+    }
+
+    return internal_state;
     // return goToPoseNoCheck(frame.p[0], frame.p[1], frame.p[2], ox, oy, oz, ow);
 }
 
@@ -112,30 +144,6 @@ bool CtrlThread::goToPoseNoCheck(double px, double py, double pz,
 
     int exit_code = -1;
     Eigen::VectorXd est_vels = solveIK(exit_code);
-
-    // KDL::JntArray jnts(chain->getNrOfJoints());
-    // VectorXd angles = chain->getAng();
-
-    // for (size_t i = 0, _i = chain->getNrOfJoints(); i < _i; ++i)
-    // {
-    //     jnts(i) = angles[i] + (dT * est_vels(i));
-    // }
-
-    // KDL::Frame frame;
-    // chain->JntToCart(jnts,frame);
-
-    // sensor_msgs::JointState curr_jnts = getJointStates();
-
-    // ROS_INFO("current  position: [%g, %g, %g]", getPos().x, getPos().y, getPos().z);
-    // ROS_INFO("desired  position: [%g, %g, %g]", px, py, pz);
-    // ROS_INFO("computed position: [%g, %g, %g]", frame.p[0], frame.p[1], frame.p[2]);
-
-    // ROS_INFO("initial joint state   [rad]: %s  ", toString(std::vector<double>(angles.data(),
-    //                                                  angles.data() + angles.size())).c_str());
-    // ROS_INFO("computed joint vels [rad/s]: %s  ", toString(std::vector<double>(est_vels.data(),
-    //                                                est_vels.data() + est_vels.size())).c_str());
-    // ROS_INFO("computed next state   [rad]: %s\n", toString(std::vector<double>(jnts.data.data(),
-    //                                               jnts.data.data() + jnts.data.size())).c_str());
 
     if (exit_code != 0 && exit_code != -4) return false;
     if (is_debug)       return  true;
@@ -178,7 +186,7 @@ VectorXd CtrlThread::solveIK(int &_exit_code)
     app->Options()->SetStringValue ("hessian_approximation","limited-memory");
     // app->Options()->SetStringValue ("derivative_test",verbosity?"first-order":"none");
     app->Options()->SetStringValue ("derivative_test","none");
-    app->Options()->SetIntegerValue("print_level",verbosity?5:0);
+    app->Options()->SetIntegerValue("print_level",verbosity & !is_debug?5:0);
     app->Initialize();
 
     Ipopt::SmartPtr<ControllerNLP> nlp;

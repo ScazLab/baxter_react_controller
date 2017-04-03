@@ -11,7 +11,7 @@ TEST(IPOPTtest, myTest)
 
     CtrlThread arm("baxter_react_controller", limb, true, "base", limb+"_gripper", true);
 
-    EXPECT_TRUE(true);
+    EXPECT_TRUE(arm.getInternalState());
 }
 
 // Run all the tests that were declared with TEST()
