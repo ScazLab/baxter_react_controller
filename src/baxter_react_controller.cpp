@@ -23,7 +23,7 @@ int main(int argc, char ** argv)
     ROS_INFO("Limb to be used set to %s", limb.c_str());
 
     printf("\n");
-    CtrlThread arm("baxter_react_controller", limb, !use_robot, "base", limb+"_gripper", is_debug);
+    CtrlThread arm("baxter_react_controller", limb, !use_robot, is_debug);
     printf("\n");
 
     if (is_debug == true)

@@ -7,14 +7,14 @@ using namespace std;
 // Declare a test
 TEST(IPOPTtest, testRightArm)
 {
-    CtrlThread arm("baxter_react_controller", "right", true, "base", "right_gripper", true);
+    CtrlThread arm("baxter_react_controller", "right", true, true);
 
     EXPECT_TRUE(arm.getInternalState());
 }
 
 TEST(IPOPTtest, testLeftArm)
 {
-    CtrlThread arm("baxter_react_controller",  "left", true, "base",  "left_gripper", true);
+    CtrlThread arm("baxter_react_controller",  "left", true, true);
 
     EXPECT_TRUE(arm.getInternalState());
 }

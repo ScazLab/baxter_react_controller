@@ -6,8 +6,7 @@ using namespace baxter_core_msgs;
 using namespace            Eigen;
 
 CtrlThread::CtrlThread(const std::string& _name, const std::string& _limb, bool _no_robot,
-                       const std::string& _base_link, const std::string& _tip_link, bool _is_debug,
-                       double _tol, double _vMax, double _dT) :
+                       bool _is_debug, double _tol, double _vMax, double _dT) :
                        RobotInterface(_name, _limb, _no_robot, true, false, true, true),
                        is_debug(_is_debug), internal_state(true), tol(_tol), vMax(_vMax), dT(_dT)
 {
@@ -28,7 +27,10 @@ CtrlThread::CtrlThread(const std::string& _name, const std::string& _limb, bool 
     _n.param(full_urdf_xml,xml_string,std::string());
     robot_model.initString(xml_string);
 
-    chain = new BaxterChain(robot_model, _base_link, _tip_link);
+    string base_link = "base";
+    string  tip_link = getLimb()+"_gripper";
+
+    chain = new BaxterChain(robot_model, base_link, tip_link);
 
     x_0.resize(3); x_0.setZero();
     x_t.resize(3); x_t.setZero();
