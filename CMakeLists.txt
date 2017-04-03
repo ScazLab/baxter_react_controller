@@ -172,7 +172,8 @@ target_link_libraries(baxter_react_controller               react_controller
 
 ## Add gtest based cpp test target and link libraries
 if(CATKIN_ENABLE_TESTING)
-  find_package(rostest REQUIRED)
+  find_package(rostest            REQUIRED)
+  find_package(baxter_description REQUIRED)
   add_rostest_gtest(test_ipopt test/test_ipopt.launch test/test_ipopt.cpp)
   target_link_libraries(test_ipopt  react_controller
                                     ${IPOPT_LIBRARIES}
