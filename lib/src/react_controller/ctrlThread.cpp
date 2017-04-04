@@ -77,7 +77,9 @@ void CtrlThread::initializeApp(bool verbosity) {
     app->Options()->SetNumericValue("constr_viol_tol",1e-6);
     // app->Options()->SetIntegerValue("acceptable_iter",0);
     app->Options()->SetStringValue ("mu_strategy","adaptive");
-    app->Options()->SetStringValue ("linear_solver", "ma57");
+    if (is_debug == false) {
+        app->Options()->SetStringValue ("linear_solver", "ma57");
+    }
     app->Options()->SetIntegerValue("max_iter",std::numeric_limits<int>::max());
     app->Options()->SetNumericValue("max_cpu_time", 0.95 * dT);
     // app->Options()->SetStringValue ("nlp_scaling_method","gradient-based");
