@@ -11,8 +11,7 @@ using namespace   std;
 ControllerNLP::ControllerNLP(BaxterChain chain_, double dt_, bool ctrl_ori_) :
                                 chain(chain_), dt(dt_), ctrl_ori(ctrl_ori_)
 {
-    xr.resize(6); xr.setZero();
-    set_xr(xr);
+    xr.resize(6); //xr.setZero(); set_xr(xr);
 
     v_0.resize(chain.getNrOfJoints()); v_0.setZero();
     v=v_0;
@@ -355,6 +354,8 @@ void ControllerNLP::finalize_solution(Ipopt::SolverReturn status, Ipopt::Index n
         j(i) = q_0[i] + (dt * v[i]);
     }
 
+    ROS_INFO("initial  joint vels: %s", toString(std::vector<double>(v_0.data(),
+                                                v_0.data() + v_0.size())).c_str());
     ROS_INFO("initial joint state: %s", toString(std::vector<double>(q_0.data(),
                                               q_0.data() + q_0.size())).c_str());
     ROS_INFO("computed joint vels: %s", toString(std::vector<double>(v.data(),
