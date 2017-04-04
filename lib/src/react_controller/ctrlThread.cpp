@@ -91,6 +91,7 @@ bool CtrlThread::debugIPOPT()
     double    offs_z =     0;
     int      counter =     0;
     bool      result =  true;
+    int   n_failures =     0;
 
     std::vector<double> increment;
     increment.push_back(0.001);
@@ -121,6 +122,7 @@ bool CtrlThread::debugIPOPT()
                         ROS_ERROR("[%s] Test number %i , dT %g, offset [%g %g %g], result %s",
                                    getLimb().c_str(), counter, dT, offs_x, offs_y, offs_z,
                                    result==true?"TRUE":"FALSE");
+                        n_failures++;
                     }
                     else
                     {
@@ -134,6 +136,11 @@ bool CtrlThread::debugIPOPT()
                 }
             }
         }
+    }
+
+    if (n_failures)
+    {
+        ROS_ERROR("[%s] Number of failures: %i", getLimb().c_str(), n_failures);
     }
 
     return internal_state;
