@@ -151,7 +151,14 @@ bool CtrlThread::debugIPOPT()
                                          frame.p[1] + offs_y,
                                          frame.p[2] + offs_z,
                                          ox, oy, oz, ow);
-                ROS_WARN("Test number %i , result %s", counter, result==true?"TRUE":"FALSE");
+                if (result == false)
+                {
+                    ROS_ERROR("Test number %i , result %s", counter, result==true?"TRUE":"FALSE");
+                }
+                else
+                {
+                    ROS_WARN("Test number %i , result %s", counter, result==true?"TRUE":"FALSE");
+                }
 
                 ++counter;
                 internal_state = internal_state & result;
@@ -192,8 +199,9 @@ bool CtrlThread::goToPoseNoCheck(double px, double py, double pz,
     Eigen::VectorXd est_vels = solveIK(exit_code);
     q_dot = est_vels;
 
+    if (exit_code != 0 && is_debug)        return false;
     if (exit_code != 0 && exit_code != -4) return false;
-    if (is_debug)       return  true;
+    if (is_debug)                          return  true;
 
     if (!goToJointConfNoCheck(std::vector<double>(est_vels.data(), est_vels.data() + est_vels.size()))) return false;
 
