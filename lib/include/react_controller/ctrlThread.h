@@ -32,7 +32,7 @@ private:
 
 public:
     CtrlThread(const std::string& _name, const std::string& _limb, bool _no_robot,
-               bool _is_debug = false, double dT = 0.01, double tol = 1e-6, double vMax = 45.0);
+               bool _is_debug = false, double dT = 0.02, double tol = 1e-6, double vMax = 45.0);
 
     /**
      * Overridden version of the robot_interface function. Takes position and

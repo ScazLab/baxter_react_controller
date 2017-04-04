@@ -10,6 +10,9 @@ CtrlThread::CtrlThread(const std::string& _name, const std::string& _limb, bool 
                        RobotInterface(_name, _limb, _no_robot, true, false, true, true),
                        is_debug(_is_debug), internal_state(true), dT(_dT), tol(_tol), vMax(_vMax)
 {
+    setCtrlFreq(50);
+    ROS_INFO("[%s] ctrlFreq set to %g [Hz]", getLimb().c_str(), getCtrlFreq());
+
     urdf::Model robot_model;
     std::string xml_string;
 
@@ -83,43 +86,52 @@ bool CtrlThread::debugIPOPT()
     double ox, oy, oz, ow;
     frame.M.GetQuaternion(ox, oy, oz, ow);
 
-    double offs_x =    0;
-    double offs_y =    0;
-    double offs_z =    0;
-    int     range =    2;
-    int   counter =    0;
-    bool   result = true;
+    double    offs_x =     0;
+    double    offs_y =     0;
+    double    offs_z =     0;
+    int      counter =     0;
+    bool      result =  true;
+
+    std::vector<double> increment;
+    increment.push_back(0.001);
+    increment.push_back(0.004);
+    increment.push_back(0.010);
 
     // Let's do all the test together
-    // The number of test performed is 2^range
-    for (int i = 0; i < range; ++i)
+    // The number of test performed is 2^2^increment.size()
+
+    for (int i = 0; i < 2; ++i)
     {
-        offs_x = i * 0.001;
-
-        for (int j = 0; j < range; ++j)
+        for (int j = 0; j < 2; ++j)
         {
-            offs_y = j * 0.001;
-
-            for (int k = 0; k < range; ++k)
+            for (int k = 0; k < 2; ++k)
             {
-                offs_z = k * 0.001;
-                result = goToPoseNoCheck(frame.p[0] + offs_x,
-                                         frame.p[1] + offs_y,
-                                         frame.p[2] + offs_z,
-                                         ox, oy, oz, ow);
-                if (result == false)
+                for (size_t p = 0; p < increment.size(); ++p)
                 {
-                    ROS_ERROR("Test number %i , dT %g, result %s",
-                               counter, dT, result==true?"TRUE":"FALSE");
-                }
-                else
-                {
-                    ROS_WARN("Test number %i , dT %g, result %s",
-                              counter, dT, result==true?"TRUE":"FALSE");
-                }
+                    offs_x = i * increment[p];
+                    offs_y = j * increment[p];
+                    offs_z = k * increment[p];
 
-                ++counter;
-                internal_state = internal_state & result;
+                    result = goToPoseNoCheck(frame.p[0] + offs_x,
+                                             frame.p[1] + offs_y,
+                                             frame.p[2] + offs_z,
+                                             ox, oy, oz, ow);
+                    if (result == false)
+                    {
+                        ROS_ERROR("[%s] Test number %i , dT %g, offset [%g %g %g], result %s",
+                                   getLimb().c_str(), counter, dT, offs_x, offs_y, offs_z,
+                                   result==true?"TRUE":"FALSE");
+                    }
+                    else
+                    {
+                        ROS_WARN("[%s] Test number %i , dT %g, offset [%g %g %g], result %s",
+                                  getLimb().c_str(), counter, dT, offs_x, offs_y, offs_z,
+                                  result==true?"TRUE":"FALSE");
+                    }
+
+                    ++counter;
+                    internal_state = internal_state & result;
+                }
             }
         }
     }
