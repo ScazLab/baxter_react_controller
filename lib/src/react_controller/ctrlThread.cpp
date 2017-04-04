@@ -101,11 +101,11 @@ bool CtrlThread::debugIPOPT()
     // Let's do all the test together
     // The number of test performed is 2^2^increment.size()
 
-    for (int i = 0; i < 2; ++i)
+    for (int i = -1; i < 2; ++i) // -1, 0, +1
     {
-        for (int j = 0; j < 2; ++j)
+        for (int j = -1; j < 2; ++j) // -1, 0, +1
         {
-            for (int k = 0; k < 2; ++k)
+            for (int k = -1; k < 2; ++k) // -1, 0, +1
             {
                 for (size_t p = 0; p < increment.size(); ++p)
                 {
@@ -175,7 +175,8 @@ bool CtrlThread::goToPoseNoCheck(double px, double py, double pz,
     int exit_code = -1;
     Eigen::VectorXd est_vels = solveIK(exit_code);
 
-    if (exit_code != 0 && is_debug)        return false;
+    // if (exit_code != 0 && is_debug)        return false;
+    if (exit_code == 4 && is_debug)        return false;
     if (exit_code != 0 && exit_code != -4) return false;
     if (is_debug)                          return  true;
 
