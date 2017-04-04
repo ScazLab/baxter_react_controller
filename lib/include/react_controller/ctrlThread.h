@@ -26,13 +26,13 @@ private:
 
     Eigen::MatrixXd vLimAdapted; // matrix of maximum joint velocities per joint
 
+    double dT;          // time constraint for IpOpt solver time per optimization
     double tol;         // tolerance for constraint violations
     double vMax;        // maximum velocity of joints
-    double dT;          // time constraint for IpOpt solver time per optimization
 
 public:
     CtrlThread(const std::string& _name, const std::string& _limb, bool _no_robot,
-               bool _is_debug = false, double tol = 1e-6, double vMax = 45.0, double dT = 0.01);
+               bool _is_debug = false, double dT = 0.01, double tol = 1e-6, double vMax = 45.0);
 
     /**
      * Overridden version of the robot_interface function. Takes position and

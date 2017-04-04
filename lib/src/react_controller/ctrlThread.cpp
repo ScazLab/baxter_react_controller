@@ -6,9 +6,9 @@ using namespace baxter_core_msgs;
 using namespace            Eigen;
 
 CtrlThread::CtrlThread(const std::string& _name, const std::string& _limb, bool _no_robot,
-                       bool _is_debug, double _tol, double _vMax, double _dT) :
+                       bool _is_debug, double _dT, double _tol, double _vMax) :
                        RobotInterface(_name, _limb, _no_robot, true, false, true, true),
-                       is_debug(_is_debug), internal_state(true), tol(_tol), vMax(_vMax), dT(_dT)
+                       is_debug(_is_debug), internal_state(true), dT(_dT), tol(_tol), vMax(_vMax)
 {
     urdf::Model robot_model;
     std::string xml_string;
@@ -109,11 +109,13 @@ bool CtrlThread::debugIPOPT()
                                          ox, oy, oz, ow);
                 if (result == false)
                 {
-                    ROS_ERROR("Test number %i , result %s", counter, result==true?"TRUE":"FALSE");
+                    ROS_ERROR("Test number %i , dT %g, result %s",
+                               counter, dT, result==true?"TRUE":"FALSE");
                 }
                 else
                 {
-                    ROS_WARN("Test number %i , result %s", counter, result==true?"TRUE":"FALSE");
+                    ROS_WARN("Test number %i , dT %g, result %s",
+                              counter, dT, result==true?"TRUE":"FALSE");
                 }
 
                 ++counter;
