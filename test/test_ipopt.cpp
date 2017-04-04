@@ -5,30 +5,30 @@
 using namespace std;
 
 // Declare a test
-TEST(IPOPTtest, testRightArm10ms)
+TEST(IPOPTtest, testRightArm20ms)
 {
     CtrlThread arm("baxter_react_controller", "right", true, true);
 
     EXPECT_TRUE(arm.getInternalState());
 }
 
-TEST(IPOPTtest, testLeftArm10ms)
+TEST(IPOPTtest, testLeftArm20ms)
 {
     CtrlThread arm("baxter_react_controller",  "left", true, true);
 
     EXPECT_TRUE(arm.getInternalState());
 }
 
-TEST(IPOPTtest, testRightArm20ms)
+TEST(IPOPTtest, testRightArm40ms)
 {
-    CtrlThread arm("baxter_react_controller", "right", true, true, 0.02);
+    CtrlThread arm("baxter_react_controller", "right", true, true, 0.04);
 
     EXPECT_TRUE(arm.getInternalState());
 }
 
-TEST(IPOPTtest, testLeftArm20ms)
+TEST(IPOPTtest, testLeftArm40ms)
 {
-    CtrlThread arm("baxter_react_controller",  "left", true, true, 0.02);
+    CtrlThread arm("baxter_react_controller",  "left", true, true, 0.04);
 
     EXPECT_TRUE(arm.getInternalState());
 }
