@@ -7,7 +7,7 @@ using namespace            Eigen;
 
 CtrlThread::CtrlThread(const std::string& _name, const std::string& _limb, bool _no_robot,
                        bool _is_debug, double _dT, double _tol, double _vMax) :
-                       RobotInterface(_name, _limb, _no_robot, true, false, true, true),
+                       RobotInterface(_name, _limb, _no_robot, true, false, true, true), chain(0),
                        is_debug(_is_debug), internal_state(true), dT(_dT), tol(_tol), vMax(_vMax)
 {
     setCtrlFreq(50);
