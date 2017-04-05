@@ -8,6 +8,8 @@ class CtrlThread : public RobotInterface
 private:
     BaxterChain *chain;
 
+    Ipopt::SmartPtr<Ipopt::IpoptApplication> app;
+
     bool is_debug;        // Flag to enable debug mode (without using the robot)
 
     bool internal_state;  // Flag to know the internal state. True if OK.
@@ -33,6 +35,14 @@ private:
 public:
     CtrlThread(const std::string& _name, const std::string& _limb, bool _no_robot,
                bool _is_debug = false, double dT = 0.02, double tol = 1e-6, double vMax = 45.0);
+
+    /**
+     * Initializes the IpoptApplication with default values for every time the solver
+     * is called.
+     *
+     * @param _verbosity verbosity flag
+     */
+    void initializeApp(bool _verbosity);
 
     /**
      * Overridden version of the robot_interface function. Takes position and

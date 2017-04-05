@@ -42,13 +42,23 @@ CtrlThread::CtrlThread(const std::string& _name, const std::string& _limb, bool 
 
     o_n.resize(3); o_n.setZero();
 
+    q_dot.resize(chain->getNrOfJoints());
+    q_dot.setZero();
+
+    vLimAdapted.resize(chain->getNrOfJoints(), 2);
+    for (size_t r = 0, DoFs = chain->getNrOfJoints(); r < DoFs; ++r)
+    {
+        vLimAdapted(r, 0) = -vMax;
+        vLimAdapted(r, 1) =  vMax;
+    }
+
+    bool verbosity =  true;
+    initializeApp(verbosity);
+
     if (is_debug == true)
     {
         if (debugIPOPT()) ROS_INFO("Success! IPOPT works.");
         else              ROS_ERROR("IPOPT does not work!");
-
-        delete chain;
-        chain = 0;
     }
 
     if (!noRobot())
@@ -58,6 +68,35 @@ CtrlThread::CtrlThread(const std::string& _name, const std::string& _limb, bool 
 
         ROS_INFO("Current Pose: %s", toString(getPose()).c_str());
     }
+
+    if (is_debug == true)
+    {
+        if (chain)
+        {
+            delete chain;
+            chain = 0;
+        }
+    }
+}
+
+void CtrlThread::initializeApp(bool _verbosity)
+{
+    app=new Ipopt::IpoptApplication;
+    app->Options()->SetNumericValue("tol",tol);
+    app->Options()->SetNumericValue("constr_viol_tol",1e-6);
+    // app->Options()->SetIntegerValue("acceptable_iter",0);
+    app->Options()->SetStringValue ("mu_strategy","adaptive");
+    if (is_debug == false) {
+        app->Options()->SetStringValue ("linear_solver", "ma57");
+    }
+    app->Options()->SetIntegerValue("max_iter",std::numeric_limits<int>::max());
+    app->Options()->SetNumericValue("max_cpu_time", 0.95 * dT);
+    // app->Options()->SetStringValue ("nlp_scaling_method","gradient-based");
+    app->Options()->SetStringValue ("hessian_approximation","limited-memory");
+    // app->Options()->SetStringValue ("derivative_test",verbosity?"first-order":"none");
+    app->Options()->SetStringValue ("derivative_test","none");
+    app->Options()->SetIntegerValue("print_level",(_verbosity && !is_debug)?5:0);
+    app->Initialize();
 }
 
 bool CtrlThread::debugIPOPT()
@@ -171,6 +210,7 @@ bool CtrlThread::goToPoseNoCheck(double px, double py, double pz,
 
     int exit_code = -1;
     Eigen::VectorXd est_vels = solveIK(exit_code);
+    q_dot = est_vels;
 
     // if (exit_code != 0 && is_debug)        return false;
     if (exit_code == 4 && is_debug)        return false;
@@ -192,38 +232,11 @@ VectorXd CtrlThread::solveIK(int &_exit_code)
     xr.block<3, 1>(0, 0) = x_n;
     xr.block<3, 1>(3, 0) = o_n;
 
-    MatrixXd vLimAdapted(DoFs, 2);
-    for (size_t r = 0; r < DoFs; ++r)
-    {
-        vLimAdapted(r, 0) = -vMax;
-        vLimAdapted(r, 1) =  vMax;
-    }
-    q_dot.resize(DoFs);
-    q_dot.setZero();
-
-    bool verbosity =  true;
-    bool ctrlOri   = false;
-
-    Ipopt::SmartPtr<Ipopt::IpoptApplication> app=new Ipopt::IpoptApplication;
-    app->Options()->SetNumericValue("tol",tol);
-    app->Options()->SetNumericValue("constr_viol_tol",1e-6);
-    // app->Options()->SetIntegerValue("acceptable_iter",0);
-    app->Options()->SetStringValue ("mu_strategy","adaptive");
-    app->Options()->SetIntegerValue("max_iter",std::numeric_limits<int>::max());
-    app->Options()->SetNumericValue("max_cpu_time", 0.97 * dT);
-    // app->Options()->SetStringValue ("nlp_scaling_method","gradient-based");
-    app->Options()->SetStringValue ("hessian_approximation","limited-memory");
-    // app->Options()->SetStringValue ("derivative_test",verbosity?"first-order":"none");
-    app->Options()->SetStringValue ("derivative_test","none");
-    app->Options()->SetIntegerValue("print_level",verbosity & !is_debug?5:0);
-    app->Initialize();
-
-    Ipopt::SmartPtr<ControllerNLP> nlp;
-    nlp=new ControllerNLP(*chain);
-    nlp->set_ctrl_ori(ctrlOri);
+    Ipopt::SmartPtr<ControllerNLP> nlp = new ControllerNLP(*chain);
+    nlp->set_ctrl_ori(false);
     nlp->set_dt(dT);
-    nlp->set_xr(xr);
     nlp->set_v_lim(vLimAdapted);
+    nlp->set_xr(xr);
     nlp->set_v_0(q_dot);
     nlp->init();
 
