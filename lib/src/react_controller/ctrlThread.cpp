@@ -52,12 +52,6 @@ CtrlThread::CtrlThread(const std::string& _name, const std::string& _limb, bool 
     {
         if (debugIPOPT()) ROS_INFO("Success! IPOPT works.");
         else              ROS_ERROR("IPOPT does not work!");
-
-        if (chain)
-        {
-            delete chain;
-            chain = 0;
-        }
     }
 
     if (!noRobot())
@@ -66,6 +60,15 @@ CtrlThread::CtrlThread(const std::string& _name, const std::string& _limb, bool 
         chain->setAng(getJointStates());
 
         ROS_INFO("Current Pose: %s", toString(getPose()).c_str());
+    }
+
+    if (is_debug == true)
+    {
+        if (chain)
+        {
+            delete chain;
+            chain = 0;
+        }
     }
 }
 
