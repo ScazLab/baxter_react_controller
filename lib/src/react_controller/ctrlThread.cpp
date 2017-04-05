@@ -153,6 +153,8 @@ bool CtrlThread::debugIPOPT()
                                              frame.p[1] + offs_y,
                                              frame.p[2] + offs_z,
                                              ox, oy, oz, ow);
+                    q_dot.setZero(); // in simulation, we always start from 0 velocities
+
                     if (result == false)
                     {
                         ROS_ERROR("[%s] Test number %i , dT %g, offset [%g %g %g], result %s",
