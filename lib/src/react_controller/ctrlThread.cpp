@@ -88,7 +88,7 @@ void CtrlThread::initializeApp(bool _verbosity)
     app->Options()->SetStringValue ("hessian_approximation","limited-memory");
     // app->Options()->SetStringValue ("derivative_test",verbosity?"first-order":"none");
     app->Options()->SetStringValue ("derivative_test","none");
-    app->Options()->SetIntegerValue("print_level",_verbosity & !is_debug?5:0);
+    app->Options()->SetIntegerValue("print_level",(_verbosity && !is_debug)?5:0);
     app->Initialize();
 }
 
