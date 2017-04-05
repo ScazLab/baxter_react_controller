@@ -66,7 +66,7 @@ env:
     - CATKIN_OPTIONS=$CI_SOURCE_PATH/catkin.options
     - ROS_PARALLEL_JOBS='-j8 -l6'
     - REPO_NAME=$(echo $TRAVIS_REPO_SLUG | cut -d"/" -f2) # if you have multiple packages per repo, change this variable accordingly
-    # - IPOPT_DIR=~/src/ipopt/build
+    - IPOPT_DIR=~/src/ipopt/build
 
 ################################################################################
 
@@ -75,26 +75,26 @@ before_install:
   - sudo sh -c "echo \"deb http://packages.ros.org/ros/ubuntu $ROS_CI_DESKTOP main\" > /etc/apt/sources.list.d/ros-latest.list"
   - wget http://packages.ros.org/ros.key -O - | sudo apt-key add -
   - sudo apt-get update -qq
-  - sudo apt-get install -y coinor-libipopt-dev python-catkin-tools python-rosdep python-wstool ros-$ROS_DISTRO-catkin libnlopt-dev liblapack-dev gfortran
+  - sudo apt-get install -y python-catkin-tools python-rosdep python-wstool ros-$ROS_DISTRO-catkin libnlopt-dev liblapack-dev gfortran
   - source /opt/ros/$ROS_DISTRO/setup.bash
   # Prepare rosdep to install dependencies.
   - sudo rosdep init
   - rosdep update
   # Install IPOPT, compile it and set the proper environment variable
-  # - mkdir ~/src
-  # - cd ~/src
-  # - svn co --trust-server-cert --non-interactive https://projects.coin-or.org/svn/Ipopt/stable/3.12 ipopt
-  # - mkdir $IPOPT_DIR
-  # - cd $IPOPT_DIR/../ThirdParty
-  # - cd ASL    && ./get.ASL    && cd ../
-  # - cd Blas   && ./get.Blas   && cd ../
-  # - cd Lapack && ./get.Lapack && cd ../
-  # - cd Metis  && ./get.Metis  && cd ../
-  # - cd Mumps  && ./get.Mumps  && cd ../
-  # - cd $IPOPT_DIR
-  # - ../configure
-  # - make -j8
-  # - sudo make install
+  - mkdir ~/src
+  - cd ~/src
+  - svn co --trust-server-cert --non-interactive https://projects.coin-or.org/svn/Ipopt/stable/3.12 ipopt
+  - mkdir $IPOPT_DIR
+  - cd $IPOPT_DIR/../ThirdParty
+  - cd ASL    && ./get.ASL    && cd ../
+  - cd Blas   && ./get.Blas   && cd ../
+  - cd Lapack && ./get.Lapack && cd ../
+  - cd Metis  && ./get.Metis  && cd ../
+  - cd Mumps  && ./get.Mumps  && cd ../
+  - cd $IPOPT_DIR
+  - ../configure
+  - make -j8
+  - sudo make install
 
 # Create a catkin workspace with the package under integration.
 install:
@@ -133,7 +133,13 @@ before_script:
 script:
   - source /opt/ros/$ROS_DISTRO/setup.bash
   - cd ~/catkin_ws
+  # To remove this -> libdc1394 error: Failed to initialize libdc1394
+  - sudo ln /dev/null /dev/raw1394
+  # Build the repo
+  - echo "Building the repository.."
   - catkin build $REPO_NAME $( [ -f $CATKIN_OPTIONS ] && cat $CATKIN_OPTIONS )
   # Run the tests, ensuring the path is set correctly.
-  # - source devel/setup.bash
-  # - catkin build $REPO_NAME_lib --catkin-make-args run_tests && catkin_test_results build/$REPO_NAME_lib
+  - echo "Running tests.."
+  - source devel/setup.bash
+  - catkin build $REPO_NAME --catkin-make-args run_tests
+  - catkin_test_results build/$REPO_NAME || (cat build/$REPO_NAME/test_results/$REPO_NAME/*.xml ; false)

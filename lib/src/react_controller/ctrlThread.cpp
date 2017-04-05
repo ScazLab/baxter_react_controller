@@ -6,10 +6,13 @@ using namespace baxter_core_msgs;
 using namespace            Eigen;
 
 CtrlThread::CtrlThread(const std::string& _name, const std::string& _limb, bool _no_robot,
-                        const std::string& _base_link, const std::string& _tip_link, double _tol,
-                        double _vMax, double _dT) : RobotInterface(_name, _limb), tol(_tol), vMax(_vMax),
-                        dT(_dT)
+                       bool _is_debug, double _dT, double _tol, double _vMax) :
+                       RobotInterface(_name, _limb, _no_robot, true, false, true, true), chain(0),
+                       is_debug(_is_debug), internal_state(true), dT(_dT), tol(_tol), vMax(_vMax)
 {
+    setCtrlFreq(50);
+    ROS_INFO("[%s] ctrlFreq set to %g [Hz]", getLimb().c_str(), getCtrlFreq());
+
     urdf::Model robot_model;
     std::string xml_string;
 
@@ -27,104 +30,219 @@ CtrlThread::CtrlThread(const std::string& _name, const std::string& _limb, bool 
     _n.param(full_urdf_xml,xml_string,std::string());
     robot_model.initString(xml_string);
 
-    chain = new BaxterChain(robot_model, _base_link, _tip_link);
+    string base_link = "base";
+    string  tip_link = getLimb()+"_gripper";
+
+    chain = new BaxterChain(robot_model, base_link, tip_link);
 
     x_0.resize(3); x_0.setZero();
     x_t.resize(3); x_t.setZero();
     x_n.resize(3); x_n.setZero();
     x_d.resize(3); x_d.setZero();
 
-    o_n.resize(4); o_n.setZero();
+    o_n.resize(3); o_n.setZero();
 
-    std::string topic = "/" + getName() + "/" + getLimb() + "/ipopt";
-    ctrl_sub      = _n.subscribe(topic, SUBSCRIBER_BUFFER, &CtrlThread::ctrlCb, this);
-    ROS_INFO("[%s] Created cartesian controller that listens to : %s",
-                                    getLimb().c_str(), topic.c_str());
+    q_dot.resize(chain->getNrOfJoints());
+    q_dot.setZero();
+
+    vLimAdapted.resize(chain->getNrOfJoints(), 2);
+    for (size_t r = 0, DoFs = chain->getNrOfJoints(); r < DoFs; ++r)
+    {
+        vLimAdapted(r, 0) = -vMax;
+        vLimAdapted(r, 1) =  vMax;
+    }
+
+    bool verbosity =  true;
+    initializeApp(verbosity);
+
+    if (is_debug == true)
+    {
+        if (debugIPOPT()) ROS_INFO("Success! IPOPT works.");
+        else              ROS_ERROR("IPOPT does not work!");
+    }
+
+    if (!noRobot())
+    {
+        waitForJointAngles();
+        chain->setAng(getJointStates());
+
+        ROS_INFO("Current Pose: %s", toString(getPose()).c_str());
+    }
+
+    if (is_debug == true)
+    {
+        if (chain)
+        {
+            delete chain;
+            chain = 0;
+        }
+    }
 }
 
-void CtrlThread::ctrlCb(const baxter_collaboration_msgs::GoToPose& _msg)
+void CtrlThread::initializeApp(bool _verbosity)
 {
-    x_n[0] = _msg.pose_stamp.pose.position.x;
-    x_n[1] = _msg.pose_stamp.pose.position.y;
-    x_n[2] = _msg.pose_stamp.pose.position.z;
-    o_n[0] = -0.128;
-    o_n[1] = 0.99;
-    o_n[2] = -0.018;
-    o_n[3] = 0.022;
+    app=new Ipopt::IpoptApplication;
+    app->Options()->SetNumericValue("tol",tol);
+    app->Options()->SetNumericValue("constr_viol_tol",1e-6);
+    // app->Options()->SetIntegerValue("acceptable_iter",0);
+    app->Options()->SetStringValue ("mu_strategy","adaptive");
+    if (is_debug == false) {
+        app->Options()->SetStringValue ("linear_solver", "ma57");
+    }
+    app->Options()->SetIntegerValue("max_iter",std::numeric_limits<int>::max());
+    app->Options()->SetNumericValue("max_cpu_time", 0.95 * dT);
+    // app->Options()->SetStringValue ("nlp_scaling_method","gradient-based");
+    app->Options()->SetStringValue ("hessian_approximation","limited-memory");
+    // app->Options()->SetStringValue ("derivative_test",verbosity?"first-order":"none");
+    app->Options()->SetStringValue ("derivative_test","none");
+    app->Options()->SetIntegerValue("print_level",(_verbosity && !is_debug)?5:0);
+    app->Initialize();
+}
 
-    int exit_code;
-    solveIK(exit_code);
+bool CtrlThread::debugIPOPT()
+{
+    if (!noRobot())
+    {
+        if (!waitForJointAngles())
+        {
+            return false;
+        }
+
+        chain->setAng(getJointStates());
+    }
+
+    KDL::JntArray jnts(chain->getNrOfJoints());
+    VectorXd angles = chain->getAng();
+
+    for (size_t i = 0, _i = chain->getNrOfJoints(); i < _i; ++i)
+    {
+        jnts(i) = angles[i];
+    }
+
+    KDL::Frame frame;
+    chain->JntToCart(jnts,frame);
+
+    double ox, oy, oz, ow;
+    frame.M.GetQuaternion(ox, oy, oz, ow);
+
+    double    offs_x =     0;
+    double    offs_y =     0;
+    double    offs_z =     0;
+    int      counter =     0;
+    bool      result =  true;
+    int   n_failures =     0;
+
+    std::vector<double> increment{0.001, 0.004, 0.010};
+
+    // Let's do all the test together
+    // The number of test performed is 2^2^increment.size()
+
+    for (int i = -1; i < 2; ++i) // -1, 0, +1
+    {
+        for (int j = -1; j < 2; ++j) // -1, 0, +1
+        {
+            for (int k = -1; k < 2; ++k) // -1, 0, +1
+            {
+                for (size_t p = 0; p < increment.size(); ++p)
+                {
+                    offs_x = i * increment[p];
+                    offs_y = j * increment[p];
+                    offs_z = k * increment[p];
+
+                    result = goToPoseNoCheck(frame.p[0] + offs_x,
+                                             frame.p[1] + offs_y,
+                                             frame.p[2] + offs_z,
+                                             ox, oy, oz, ow);
+                    if (result == false)
+                    {
+                        ROS_ERROR("[%s] Test number %i , dT %g, offset [%g %g %g], result %s",
+                                   getLimb().c_str(), counter, dT, offs_x, offs_y, offs_z,
+                                   result==true?"TRUE":"FALSE");
+                        n_failures++;
+                    }
+                    else
+                    {
+                        ROS_WARN("[%s] Test number %i , dT %g, offset [%g %g %g], result %s",
+                                  getLimb().c_str(), counter, dT, offs_x, offs_y, offs_z,
+                                  result==true?"TRUE":"FALSE");
+                    }
+
+                    ++counter;
+                    internal_state = internal_state & result;
+                }
+            }
+        }
+    }
+
+    if (n_failures)
+    {
+        ROS_ERROR("[%s] Number of failures: %i", getLimb().c_str(), n_failures);
+    }
+
+    return internal_state;
+    // return goToPoseNoCheck(frame.p[0], frame.p[1], frame.p[2], ox, oy, oz, ow);
+}
+
+bool CtrlThread::goToPoseNoCheck(double px, double py, double pz,
+                                 double ox, double oy, double oz, double ow)
+{
+    x_n[0] = px;
+    x_n[1] = py;
+    x_n[2] = pz;
+
+    tf::Quaternion q(ox, oy, oz, ow);
+    tf::Matrix3x3 m(q);
+    double roll, pitch, yaw;
+    m.getRPY(roll, pitch, yaw);
+    o_n[0] = roll;
+    o_n[1] = pitch;
+    o_n[2] = yaw;
+
+    if (!noRobot())
+    {
+        if (!waitForJointAngles())
+        {
+            return false;
+        }
+
+        chain->setAng(getJointStates());
+    }
+
+    int exit_code = -1;
+    Eigen::VectorXd est_vels = solveIK(exit_code);
+    q_dot = est_vels;
+
+    // if (exit_code != 0 && is_debug)        return false;
+    if (exit_code == 4 && is_debug)        return false;
+    if (exit_code != 0 && exit_code != -4) return false;
+    if (is_debug)                          return  true;
+
+    if (!goToJointConfNoCheck(std::vector<double>(est_vels.data(), est_vels.data() + est_vels.size()))) return false;
+
+    return true;
+
 }
 
 VectorXd CtrlThread::solveIK(int &_exit_code)
 {
-    VectorXd res(chain->getNrOfJoints()); res.setZero();
+    size_t DoFs = chain->getNrOfJoints();
+    VectorXd res(DoFs); res.setZero();
 
-    if (!waitForJointAngles()) {
-        return res;
-    }
-
-    chain->setAng(getJointStates());
-
-    VectorXd xr(7);
+    VectorXd xr(6);
     xr.block<3, 1>(0, 0) = x_n;
-    xr.block<4, 1>(3, 0) = o_n;
+    xr.block<3, 1>(3, 0) = o_n;
 
-    MatrixXd vLimAdapted;
-    vLimAdapted.resize(chain->getNrOfJoints(), 2);
-    for (size_t r = 0, DOF = chain->getNrOfJoints(); r < DOF; ++r)
-    {
-        vLimAdapted(r, 0) = -vMax;
-        vLimAdapted(r, 1) = vMax;
-    }
-    q_dot.resize(chain->getNrOfJoints());
-    q_dot.setZero();
-
-    bool verbosity = true;
-    // bool controlMode = true;
-    bool hittingConstraints = false;
-    bool orientationControl = false;
-
-    Ipopt::SmartPtr<Ipopt::IpoptApplication> app=new Ipopt::IpoptApplication;
-    app->Options()->SetNumericValue("tol",tol);
-    app->Options()->SetNumericValue("constr_viol_tol",1e-6);
-    app->Options()->SetIntegerValue("acceptable_iter",0);
-    app->Options()->SetStringValue("mu_strategy","adaptive");
-    app->Options()->SetIntegerValue("max_iter",std::numeric_limits<int>::max());
-    app->Options()->SetNumericValue("max_cpu_time", dT);
-    app->Options()->SetStringValue("nlp_scaling_method","gradient-based");
-    app->Options()->SetStringValue("hessian_approximation","limited-memory");
-    app->Options()->SetStringValue("derivative_test",verbosity?"first-order":"none");
-    app->Options()->SetIntegerValue("print_level",verbosity?5:0);
-    app->Initialize();
-
-    Ipopt::SmartPtr<ControllerNLP> nlp;
-    nlp=new ControllerNLP(*chain);
-    nlp->set_hitting_constraints(hittingConstraints);
-    nlp->set_orientation_control(orientationControl);
+    Ipopt::SmartPtr<ControllerNLP> nlp = new ControllerNLP(*chain);
+    nlp->set_ctrl_ori(false);
     nlp->set_dt(dT);
+    nlp->set_v_lim(vLimAdapted);
     nlp->set_xr(xr);
-    nlp->set_v_limInDegPerSecond(vLimAdapted);
-    nlp->set_v0InDegPerSecond(q_dot);
+    nlp->set_v_0(q_dot);
     nlp->init();
 
     _exit_code=app->OptimizeTNLP(GetRawPtr(nlp));
 
-    res=nlp->get_resultInDegPerSecond();
-
-    if(verbosity >= 1)
-    {
-        ROS_INFO("x_n: %g %g %g\tx_d: %g %g %g\tdT: %g",
-                  x_n[0], x_n[1], x_n[2], x_d[0], x_d[1], x_d[2], dT);
-        ROS_INFO("x_0: %g %g %g\tx_t: %g %g %g",
-                  x_0[0], x_0[1], x_0[2], x_t[0], x_t[1], x_t[2]);
-        ROS_INFO("norm(x_n-x_t): %g\tnorm(x_d-x_n): %g\tnorm(x_d-x_t): %g",
-                    (x_n-x_t).norm(), (x_d-x_n).norm(), (x_d-x_t).norm());
-        ROS_INFO("Result (solved velocities (deg/s)): %g %g %g %g %g %g %g",
-                    res[0], res[1], res[2], res[3], res[4], res[5], res[6]);
-    }
-
-    return res;
+    return nlp->get_result();
 }
 
 CtrlThread::~CtrlThread()
