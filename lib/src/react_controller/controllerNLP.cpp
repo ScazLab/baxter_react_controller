@@ -329,6 +329,8 @@ void ControllerNLP::finalize_solution(Ipopt::SolverReturn status, Ipopt::Index n
     for (Ipopt::Index i=0; i<n; i++)
         v[i]=x[i];
 
+    printf("\n");
+
     switch(status) {
         case Ipopt::SUCCESS             : break;
         case Ipopt::CPUTIME_EXCEEDED    : ROS_WARN("Maximum CPU time exceeded.");  break;
@@ -338,7 +340,6 @@ void ControllerNLP::finalize_solution(Ipopt::SolverReturn status, Ipopt::Index n
         // Error codes: https://www.coin-or.org/Ipopt/doxygen/classorg_1_1coinor_1_1Ipopt.html
     }
 
-    printf("\n");
     ROS_INFO("  initial  position: %s", toString(std::vector<double>(x_0.data(),
                                               x_0.data() + x_0.size())).c_str());
     ROS_INFO("  desired  position: %s", toString(std::vector<double>(pr.data(),
