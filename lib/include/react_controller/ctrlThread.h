@@ -9,7 +9,6 @@ private:
     BaxterChain *chain;
 
     Ipopt::SmartPtr<Ipopt::IpoptApplication> app;
-    Ipopt::SmartPtr<ControllerNLP> nlp;
 
     bool is_debug;        // Flag to enable debug mode (without using the robot)
 
@@ -37,9 +36,7 @@ public:
     CtrlThread(const std::string& _name, const std::string& _limb, bool _no_robot,
                bool _is_debug = false, double dT = 0.02, double tol = 1e-6, double vMax = 45.0);
 
-    void initializeApp(bool verbosity);
-
-    void initializeNLP(bool ctrlOri);
+    void initializeApp(bool _verbosity);
 
     /**
      * Overridden version of the robot_interface function. Takes position and

@@ -46,9 +46,7 @@ CtrlThread::CtrlThread(const std::string& _name, const std::string& _limb, bool 
     q_dot.setZero();
 
     bool verbosity =  true;
-    // bool ctrlOri = false;
     initializeApp(verbosity);
-    // initializeNLP(ctrlOri);
 
     if (is_debug == true)
     {
@@ -71,7 +69,8 @@ CtrlThread::CtrlThread(const std::string& _name, const std::string& _limb, bool 
     }
 }
 
-void CtrlThread::initializeApp(bool verbosity) {
+void CtrlThread::initializeApp(bool _verbosity)
+{
     app=new Ipopt::IpoptApplication;
     app->Options()->SetNumericValue("tol",tol);
     app->Options()->SetNumericValue("constr_viol_tol",1e-6);
@@ -86,24 +85,8 @@ void CtrlThread::initializeApp(bool verbosity) {
     app->Options()->SetStringValue ("hessian_approximation","limited-memory");
     // app->Options()->SetStringValue ("derivative_test",verbosity?"first-order":"none");
     app->Options()->SetStringValue ("derivative_test","none");
-    app->Options()->SetIntegerValue("print_level",verbosity & !is_debug?5:0);
+    app->Options()->SetIntegerValue("print_level",_verbosity & !is_debug?5:0);
     app->Initialize();
-}
-
-void CtrlThread::initializeNLP(bool ctrlOri) {
-
-    nlp=new ControllerNLP(*chain);
-    nlp->set_ctrl_ori(ctrlOri);
-    nlp->set_dt(dT);
-    MatrixXd vLimAdapted(chain->getNrOfJoints(), 2);
-
-    for (size_t r = 0, DoFs = chain->getNrOfJoints(); r < DoFs; ++r)
-    {
-        vLimAdapted(r, 0) = -vMax;
-        vLimAdapted(r, 1) =  vMax;
-    }
-
-    nlp->set_v_lim(vLimAdapted);
 }
 
 bool CtrlThread::debugIPOPT()
@@ -243,7 +226,7 @@ VectorXd CtrlThread::solveIK(int &_exit_code)
     xr.block<3, 1>(3, 0) = o_n;
 
 
-    nlp=new ControllerNLP(*chain);
+    Ipopt::SmartPtr<ControllerNLP> nlp = new ControllerNLP(*chain);
     nlp->set_ctrl_ori(false);
     nlp->set_dt(dT);
     MatrixXd vLimAdapted(chain->getNrOfJoints(), 2);

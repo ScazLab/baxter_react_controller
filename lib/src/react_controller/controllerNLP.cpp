@@ -11,7 +11,7 @@ using namespace   std;
 ControllerNLP::ControllerNLP(BaxterChain chain_, double dt_, bool ctrl_ori_) :
                                 chain(chain_), dt(dt_), ctrl_ori(ctrl_ori_)
 {
-    xr.resize(6); //xr.setZero(); set_xr(xr);
+    xr.resize(6);
 
     v_0.resize(chain.getNrOfJoints()); v_0.setZero();
     v=v_0;
