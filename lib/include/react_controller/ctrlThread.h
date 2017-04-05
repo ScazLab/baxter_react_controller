@@ -36,6 +36,12 @@ public:
     CtrlThread(const std::string& _name, const std::string& _limb, bool _no_robot,
                bool _is_debug = false, double dT = 0.02, double tol = 1e-6, double vMax = 45.0);
 
+    /**
+     * Initializes the IpoptApplication with default values for every time the solver
+     * is called.
+     *
+     * @param _verbosity verbosity flag
+     */
     void initializeApp(bool _verbosity);
 
     /**
