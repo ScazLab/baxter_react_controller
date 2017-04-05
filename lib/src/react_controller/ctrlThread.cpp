@@ -132,7 +132,7 @@ bool CtrlThread::debugIPOPT()
     bool      result =  true;
     int   n_failures =     0;
 
-    std::vector<double> increment{0.001, 0.004, 0.010};
+    std::vector<double> increment{0.001, 0.004};
 
     // Let's do all the test together
     // The number of test performed is 2^2^increment.size()
