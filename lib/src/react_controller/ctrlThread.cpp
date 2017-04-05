@@ -45,6 +45,13 @@ CtrlThread::CtrlThread(const std::string& _name, const std::string& _limb, bool 
     q_dot.resize(chain->getNrOfJoints());
     q_dot.setZero();
 
+    vLimAdapted.resize(chain->getNrOfJoints(), 2);
+    for (size_t r = 0, DoFs = chain->getNrOfJoints(); r < DoFs; ++r)
+    {
+        vLimAdapted(r, 0) = -vMax;
+        vLimAdapted(r, 1) =  vMax;
+    }
+
     bool verbosity =  true;
     initializeApp(verbosity);
 
@@ -228,18 +235,9 @@ VectorXd CtrlThread::solveIK(int &_exit_code)
     xr.block<3, 1>(0, 0) = x_n;
     xr.block<3, 1>(3, 0) = o_n;
 
-
     Ipopt::SmartPtr<ControllerNLP> nlp = new ControllerNLP(*chain);
     nlp->set_ctrl_ori(false);
     nlp->set_dt(dT);
-    MatrixXd vLimAdapted(chain->getNrOfJoints(), 2);
-
-    for (size_t r = 0, DoFs = chain->getNrOfJoints(); r < DoFs; ++r)
-    {
-        vLimAdapted(r, 0) = -vMax;
-        vLimAdapted(r, 1) =  vMax;
-    }
-
     nlp->set_v_lim(vLimAdapted);
     nlp->set_xr(xr);
     nlp->set_v_0(q_dot);
