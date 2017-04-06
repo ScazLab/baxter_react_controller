@@ -234,8 +234,17 @@ void ControllerNLP::computeQuantities(const Ipopt::Number *x, const bool new_x)
     {
         for (int i=0; i<v.size(); i++) v[i]=x[i];
 
-        MatrixXd sub = R_0+dt*(skew(J0_ang*v)*R_0);
-        He.block<3,3>(0, 0) = sub;
+        Vector4d w; w.setZero();
+        Vector3d tmp = J0_ang*v;
+        w.block<3,1>(0, 0) = tmp;
+        double theta = w.squaredNorm();
+        if (theta > 0.0) {
+            tmp /= theta;
+        }
+        w.block<3,1>(0, 0) = tmp;
+        w[3] = (theta * dt);
+        He.block<3,3>(0, 0) = axis2dcm(w).block<3,3>(0,0) * R_0;
+
         pe=x_0+dt*(J0_xyz*v);
         He(0,3)=pe[0];
         He(1,3)=pe[1];
