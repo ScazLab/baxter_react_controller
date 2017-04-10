@@ -5,14 +5,11 @@ using namespace      sensor_msgs;
 using namespace baxter_core_msgs;
 using namespace            Eigen;
 
-CtrlThread::CtrlThread(const std::string& _name, const std::string& _limb, bool _no_robot,
+CtrlThread::CtrlThread(const std::string& _name, const std::string& _limb, bool _no_robot, double _ctrl_freq,
                        bool _is_debug, double _dT, double _tol, double _vMax) :
-                       RobotInterface(_name, _limb, _no_robot, true, false, true, true), chain(0),
+                       RobotInterface(_name, _limb, _no_robot, _ctrl_freq, true, false, true, true), chain(0),
                        is_debug(_is_debug), internal_state(true), dT(_dT), tol(_tol), vMax(_vMax)
 {
-    setCtrlFreq(50);
-    ROS_INFO("[%s] ctrlFreq set to %g [Hz]", getLimb().c_str(), getCtrlFreq());
-
     urdf::Model robot_model;
     std::string xml_string;
 
@@ -211,14 +208,27 @@ bool CtrlThread::goToPoseNoCheck(double px, double py, double pz,
     }
 
     int exit_code = -1;
+
+    sensor_msgs::JointState _q = getJointStates();
+    std::vector<double> velocity;
+    for (size_t i = 0; i < chain->getNrOfJoints(); ++i)
+    {
+        velocity.push_back(_q.velocity[i]);
+    }
+
+    ROS_INFO("actual joint vels: %s", toString(std::vector<double>(velocity.data(),
+                                                velocity.data() + velocity.size())).c_str());
+
     Eigen::VectorXd est_vels = solveIK(exit_code);
+
     q_dot = est_vels;
 
-    // if (exit_code != 0 && is_debug)        return false;
+    if (exit_code != 0 && is_debug)        return false;
     if (exit_code == 4 && is_debug)        return false;
     if (exit_code != 0 && exit_code != -4) return false;
     if (is_debug)                          return  true;
 
+    suppressCollisionAv();
     if (!goToJointConfNoCheck(std::vector<double>(est_vels.data(), est_vels.data() + est_vels.size()))) return false;
 
     return true;
