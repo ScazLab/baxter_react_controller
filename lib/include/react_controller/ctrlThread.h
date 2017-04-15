@@ -32,6 +32,8 @@ private:
     double tol;         // tolerance for constraint violations
     double vMax;        // maximum velocity of joints
 
+    std::vector<double> positions_init;
+
 public:
     CtrlThread(const std::string& _name, const std::string& _limb, bool _no_robot, double _ctrl_freq,
                bool _is_debug = false, double dT = 0.02, double tol = 1e-6, double vMax = 45.0);

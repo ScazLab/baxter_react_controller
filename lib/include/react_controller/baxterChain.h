@@ -120,6 +120,7 @@ public:
      * return: array of joint angles in the form of Eigen::Vector
      */
     Eigen::VectorXd     getAng();
+    double              getAng(const unsigned int _i) { return getAng()[_i]; };
 
     /**
      * Functions to set the joint angles of the arm chain. Used

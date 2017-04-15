@@ -49,7 +49,7 @@ CtrlThread::CtrlThread(const std::string& _name, const std::string& _limb, bool 
         vLimAdapted(r, 1) =  vMax;
     }
 
-    bool verbosity =  true;
+    bool verbosity =  false;
     initializeApp(verbosity);
 
     if (is_debug == true)
@@ -58,10 +58,17 @@ CtrlThread::CtrlThread(const std::string& _name, const std::string& _limb, bool 
         else              ROS_ERROR("IPOPT does not work!");
     }
 
+    positions_init.clear();
+
     if (!noRobot())
     {
         waitForJointAngles();
         chain->setAng(getJointStates());
+
+        for (size_t i = 0; i < chain->getNrOfJoints(); ++i)
+        {
+            positions_init.push_back(chain->getAng(i));
+        }
 
         ROS_INFO("Current Pose: %s", toString(getPose()).c_str());
     }
@@ -210,25 +217,37 @@ bool CtrlThread::goToPoseNoCheck(double px, double py, double pz,
     int exit_code = -1;
 
     sensor_msgs::JointState _q = getJointStates();
-    std::vector<double> velocity;
-    for (size_t i = 0; i < chain->getNrOfJoints(); ++i)
-    {
-        velocity.push_back(_q.velocity[i]);
-    }
+    // std::vector<double> velocity;
 
-    ROS_INFO("actual joint vels: %s", toString(std::vector<double>(velocity.data(),
-                                                velocity.data() + velocity.size())).c_str());
+    // ROS_INFO("actual joint vels: %s", toString(std::vector<double>(velocity.data(),
+    //                                             velocity.data() + velocity.size())).c_str());
+
+    ROS_INFO("actual joint  pos: %s", toString(std::vector<double>(_q.position.data(),
+                                                _q.position.data() + _q.position.size())).c_str());
+    // positions_init[5] += 0.005;
 
     Eigen::VectorXd est_vels = solveIK(exit_code);
 
-    q_dot = est_vels;
+    // q_dot = est_vels;
 
-    if (exit_code != 0 && is_debug)        return false;
-    if (exit_code == 4 && is_debug)        return false;
-    if (exit_code != 0 && exit_code != -4) return false;
-    if (is_debug)                          return  true;
+    // std::vector<double> position;
+    // position.clear();
+    // for (size_t i = 0; i < chain->getNrOfJoints(); ++i)
+    // {
+    // //     velocity.push_back(_q.velocity[i]);
+    //     position.push_back(_q.position[i] + est_vels.data()[i * (1 / 50)]);
+    // }
+    ROS_INFO("desired joint pos: %s", toString(std::vector<double>(est_vels.data(),
+                                                est_vels.data() + est_vels.size())).c_str());
 
-    suppressCollisionAv();
+    // if (exit_code != 0 && is_debug)        return false;
+    // if (exit_code == 4 && is_debug)        return false;
+    // if (exit_code != 0 && exit_code != -4) return false;
+    // if (is_debug)                          return  true;
+
+    // suppressCollisionAv();
+    // if (!goToJointConfNoCheck(std::vector<double>(est_vels.data(), est_vels.data() + est_vels.size()))) return false;
+
     if (!goToJointConfNoCheck(std::vector<double>(est_vels.data(), est_vels.data() + est_vels.size()))) return false;
 
     return true;
