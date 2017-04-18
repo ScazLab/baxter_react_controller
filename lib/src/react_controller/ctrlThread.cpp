@@ -58,7 +58,7 @@ CtrlThread::CtrlThread(const std::string& _name, const std::string& _limb, bool 
         else              ROS_ERROR("IPOPT does not work!");
     }
 
-    positions_init.clear();
+    std::vector<double> positions_init;
 
     if (!noRobot())
     {
