@@ -6,9 +6,9 @@ using namespace baxter_core_msgs;
 using namespace            Eigen;
 
 CtrlThread::CtrlThread(const std::string& _name, const std::string& _limb, bool _no_robot, double _ctrl_freq,
-                       bool _is_debug, double _dT, double _tol, double _vMax) :
+                       bool _is_debug, double _tol, double _vMax) :
                        RobotInterface(_name, _limb, _no_robot, _ctrl_freq, true, false, true, true), chain(0),
-                       is_debug(_is_debug), internal_state(true), dT(_dT), tol(_tol), vMax(_vMax)
+                       is_debug(_is_debug), internal_state(true), dT(1000.0/_ctrl_freq), tol(_tol), vMax(_vMax)
 {
     urdf::Model robot_model;
     std::string xml_string;
