@@ -1,6 +1,6 @@
 <launch>
     <!-- Let's load the baxter URDF from the parameter server -->
-    <param name="robot_description" command="$(find xacro)/xacro --inorder '$(find baxter_description)/urdf/baxter.urdf.xacro'" />
+    <include file="$(find baxter_react_controller)/launch/baxter_urdf.launch" />
 
     <test test-name="test_ipopt" pkg="baxter_react_controller" type="test_ipopt" />
 </launch>
