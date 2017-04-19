@@ -5,14 +5,11 @@ using namespace      sensor_msgs;
 using namespace baxter_core_msgs;
 using namespace            Eigen;
 
-CtrlThread::CtrlThread(const std::string& _name, const std::string& _limb, bool _no_robot,
-                       bool _is_debug, double _dT, double _tol, double _vMax) :
-                       RobotInterface(_name, _limb, _no_robot, true, false, true, true), chain(0),
-                       is_debug(_is_debug), internal_state(true), dT(_dT), tol(_tol), vMax(_vMax)
+CtrlThread::CtrlThread(const std::string& _name, const std::string& _limb, bool _no_robot, double _ctrl_freq,
+                       bool _is_debug, double _tol, double _vMax) :
+                       RobotInterface(_name, _limb, _no_robot, _ctrl_freq, true, false, true, true), chain(0),
+                       is_debug(_is_debug), internal_state(true), dT(1000.0/_ctrl_freq), tol(_tol), vMax(_vMax)
 {
-    setCtrlFreq(50);
-    ROS_INFO("[%s] ctrlFreq set to %g [Hz]", getLimb().c_str(), getCtrlFreq());
-
     urdf::Model robot_model;
     std::string xml_string;
 
@@ -52,7 +49,7 @@ CtrlThread::CtrlThread(const std::string& _name, const std::string& _limb, bool 
         vLimAdapted(r, 1) =  vMax;
     }
 
-    bool verbosity =  true;
+    bool verbosity =  false;
     initializeApp(verbosity);
 
     if (is_debug == true)
@@ -61,10 +58,17 @@ CtrlThread::CtrlThread(const std::string& _name, const std::string& _limb, bool 
         else              ROS_ERROR("IPOPT does not work!");
     }
 
+    std::vector<double> positions_init;
+
     if (!noRobot())
     {
         waitForJointAngles();
         chain->setAng(getJointStates());
+
+        for (size_t i = 0; i < chain->getNrOfJoints(); ++i)
+        {
+            positions_init.push_back(chain->getAng(i));
+        }
 
         ROS_INFO("Current Pose: %s", toString(getPose()).c_str());
     }
@@ -211,15 +215,30 @@ bool CtrlThread::goToPoseNoCheck(double px, double py, double pz,
     }
 
     int exit_code = -1;
-    Eigen::VectorXd est_vels = solveIK(exit_code);
-    q_dot = est_vels;
 
-    // if (exit_code != 0 && is_debug)        return false;
+    // ROS_INFO("actual joint  pos: %s", toString(std::vector<double>(_q.position.data(),
+    //                                             _q.position.data() + _q.position.size())).c_str());
+
+    Eigen::VectorXd est_vels = solveIK(exit_code);
+
+    std::vector<double> des_poss(chain->getNrOfJoints());
+
+    for (size_t i = 0, _i = chain->getNrOfJoints(); i < _i; ++i)
+    {
+        des_poss[i] = chain->getAng(i) + (dT * est_vels[i]);
+    }
+
+    // q_dot = est_vels;
+
+    ROS_INFO("sending joint position: %s", toString(des_poss).c_str());
+
+    if (exit_code != 0 && is_debug)        return false;
     if (exit_code == 4 && is_debug)        return false;
     if (exit_code != 0 && exit_code != -4) return false;
     if (is_debug)                          return  true;
 
-    if (!goToJointConfNoCheck(std::vector<double>(est_vels.data(), est_vels.data() + est_vels.size()))) return false;
+    // suppressCollisionAv();
+    if (!goToJointConfNoCheck(des_poss)) return false;
 
     return true;
 

@@ -33,8 +33,8 @@ private:
     double vMax;        // maximum velocity of joints
 
 public:
-    CtrlThread(const std::string& _name, const std::string& _limb, bool _no_robot,
-               bool _is_debug = false, double dT = 0.02, double tol = 1e-6, double vMax = 45.0);
+    CtrlThread(const std::string& _name, const std::string& _limb, bool _no_robot, double _ctrl_freq,
+               bool _is_debug = false, double tol = 1e-6, double vMax = 60.0);
 
     /**
      * Initializes the IpoptApplication with default values for every time the solver
