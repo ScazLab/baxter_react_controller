@@ -178,34 +178,6 @@ void BaxterChain::initChain(urdf::Model _robot_model,
 
 MatrixXd BaxterChain::GeoJacobian()
 {
-    // size_t DOF = q.size();
-
-    // MatrixXd J(6,DOF);
-    // MatrixXd PN,Z;
-    // VectorXd w;
-
-    // std::deque<MatrixXd> intH;
-    // intH.push_back(getH(0));
-
-    // for (size_t i=0; i<DOF; i++)
-    // {
-    //     intH.push_back(intH[i]*getH(i));
-    // }
-
-    // PN=intH[DOF];
-
-    // for (size_t i=0; i<DOF; i++)
-    // {
-    //     Z=intH[i];
-    //     w=cross(Z,2,PN-Z,3); // TODO define cross
-
-    //     J(0,i)=w[0];
-    //     J(1,i)=w[1];
-    //     J(2,i)=w[2];
-    //     J(3,i)=Z(0,2);
-    //     J(4,i)=Z(1,2);
-    //     J(5,i)=Z(2,2);
-    // }
 
     KDL::Jacobian J;
     J.resize(getNrOfJoints());
@@ -239,7 +211,6 @@ bool BaxterChain::setAng(sensor_msgs::JointState _q)
 bool BaxterChain::setAng(Eigen::VectorXd _q)
 {
     q = std::vector<double>(_q.data(), _q.data()+_q.size());
-    // ROS_INFO("size: %d", q.size());
     return true;
 }
 
@@ -358,9 +329,7 @@ MatrixXd BaxterChain::getH(const unsigned int _i)
         jnts(i) = q[i];
     }
 
-    // KDL::ChainFkSolverPos_recursive fksolver(*this);
     KDL::Frame frame;
-    // fksolver.JntToCart(jnts,frame,getNrOfSegments());
     JntToCart(jnts,frame);
 
     // if (!JntToCart(jnts, frame))
