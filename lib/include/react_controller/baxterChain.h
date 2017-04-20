@@ -57,6 +57,15 @@ public:
     bool JntToCart(const KDL::JntArray& _q_in, KDL::Frame& _p_out, int _segNr=-1);
 
     /**
+     * Gets all collision points and normal vectors for each segment in the arm.
+     *
+     * @return true if successful, flase if error
+     */
+    bool GetCollisionPoints();
+
+    bool ComputeCollisionPoint(std::vector<Eigen::Vector3d> joints, Eigen::Vector3d coll_coords);
+
+    /**
      * TODO
      * @param  q_in   [description]
      * @param  jac    [description]

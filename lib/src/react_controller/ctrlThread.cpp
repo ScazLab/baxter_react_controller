@@ -60,7 +60,7 @@ CtrlThread::CtrlThread(const std::string& _name, const std::string& _limb, bool 
 
     std::vector<double> positions_init;
 
-    if (!noRobot())
+    if (!isNoRobot())
     {
         waitForJointAngles();
         chain->setAng(getJointStates());
@@ -72,6 +72,8 @@ CtrlThread::CtrlThread(const std::string& _name, const std::string& _limb, bool 
 
         ROS_INFO("Current Pose: %s", toString(getPose()).c_str());
     }
+
+    chain->GetCollisionPoints();
 
     if (is_debug == true)
     {
@@ -105,7 +107,7 @@ void CtrlThread::initializeApp(bool _verbosity)
 
 bool CtrlThread::debugIPOPT()
 {
-    if (!noRobot())
+    if (!isNoRobot())
     {
         if (!waitForJointAngles())
         {
@@ -204,7 +206,7 @@ bool CtrlThread::goToPoseNoCheck(double px, double py, double pz,
     o_n[1] = pitch;
     o_n[2] = yaw;
 
-    if (!noRobot())
+    if (!isNoRobot())
     {
         if (!waitForJointAngles())
         {
