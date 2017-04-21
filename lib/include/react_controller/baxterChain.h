@@ -54,7 +54,7 @@ public:
      *
      * return:     true if successful, false if error
      */
-    bool JntToCart(const KDL::JntArray& _q_in, KDL::Frame& _p_out, int _segNr=-1);
+    bool JntToCart(const KDL::JntArray& _q_in, KDL::Frame& _p_out, int seg_nr=-1);
 
     /**
      * Gets all collision points and normal vectors for each segment in the arm.

@@ -8,13 +8,10 @@
 
 #include <kdl/chainfksolverpos_recursive.hpp>
 
-using namespace Eigen;
-using namespace   KDL;
 using namespace   std;
 
 bool BaxterChain::GetCollisionPoints()
 {
-
     Eigen::Vector3d point(0.40, -0.25, 0.45);
 
     unsigned int segmentNr=getNrOfSegments();
@@ -27,13 +24,12 @@ bool BaxterChain::GetCollisionPoints()
     }
 
     int j=0;
-    KDL::Frame frame;
-    frame = Frame::Identity();
+    KDL::Frame frame(KDL::Frame::Identity());
     std::vector<Eigen::Vector3d> joint_pos;
 
-    for(unsigned int i=0;i<segmentNr;i++)
+    for(unsigned int i=0; i<segmentNr; ++i)
     {
-        if(getSegment(i).getJoint().getType()!=Joint::None)
+        if(getSegment(i).getJoint().getType()!=KDL::Joint::None)
         {
             frame = frame*getSegment(i).pose(jnts(j));
             KDL::Vector   posKDL = frame.p;
@@ -50,18 +46,14 @@ bool BaxterChain::GetCollisionPoints()
 
     for(size_t i = 0; i < joint_pos.size(); ++i)
     {
-        ROS_INFO("joint %zu at x:%f y:%f z:%f", i, joint_pos[i](0), joint_pos[i](1), joint_pos[i](2));
+        ROS_INFO("joint %zu at x: %g y: %g z: %g", i, joint_pos[i](0), joint_pos[i](1), joint_pos[i](2));
     }
 
-    std::vector<Eigen::Vector3d> joints;
-    Eigen::Vector3d joint1(0, 0, 0); Eigen::Vector3d joint2(0, 2, 0); Eigen::Vector3d joint3(2, 2, 0); Eigen::Vector3d joint4(2, 0, 0);
-    joints.push_back(joint1); joints.push_back(joint2); joints.push_back(joint3); joints.push_back(joint4);
+    std::vector<Eigen::Vector3d> joints{ Eigen::Vector3d(0, 0, 0), Eigen::Vector3d(0, 2, 0),
+                                         Eigen::Vector3d(2, 2, 0), Eigen::Vector3d(2, 0, 0)};
 
-    Eigen::Vector3d point2(1, 1, 0);
-    ComputeCollisionPoint(joints, point2);
-
-    Eigen::Vector3d point3(4, 4, 0);
-    ComputeCollisionPoint(joints, point3);
+    ComputeCollisionPoint(joints, Eigen::Vector3d(1, 1, 0));
+    ComputeCollisionPoint(joints, Eigen::Vector3d(4, 4, 0));
 
     // std::vector<Eigen::Vector3d> coll_points;
     // std::vector<Eigen::Vector3d> norms;
@@ -91,10 +83,10 @@ bool BaxterChain::ComputeCollisionPoint(std::vector<Eigen::Vector3d> joints, Eig
         Eigen::Vector3d coll_pt = joints[i] + ((ap).dot(ab)) / ((ab).dot(ab)) * ab;
         coll_points.push_back(coll_pt);
         norms.push_back(coll_coords - coll_pt);
-        ROS_INFO("coll point %zu at x:%f y:%f z:%f", i, coll_points[i](0), coll_points[i](1), coll_points[i](2));
-        ROS_INFO("norm %zu at x:%f y:%f z:%f", i, norms[i](0), norms[i](1), norms[i](2));
+        ROS_INFO("coll point %zu at x: %g y: %g z: %g", i, coll_points[i](0), coll_points[i](1), coll_points[i](2));
+        ROS_INFO("      norm %zu at x: %g y: %g z: %g", i, norms[i](0), norms[i](1), norms[i](2));
     }
-    ROS_INFO("\n");
+    printf("\n");
 
     return true;
 }

@@ -89,7 +89,7 @@ void CtrlThread::initializeApp(bool _verbosity)
 {
     app=new Ipopt::IpoptApplication;
     app->Options()->SetNumericValue("tol",tol);
-    app->Options()->SetNumericValue("constr_viol_tol",1e-6);
+    app->Options()->SetNumericValue("constr_viol_tol", 1e-6);
     // app->Options()->SetIntegerValue("acceptable_iter",0);
     app->Options()->SetStringValue ("mu_strategy","adaptive");
     if (is_debug == false) {
