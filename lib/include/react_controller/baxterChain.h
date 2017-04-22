@@ -34,6 +34,14 @@
 */
 Eigen::Matrix4d KDLFrameToEigen(KDL::Frame _f);
 
+/**
+ * TODO documentation
+ * @param  joints      [description]
+ * @param  coll_coords [description]
+ * @return             [description]
+ */
+bool computeCollisionPoint(std::vector<Eigen::Vector3d> joints, Eigen::Vector3d coll_coords);
+
 /****************************************************************/
 class BaxterChain : public KDL::Chain
 {
@@ -59,11 +67,9 @@ public:
     /**
      * Gets all collision points and normal vectors for each segment in the arm.
      *
-     * @return true if successful, flase if error
+     * @return true if successful, false if error
      */
     bool GetCollisionPoints();
-
-    bool ComputeCollisionPoint(std::vector<Eigen::Vector3d> joints, Eigen::Vector3d coll_coords);
 
     /**
      * TODO
