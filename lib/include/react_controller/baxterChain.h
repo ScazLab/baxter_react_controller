@@ -38,9 +38,14 @@ Eigen::Matrix4d KDLFrameToEigen(KDL::Frame _f);
  * TODO documentation
  * @param  joints      [description]
  * @param  coll_coords [description]
- * @return             [description]
+ * @param  coll_points [description]
+ * @param  norms       [description]
+ * @return             true/false if success/failure
  */
-bool computeCollisionPoint(std::vector<Eigen::Vector3d> joints, Eigen::Vector3d coll_coords);
+bool computeCollisionPoint(const std::vector<Eigen::Vector3d>&      joints,
+                           const             Eigen::Vector3d & coll_coords,
+                                 std::vector<Eigen::Vector3d>& coll_points,
+                                 std::vector<Eigen::Vector3d>&       norms);
 
 /****************************************************************/
 class BaxterChain : public KDL::Chain

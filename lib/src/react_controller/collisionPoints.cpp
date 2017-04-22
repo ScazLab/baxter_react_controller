@@ -3,27 +3,28 @@
 #include <ros/ros.h>
 
 #include <react_controller/baxterChain.h>
-#include <react_controller/mathUtils.h>
 #include <eigen_conversions/eigen_kdl.h>
 
 #include <kdl/chainfksolverpos_recursive.hpp>
 
 using namespace   std;
 
-bool computeCollisionPoint(std::vector<Eigen::Vector3d> joints, Eigen::Vector3d coll_coords)
+bool computeCollisionPoint(const std::vector<Eigen::Vector3d>&      joints,
+                           const             Eigen::Vector3d & coll_coords,
+                                 std::vector<Eigen::Vector3d>& coll_points,
+                                 std::vector<Eigen::Vector3d>&       norms)
 {
-    std::vector<Eigen::Vector3d> coll_points;
-    std::vector<Eigen::Vector3d> norms;
-
     for (size_t i = 0; i < joints.size() - 1; ++i)
     {
         Eigen::Vector3d ab = joints[i + 1] - joints[i];
         Eigen::Vector3d ap = coll_coords - joints[i];
         Eigen::Vector3d coll_pt = joints[i] + ((ap).dot(ab)) / ((ab).dot(ab)) * ab;
+
         coll_points.push_back(coll_pt);
         norms.push_back(coll_coords - coll_pt);
-        ROS_INFO("coll point %zu at x: %g y: %g z: %g", i, coll_points[i](0), coll_points[i](1), coll_points[i](2));
-        ROS_INFO("      norm %zu at x: %g y: %g z: %g", i, norms[i](0), norms[i](1), norms[i](2));
+
+        // ROS_INFO("coll point %zu at x: %g y: %g z: %g", i, coll_points[i](0), coll_points[i](1), coll_points[i](2));
+        // ROS_INFO("      norm %zu at x: %g y: %g z: %g", i, norms[i](0), norms[i](1), norms[i](2));
     }
     printf("\n");
 
@@ -68,12 +69,6 @@ bool BaxterChain::GetCollisionPoints()
     {
         ROS_INFO("joint %zu at x: %g y: %g z: %g", i, joint_pos[i](0), joint_pos[i](1), joint_pos[i](2));
     }
-
-    std::vector<Eigen::Vector3d> joints{ Eigen::Vector3d(0, 0, 0), Eigen::Vector3d(0, 2, 0),
-                                         Eigen::Vector3d(2, 2, 0), Eigen::Vector3d(2, 0, 0)};
-
-    computeCollisionPoint(joints, Eigen::Vector3d(1, 1, 0));
-    computeCollisionPoint(joints, Eigen::Vector3d(4, 4, 0));
 
     // std::vector<Eigen::Vector3d> coll_points;
     // std::vector<Eigen::Vector3d> norms;
