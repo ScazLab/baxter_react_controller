@@ -49,8 +49,7 @@ CtrlThread::CtrlThread(const std::string& _name, const std::string& _limb, bool 
         vLimAdapted(r, 1) =  vMax;
     }
 
-    bool verbosity =  false;
-    initializeApp(verbosity);
+    initializeApp(false);
 
     if (is_debug == true)
     {
@@ -88,20 +87,18 @@ CtrlThread::CtrlThread(const std::string& _name, const std::string& _limb, bool 
 void CtrlThread::initializeApp(bool _verbosity)
 {
     app=new Ipopt::IpoptApplication;
-    app->Options()->SetNumericValue("tol",tol);
-    app->Options()->SetNumericValue("constr_viol_tol", 1e-6);
-    // app->Options()->SetIntegerValue("acceptable_iter",0);
+    app->Options()->SetNumericValue("tol", tol/10);
+    app->Options()->SetNumericValue("constr_viol_tol", tol);
+    app->Options()->SetNumericValue("acceptable_tol", tol/10);
+    app->Options()->SetIntegerValue("acceptable_iter",0);
     app->Options()->SetStringValue ("mu_strategy","adaptive");
-    if (is_debug == false) {
-        app->Options()->SetStringValue ("linear_solver", "ma57");
-    }
-    app->Options()->SetIntegerValue("max_iter",std::numeric_limits<int>::max());
+    if (is_debug == false) { app->Options()->SetStringValue ("linear_solver", "ma57"); }
     app->Options()->SetNumericValue("max_cpu_time", 0.95 * dT);
     // app->Options()->SetStringValue ("nlp_scaling_method","gradient-based");
     app->Options()->SetStringValue ("hessian_approximation","limited-memory");
     // app->Options()->SetStringValue ("derivative_test",verbosity?"first-order":"none");
     app->Options()->SetStringValue ("derivative_test","none");
-    app->Options()->SetIntegerValue("print_level",(_verbosity && !is_debug)?5:0);
+    app->Options()->SetIntegerValue("print_level",(_verbosity && !is_debug)?4:0);
     app->Initialize();
 }
 
