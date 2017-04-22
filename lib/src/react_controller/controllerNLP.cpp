@@ -341,6 +341,7 @@ void ControllerNLP::finalize_solution(Ipopt::SolverReturn status, Ipopt::Index n
         case Ipopt::CPUTIME_EXCEEDED    : ROS_WARN("Maximum CPU time exceeded.");  break;
         case Ipopt::LOCAL_INFEASIBILITY : ROS_WARN("Algorithm converged to a point of local infeasibility. "
                                                    "Problem may be infeasible.");  break;
+        case Ipopt::DIVERGING_ITERATES  : ROS_WARN("Iterates divering; problem might be unbounded."); break;
         default                         : ROS_WARN("IPOPT Failed. Error code: %i", status);
         // Error codes: https://www.coin-or.org/Ipopt/doxygen/classorg_1_1coinor_1_1Ipopt.html
     }
