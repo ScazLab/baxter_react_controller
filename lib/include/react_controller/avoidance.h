@@ -18,14 +18,6 @@
 // #include <iCub/iKin/iKinFwd.h>
 // #include <iCub/skinDynLib/common.h>
 
-
-struct collisionPoint_t{
-        // iCub::skinDynLib::SkinPart skin_part;
-        Eigen::VectorXd x; //position (x,y,z) in the FoR of the respective skin part
-        Eigen::VectorXd n; //direction of normal vector at that point - derived from taxel normals, pointing out of the skin
-        double magnitude; // ~ activation level from probabilistic representation in pps - likelihood of collision
-};
-
 /****************************************************************/
 class AvoidanceHandlerAbstract
 {

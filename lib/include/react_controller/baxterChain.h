@@ -1,3 +1,6 @@
+#ifndef __BAXTERCHAIN_H__
+#define __BAXTERCHAIN_H__
+
 #include <kdl/chain.hpp>
 #include <kdl/frames.hpp>
 #include <kdl/jacobian.hpp>
@@ -25,6 +28,13 @@
 // in my code and you would need to do it anyway when we'll integrate
 // with my code
 
+struct collisionPoint_t{
+        // iCub::skinDynLib::SkinPart skin_part;
+        Eigen::VectorXd x; //position (x,y,z) in the FoR of the respective skin part
+        Eigen::VectorXd n; //direction of normal vector at that point - derived from taxel normals, pointing out of the skin
+        double magnitude; // ~ activation level from probabilistic representation in pps - likelihood of collision
+};
+
 /**
  * Takes a KDL::Frame and returns a 4X4 pose Eigen::Matrix
  *
@@ -42,10 +52,9 @@ Eigen::Matrix4d KDLFrameToEigen(KDL::Frame _f);
  * @param  norms       [description]
  * @return             true/false if success/failure
  */
-bool computeCollisionPoint(const std::vector<Eigen::Vector3d>&      joints,
+bool computeCollisionPoints(const std::vector<Eigen::Vector3d>&      joints,
                            const             Eigen::Vector3d & coll_coords,
-                                 std::vector<Eigen::Vector3d>& coll_points,
-                                 std::vector<Eigen::Vector3d>&       norms);
+                           std::vector<collisionPoint_t> &_collisionPoints);
 
 /****************************************************************/
 class BaxterChain : public KDL::Chain
@@ -74,7 +83,7 @@ public:
      *
      * @return true if successful, false if error
      */
-    bool GetCollisionPoints();
+    bool GetJointPositions(std::vector<Eigen::Vector3d>& positions);
 
     /**
      * TODO
@@ -173,3 +182,5 @@ public:
 
     ~BaxterChain();
 };
+
+#endif

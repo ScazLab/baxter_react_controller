@@ -1,6 +1,7 @@
 #include <robot_utils/utils.h>
 #include <robot_interface/robot_interface.h>
 #include <react_controller/controllerNLP.h>
+#include <react_controller/avoidance.h>
 #include <tf/transform_datatypes.h>
 
 class CtrlThread : public RobotInterface

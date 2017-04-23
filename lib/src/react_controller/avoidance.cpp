@@ -1,8 +1,11 @@
 #include <Eigen/Dense>
+#include <math.h>
 
 #include "react_controller/avoidance.h"
 
 using namespace std;
+
+#define CTRL_DEG2RAD (M_PI/180.0)
 
 // using namespace yarp::sig;
 // using namespace yarp::math;
@@ -218,8 +221,8 @@ Eigen::MatrixXd AvoidanceHandlerTactile::getVLIM(const Eigen::MatrixXd &v_lim)
         {
             // printMessage(2,"Chain with control point - index %d (last index %d), nDOF: %d.\n",i,ctrlPointChains.size()-1,ctrlPointChains[i].getNrOfSegments());
             Eigen::MatrixXd tmp = ctrlPointChains[i].GeoJacobian();
-            Eigen::MatrixXd J = tmp.block(3,ctrlPointChains[i].getNrOfSegments()-1,0,0); //.submatrix(0,2,0,ctrlPointChains[i].getNrOfSegments()-1); //first 3 rows ~ dPosition/dJoints
-            Eigen::VectorXd normal = ctrlPointChains[i].getH().col(2);//.subEigen::VectorXd(0,2); //get the end-effector frame of the standard or custom chain (control point derived from skin), takes the z-axis (3rd column in transform matrix) ~ normal, only its first three elements of the 4 in the homogenous transf. format
+            Eigen::MatrixXd J = tmp.block(0, 0, 3, ctrlPointChains[i].getNrOfJoints()-1); //.submatrix(0,2,0,ctrlPointChains[i].getNrOfSegments()-1); //first 3 rows ~ dPosition/dJoints
+            Eigen::VectorXd normal = ctrlPointChains[i].getH().col(2).block<3,1>(0,0);//.subEigen::VectorXd(0,2); //get the end-effector frame of the standard or custom chain (control point derived from skin), takes the z-axis (3rd column in transform matrix) ~ normal, only its first three elements of the 4 in the homogenous transf. format
             Eigen::VectorXd s=(J.transpose()*normal) * avoidingSpeed * collisionPoints[i].magnitude; //project movement along the normal into joint velocity space and scale by default avoidingSpeed and magnitude of skin (or PPS) activation
             if (verbosity>=2){
                 // printf("J for positions at control point:\n %s \nJ.transposed:\n %s \nNormal at control point: (%s), norm: %f \n",J.toString(3,3).c_str(),J.transposed().toString(3,3).c_str(), normal.toString(3,3).c_str(),norm(normal));
@@ -227,7 +230,7 @@ Eigen::MatrixXd AvoidanceHandlerTactile::getVLIM(const Eigen::MatrixXd &v_lim)
             }
             s = s * -1.0; //we reverse the direction to obtain joint velocities that bring about avoidance
             // printMessage(2,"s * (-1) -> joint contributions toward avoidance: \n (%s) \n",s.toString(3,3).c_str());
-
+            cout << s;
             for (int j=0; j<s.size(); j++)
             {
                 // printMessage(2,"        Joint: %d, s[j]: %f, limits before: Min: %f, Max: %f\n",j,s[j],VLIM(j,0),VLIM(j,1));

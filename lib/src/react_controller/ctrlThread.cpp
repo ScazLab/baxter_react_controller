@@ -72,7 +72,23 @@ CtrlThread::CtrlThread(const std::string& _name, const std::string& _limb, bool 
         ROS_INFO("Current Pose: %s", toString(getPose()).c_str());
     }
 
-    chain->GetCollisionPoints();
+    std::vector<Eigen::Vector3d> positions;
+    chain->GetJointPositions(positions);
+
+    Eigen::Vector3d point(0.40, -0.25, 0.45);
+    std::vector<collisionPoint_t> collisionPoints;
+    computeCollisionPoints(positions, point, collisionPoints);
+    AvoidanceHandlerAbstract *avhdl;
+    avhdl = new AvoidanceHandlerTactile(*chain, collisionPoints, false);
+    cout << vLimAdapted << "\n";
+    vLimAdapted = avhdl->getVLIM(vLimAdapted);
+
+    cout << vLimAdapted << "\n";
+
+    for (size_t i = 0; i < positions.size(); ++i)
+    {
+        ROS_INFO("joint %zu at x: %g y: %g z: %g", i, positions[i](0), positions[i](1), positions[i](2));
+    }
 
     if (is_debug == true)
     {
