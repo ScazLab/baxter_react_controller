@@ -65,9 +65,9 @@ AvoidanceHandlerAbstract::AvoidanceHandlerAbstract(const BaxterChain &_chain, co
 
 
                 // SetHN to move the end effector toward the point to be controlled - the average locus of collision threat from safety margin
-                Eigen::Matrix4d HN;
-                HN.setIdentity();
-                computeFoR((*it).x,(*it).n,HN);
+                // Eigen::Matrix4d HN;
+                // HN.setIdentity();
+                // computeFoR((*it).x,(*it).n,HN);
                 // printMessage(5,"HN matrix at collision point w.r.t. local frame: \n %s \n",HN.toString(3,3).c_str());
                 // customChain.setHN(HN); //setting the end-effector transform to the collision point w.r.t subchain
                 // if (verbosity >=5){

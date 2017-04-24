@@ -6,9 +6,10 @@ using namespace baxter_core_msgs;
 using namespace            Eigen;
 
 CtrlThread::CtrlThread(const std::string& _name, const std::string& _limb, bool _no_robot, double _ctrl_freq,
-                       bool _is_debug, double _tol, double _vMax) :
+                       bool _is_debug, double _tol, double _vMax, bool _coll_av) :
                        RobotInterface(_name, _limb, _no_robot, _ctrl_freq, true, false, true, true), chain(0),
-                       is_debug(_is_debug), internal_state(true), dT(1000.0/_ctrl_freq), tol(_tol), vMax(_vMax)
+                       is_debug(_is_debug), internal_state(true), dT(1000.0/_ctrl_freq), tol(_tol), vMax(_vMax),
+                       coll_av(_coll_av)
 {
     urdf::Model robot_model;
     std::string xml_string;
@@ -38,11 +39,11 @@ CtrlThread::CtrlThread(const std::string& _name, const std::string& _limb, bool 
     q_dot.resize(chain->getNrOfJoints());
     q_dot.setZero();
 
-    vLimAdapted.resize(chain->getNrOfJoints(), 2);
+    vLim.resize(chain->getNrOfJoints(), 2);
     for (size_t r = 0, DoFs = chain->getNrOfJoints(); r < DoFs; ++r)
     {
-        vLimAdapted(r, 0) = -vMax;
-        vLimAdapted(r, 1) =  vMax;
+        vLim(r, 0) = -vMax;
+        vLim(r, 1) =  vMax;
     }
 
     initializeApp(false);
@@ -67,24 +68,6 @@ CtrlThread::CtrlThread(const std::string& _name, const std::string& _limb, bool 
 
         ROS_INFO("Current Pose: %s", toString(getPose()).c_str());
     }
-
-    // std::vector<Eigen::Vector3d> positions;
-    // chain->GetJointPositions(positions);
-
-    // Eigen::Vector3d point(0.40, -0.25, 0.45);
-    // std::vector<collisionPoint> collisionPoints;
-    // computeCollisionPoints(positions, point, collisionPoints);
-    // AvoidanceHandlerAbstract *avhdl;
-    // avhdl = new AvoidanceHandlerTactile(*chain, collisionPoints, false);
-    // // cout << vLimAdapted << "\n";
-    // vLimAdapted = avhdl->getVLIM(vLimAdapted);
-
-    // cout << vLimAdapted << "\n";
-
-    // for (size_t i = 0; i < positions.size(); ++i)
-    // {
-    //     ROS_INFO("joint %zu at x: %g y: %g z: %g", i, positions[i](0), positions[i](1), positions[i](2));
-    // }
 
     if (is_debug == true)
     {
@@ -231,6 +214,31 @@ bool CtrlThread::goToPoseNoCheck(double px, double py, double pz,
 
     // ROS_INFO("actual joint  pos: %s", toString(std::vector<double>(_q.position.data(),
     //                                             _q.position.data() + _q.position.size())).c_str());
+    nlp = new ControllerNLP(*chain);
+    if (coll_av)
+    {
+        std::vector<Eigen::Vector3d> positions;
+        chain->GetJointPositions(positions);
+
+        Eigen::Vector3d point(0.63, -0.17, 0.0);
+        std::vector<collisionPoint> collisionPoints;
+        computeCollisionPoints(positions, point, collisionPoints);
+        AvoidanceHandlerAbstract *avhdl;
+        avhdl = new AvoidanceHandlerTactile(*chain, collisionPoints, false);
+        // // cout << vLim << "\n";
+        vLimCollision = avhdl->getVLIM(vLim);
+        nlp->set_v_lim(vLimCollision);
+    }
+    else
+    {
+        nlp->set_v_lim(vLim);
+    }
+
+    // for (size_t i = 0; i < positions.size(); ++i)
+    // {
+    //     ROS_INFO("joint %zu at x: %g y: %g z: %g", i, positions[i](0), positions[i](1), positions[i](2));
+    // }
+
 
     Eigen::VectorXd est_vels = solveIK(exit_code);
 
@@ -266,10 +274,9 @@ VectorXd CtrlThread::solveIK(int &_exit_code)
     xr.block<3, 1>(0, 0) = x_n;
     xr.block<3, 1>(3, 0) = o_n;
 
-    Ipopt::SmartPtr<ControllerNLP> nlp = new ControllerNLP(*chain);
     nlp->set_ctrl_ori(false);
     nlp->set_dt(dT);
-    nlp->set_v_lim(vLimAdapted);
+    // nlp->set_v_lim(vLim);
     nlp->set_xr(xr);
     nlp->set_v_0(q_dot);
     nlp->init();
