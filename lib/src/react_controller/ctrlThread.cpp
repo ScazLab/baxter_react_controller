@@ -1,4 +1,4 @@
-#include <react_controller/ctrlThread.h>
+#include "react_controller/ctrlThread.h"
 
 using namespace              std;
 using namespace      sensor_msgs;
@@ -203,6 +203,8 @@ bool CtrlThread::debugIPOPT()
     return internal_state;
     // return goToPoseNoCheck(frame.p[0], frame.p[1], frame.p[2], ox, oy, oz, ow);
 }
+
+#include <tf/transform_datatypes.h>
 
 bool CtrlThread::goToPoseNoCheck(double px, double py, double pz,
                                  double ox, double oy, double oz, double ow)

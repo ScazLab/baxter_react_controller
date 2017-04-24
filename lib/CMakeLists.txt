@@ -18,12 +18,12 @@ include_directories(${PROJECT_SOURCE_DIR}/include)
 
 add_library(react_controller include/react_controller/controllerNLP.h
                              include/react_controller/ctrlThread.h
-                             include/react_controller/mathUtils.h
+                             include/react_controller/react_control_utils.h
                              include/react_controller/baxterChain.h
                              include/react_controller/avoidance.h
                              src/react_controller/controllerNLP.cpp
                              src/react_controller/ctrlThread.cpp
-                             src/react_controller/mathUtils.cpp
+                             src/react_controller/react_control_utils.cpp
                              src/react_controller/baxterChain.cpp
                              src/react_controller/collisionPoints.cpp
                              src/react_controller/avoidance.cpp)

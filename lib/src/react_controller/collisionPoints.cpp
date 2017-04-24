@@ -1,38 +1,9 @@
-#include <assert.h>
-#include <deque>
 #include <ros/ros.h>
-
-#include <react_controller/baxterChain.h>
-#include <eigen_conversions/eigen_kdl.h>
-
 #include <kdl/chainfksolverpos_recursive.hpp>
 
+#include "react_controller/baxterChain.h"
+
 using namespace   std;
-
-bool computeCollisionPoints(const std::vector<Eigen::Vector3d>&      joints,
-                            const             Eigen::Vector3d & coll_coords,
-                            std::vector<collisionPoint>&    collisionPoints)
-{
-    collisionPoints.clear();
-
-    for (size_t i = 0; i < joints.size() - 1; ++i)
-    {
-        Eigen::Vector3d ab = joints[i + 1] - joints[i];
-        Eigen::Vector3d ap = coll_coords - joints[i];
-        Eigen::Vector3d coll_pt = joints[i] + ((ap).dot(ab)) / ((ab).dot(ab)) * ab;
-        collisionPoint c;
-        c.x = coll_pt;
-        c.magnitude = (coll_coords - coll_pt).norm();
-        c.n = (coll_coords - coll_pt) / c.magnitude;
-        collisionPoints.push_back(c);
-
-        // ROS_INFO("coll point %zu at x: %g y: %g z: %g", i, collisionPoints[i].x(0), collisionPoints[i].x(1), collisionPoints[i].x(2));
-        // ROS_INFO("      norm %zu at x: %g y: %g z: %g", i, collisionPoints[i].n(0), collisionPoints[i].n(1), collisionPoints[i].n(2));
-    }
-    // printf("\n");
-
-    return true;
-}
 
 bool BaxterChain::GetJointPositions(std::vector<Eigen::Vector3d>& positions)
 {

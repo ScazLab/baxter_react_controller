@@ -9,7 +9,7 @@
 
 #include <algorithm>
 
-#include <react_controller/baxterChain.h>
+#include "react_controller/baxterChain.h"
 
 // #include <yarp/sig/all.h>
 // #include <yarp/math/Math.h>
@@ -21,8 +21,6 @@
 /****************************************************************/
 class AvoidanceHandlerAbstract
 {
-
-
 public:
     AvoidanceHandlerAbstract(const BaxterChain &_chain, const std::vector<collisionPoint> &_collisionPoints, const unsigned int _verbosity=0);
 

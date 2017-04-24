@@ -1,39 +1,10 @@
-#include <assert.h>
-#include <deque>
 #include <ros/ros.h>
-
-#include <react_controller/baxterChain.h>
-#include <react_controller/mathUtils.h>
-#include <eigen_conversions/eigen_kdl.h>
-
 #include <kdl/chainfksolverpos_recursive.hpp>
+
+#include "react_controller/baxterChain.h"
 
 using namespace Eigen;
 using namespace   std;
-
-Matrix4d KDLFrameToEigen(KDL::Frame _f)
-{
-    Matrix4d result;
-    result.setIdentity();
-
-    //get pose matrix
-    KDL::Rotation rotKDL = _f.M;
-    KDL::Vector   posKDL = _f.p;
-
-    //convert to Eigen matrix
-    Eigen::Quaterniond quatEig;
-    Eigen::Vector3d posEig;
-
-    tf::quaternionKDLToEigen(rotKDL, quatEig);
-    tf::vectorKDLToEigen(posKDL, posEig);
-
-    Matrix3d rot = quatEig.toRotationMatrix();
-
-    result.block<3,3>(0,0) = rot;
-    result.block<3,1>(0,3) = posEig;
-
-    return result;
-}
 
 /**************************************************************************/
 /*                            BaxterChain                                 */

@@ -8,6 +8,7 @@
 #include <urdf/model.h>
 #include <sensor_msgs/JointState.h>
 #include <robot_utils/utils.h>
+#include "react_controller/react_control_utils.h"
 
 // New rule:
 // 1 input parameters for functions are prefixed with a _ (e.g. _q_0),
@@ -19,40 +20,10 @@
 // in my code and you would need to do it anyway when we'll integrate
 // with my code
 
-struct collisionPoint
-{
-        // iCub::skinDynLib::SkinPart skin_part;
-        Eigen::VectorXd x; //position (x,y,z) in the FoR of the respective skin part
-        Eigen::VectorXd n; //direction of normal vector at that point - derived from taxel normals, pointing out of the skin
-        double magnitude;  // ~ activation level from probabilistic representation in pps - likelihood of collision
-};
-
-/**
- * Takes a KDL::Frame and returns a 4X4 pose Eigen::Matrix
- *
- * @param _f: KDL::Frame to turn into a pose Eigen::Matrix
- *
- * return: Eigen 4X4 pose matrix
-*/
-Eigen::Matrix4d KDLFrameToEigen(KDL::Frame _f);
-
-/**
- * TODO documentation
- * @param  joints      [description]
- * @param  coll_coords [description]
- * @param  coll_points [description]
- * @param  norms       [description]
- * @return             true/false if success/failure
- */
-bool computeCollisionPoints(const std::vector<Eigen::Vector3d>&      joints,
-                            const             Eigen::Vector3d & coll_coords,
-                            std::vector<collisionPoint>&   _collisionPoints);
-
 /****************************************************************/
 class BaxterChain : public KDL::Chain
 {
 private:
-
     std::vector<double> q;    // vector of joint angles in the arm chain
     KDL::JntArray lb, ub;     // lower bound, upper bound joint arrays
 

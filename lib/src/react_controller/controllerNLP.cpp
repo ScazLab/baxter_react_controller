@@ -2,7 +2,7 @@
 #include <ros/ros.h>
 
 #include "react_controller/controllerNLP.h"
-#include "react_controller/mathUtils.h"
+#include "react_controller/react_control_utils.h"
 
 using namespace Eigen;
 using namespace   std;

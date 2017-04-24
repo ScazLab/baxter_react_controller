@@ -1,4 +1,6 @@
-#include "react_controller/mathUtils.h"
+#include "react_controller/react_control_utils.h"
+
+using namespace Eigen;
 
 void SVD(const MatrixXd &in, Matrix3d &U, Vector3d &S, Matrix3d &V)
 {
@@ -98,4 +100,53 @@ VectorXd dcm2axis(const Eigen::MatrixXd &R)
    v[3]=theta;
 
    return v;
+}
+
+Matrix4d KDLFrameToEigen(KDL::Frame _f)
+{
+    Matrix4d result;
+    result.setIdentity();
+
+    //get pose matrix
+    KDL::Rotation rotKDL = _f.M;
+    KDL::Vector   posKDL = _f.p;
+
+    //convert to Eigen matrix
+    Eigen::Quaterniond quatEig;
+    Eigen::Vector3d posEig;
+
+    tf::quaternionKDLToEigen(rotKDL, quatEig);
+    tf::vectorKDLToEigen(posKDL, posEig);
+
+    Matrix3d rot = quatEig.toRotationMatrix();
+
+    result.block<3,3>(0,0) = rot;
+    result.block<3,1>(0,3) = posEig;
+
+    return result;
+}
+
+bool computeCollisionPoints(const std::vector<Eigen::Vector3d>&      joints,
+                            const             Eigen::Vector3d & coll_coords,
+                            std::vector<collisionPoint>&    collisionPoints)
+{
+    collisionPoints.clear();
+
+    for (size_t i = 0; i < joints.size() - 1; ++i)
+    {
+        Eigen::Vector3d ab = joints[i + 1] - joints[i];
+        Eigen::Vector3d ap = coll_coords - joints[i];
+        Eigen::Vector3d coll_pt = joints[i] + ((ap).dot(ab)) / ((ab).dot(ab)) * ab;
+        collisionPoint c;
+        c.x = coll_pt;
+        c.magnitude = (coll_coords - coll_pt).norm();
+        c.n = (coll_coords - coll_pt) / c.magnitude;
+        collisionPoints.push_back(c);
+
+        // ROS_INFO("coll point %zu at x: %g y: %g z: %g", i, collisionPoints[i].x(0), collisionPoints[i].x(1), collisionPoints[i].x(2));
+        // ROS_INFO("      norm %zu at x: %g y: %g z: %g", i, collisionPoints[i].n(0), collisionPoints[i].n(1), collisionPoints[i].n(2));
+    }
+    // printf("\n");
+
+    return true;
 }
