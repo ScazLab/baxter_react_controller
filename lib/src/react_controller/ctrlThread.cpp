@@ -32,11 +32,7 @@ CtrlThread::CtrlThread(const std::string& _name, const std::string& _limb, bool 
 
     chain = new BaxterChain(robot_model, base_link, tip_link);
 
-    x_0.resize(3); x_0.setZero();
-    x_t.resize(3); x_t.setZero();
     x_n.resize(3); x_n.setZero();
-    x_d.resize(3); x_d.setZero();
-
     o_n.resize(3); o_n.setZero();
 
     q_dot.resize(chain->getNrOfJoints());

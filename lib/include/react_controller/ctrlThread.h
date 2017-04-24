@@ -12,18 +12,10 @@ private:
     Ipopt::SmartPtr<Ipopt::IpoptApplication> app;
 
     bool is_debug;        // Flag to enable debug mode (without using the robot)
-
     bool internal_state;  // Flag to know the internal state. True if OK.
 
-    Eigen::VectorXd x_0;  // Initial end-effector position
-    Eigen::VectorXd x_t;  // Current end-effector position
     Eigen::VectorXd x_n;  // Desired next end-effector position
-    Eigen::VectorXd x_d;  // Vector that stores the new target
-
-    Eigen::VectorXd o_0;  // Initial end-effector orientation
-    Eigen::VectorXd o_t;  // Current end-effector orientation
     Eigen::VectorXd o_n;  // Desired next end-effector orientation
-    Eigen::VectorXd o_d;  // Vector that stores the new orientation
 
     Eigen::VectorXd q_dot; // vector of initial joint angles in arm chain
 
