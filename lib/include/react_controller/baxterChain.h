@@ -37,16 +37,9 @@ public:
      * @param _p_out:     KDL::Frame of end effector, populated by function
      * @param _segmentNr: segment to get frame for, default is end effector
      *
-     * return:     true if successful, false if error
+     * return:     true/false if success/failure
      */
     bool JntToCart(const KDL::JntArray& _q_in, KDL::Frame& _p_out, int seg_nr=-1);
-
-    /**
-     * Gets all collision points and normal vectors for each segment in the arm.
-     *
-     * @return true if successful, false if error
-     */
-    bool GetJointPositions(std::vector<Eigen::Vector3d>& positions);
 
     /**
      * TODO
@@ -56,6 +49,13 @@ public:
      * @return        [description]
      */
     bool JntToJac(const KDL::JntArray& q_in, KDL::Jacobian& jac, int seg_nr=-1);
+
+/**
+     * Gets all collision points and normal vectors for each segment in the arm.
+     *
+     * @return true/false if success/failure
+     */
+    bool GetJointPositions(std::vector<Eigen::Vector3d>& positions);
 
     /**
      * Constructor for Baxter Chain. Takes a urdf robot model and base/tip link to
