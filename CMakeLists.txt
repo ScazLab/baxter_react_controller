@@ -181,6 +181,9 @@ if(CATKIN_ENABLE_TESTING)
 
   add_rostest_gtest(test_ipopt test/test_ipopt.launch test/test_ipopt.cpp)
   target_link_libraries(test_ipopt  react_controller ${catkin_LIBRARIES})
+
+  # add_rostest_gtest(test_react_controller test/test_react_controller.launch test/test_react_controller.cpp)
+  # target_link_libraries(test_react_controller  react_controller ${catkin_LIBRARIES})
 endif()
 
 ## Add folders to be run by python nosetests

@@ -1,0 +1,16 @@
+<launch>
+    <!-- Let's load the baxter URDF from the parameter server -->
+    <!-- <include file="$(find baxter_collaboration_lib)/launch/baxter_urdf.launch" /> -->
+
+    <node pkg="baxter_react_controller" type="baxter_react_controller" name="baxter_react_controller" output="screen"/>
+
+    <!-- 3D positions of the corners of the board -->
+    <rosparam param = "baxter_react_controller/waypoints">
+        [[0.9,  0.0, 0.2, 0.0, 0.7, 0.0, 0.7],
+         [0.9, -0.3, 0.0, 0.0, 0.7, 0.0, 0.7],
+         [0.9, -0.6, 0.4, 0.0, 0.7, 0.0, 0.7],
+         [0.9, -0.7, 0.1, 0.0, 0.7, 0.0, 0.7]]
+    </rosparam>
+
+    <test test-name="test_react_controller" pkg="baxter_react_controller" type="test_react_controller" />
+</launch>
