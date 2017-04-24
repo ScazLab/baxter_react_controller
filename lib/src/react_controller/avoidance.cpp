@@ -13,10 +13,10 @@ using namespace std;
 // using namespace iCub::iKin;
 // using namespace iCub::skinDynLib;
 
-AvoidanceHandlerAbstract::AvoidanceHandlerAbstract(const BaxterChain &_chain, const std::vector<collisionPoint_t> &_collisionPoints,const unsigned int _verbosity) :  chain(_chain), collisionPoints(_collisionPoints), verbosity(_verbosity)
+AvoidanceHandlerAbstract::AvoidanceHandlerAbstract(const BaxterChain &_chain, const std::vector<collisionPoint> &_collisionPoints,const unsigned int _verbosity) :  chain(_chain), collisionPoints(_collisionPoints), verbosity(_verbosity)
 {
         if (!collisionPoints.empty()){
-            for(std::vector<collisionPoint_t>::const_iterator it = collisionPoints.begin(); it != collisionPoints.end(); ++it) {
+            for(std::vector<collisionPoint>::const_iterator it = collisionPoints.begin(); it != collisionPoints.end(); ++it) {
                 // size_t dim = chain.getNrOfSegments();
                 BaxterChain customChain = chain; //instantiates a new chain, copying from the old (full) one
 
@@ -190,7 +190,7 @@ bool AvoidanceHandlerAbstract::computeFoR(const Eigen::VectorXd &pos, const Eige
 
 
 /****************************************************************/
-AvoidanceHandlerTactile::AvoidanceHandlerTactile(const BaxterChain &_chain,const std::vector<collisionPoint_t> &_collisionPoints,const unsigned int _verbosity): AvoidanceHandlerAbstract(_chain,_collisionPoints,_verbosity)
+AvoidanceHandlerTactile::AvoidanceHandlerTactile(const BaxterChain &_chain,const std::vector<collisionPoint> &_collisionPoints,const unsigned int _verbosity): AvoidanceHandlerAbstract(_chain,_collisionPoints,_verbosity)
 {
     type="tactile";
 

@@ -24,7 +24,7 @@ class AvoidanceHandlerAbstract
 
 
 public:
-    AvoidanceHandlerAbstract(const BaxterChain &_chain, const std::vector<collisionPoint_t> &_collisionPoints, const unsigned int _verbosity=0);
+    AvoidanceHandlerAbstract(const BaxterChain &_chain, const std::vector<collisionPoint> &_collisionPoints, const unsigned int _verbosity=0);
 
     std::string getType() const;
 
@@ -41,7 +41,7 @@ public:
  protected:
     std::string type;
     BaxterChain chain;
-    const std::vector<collisionPoint_t> &collisionPoints;
+    const std::vector<collisionPoint> &collisionPoints;
     unsigned int verbosity;
     std::deque<BaxterChain> ctrlPointChains;
     // yarp::os::Property parameters;
@@ -64,7 +64,7 @@ class AvoidanceHandlerTactile : public virtual AvoidanceHandlerAbstract
 {
 
 public:
-    AvoidanceHandlerTactile(const BaxterChain &_chain,const std::vector<collisionPoint_t> &_collisionPoints,const unsigned int _verbosity=0);
+    AvoidanceHandlerTactile(const BaxterChain &_chain,const std::vector<collisionPoint> &_collisionPoints,const unsigned int _verbosity=0);
     // void setParameters(const yarp::os::Property &parameters);
     Eigen::MatrixXd getVLIM(const Eigen::MatrixXd &v_lim);
 

@@ -9,15 +9,6 @@
 #include <sensor_msgs/JointState.h>
 #include <robot_utils/utils.h>
 
-// Things to remember:
-//  1 allList == quickList
-//  2 N == DOF
-//
-//  3 HN == Identity matrix (for now) -> every time there is something
-//                                       multiplied by HN, just discard it
-//  3 H0 == Identity matrix (for now) -> every time there is something
-//                                       multiplied by HN, just discard it
-//
 // New rule:
 // 1 input parameters for functions are prefixed with a _ (e.g. _q_0),
 // 2 members of the class do not have a _ (e.g. q)
@@ -28,11 +19,12 @@
 // in my code and you would need to do it anyway when we'll integrate
 // with my code
 
-struct collisionPoint_t{
+struct collisionPoint
+{
         // iCub::skinDynLib::SkinPart skin_part;
         Eigen::VectorXd x; //position (x,y,z) in the FoR of the respective skin part
         Eigen::VectorXd n; //direction of normal vector at that point - derived from taxel normals, pointing out of the skin
-        double magnitude; // ~ activation level from probabilistic representation in pps - likelihood of collision
+        double magnitude;  // ~ activation level from probabilistic representation in pps - likelihood of collision
 };
 
 /**
@@ -53,8 +45,8 @@ Eigen::Matrix4d KDLFrameToEigen(KDL::Frame _f);
  * @return             true/false if success/failure
  */
 bool computeCollisionPoints(const std::vector<Eigen::Vector3d>&      joints,
-                           const             Eigen::Vector3d & coll_coords,
-                           std::vector<collisionPoint_t> &_collisionPoints);
+                            const             Eigen::Vector3d & coll_coords,
+                            std::vector<collisionPoint>&   _collisionPoints);
 
 /****************************************************************/
 class BaxterChain : public KDL::Chain

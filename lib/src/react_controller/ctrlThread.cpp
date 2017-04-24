@@ -76,7 +76,7 @@ CtrlThread::CtrlThread(const std::string& _name, const std::string& _limb, bool 
     chain->GetJointPositions(positions);
 
     Eigen::Vector3d point(0.40, -0.25, 0.45);
-    std::vector<collisionPoint_t> collisionPoints;
+    std::vector<collisionPoint> collisionPoints;
     computeCollisionPoints(positions, point, collisionPoints);
     AvoidanceHandlerAbstract *avhdl;
     avhdl = new AvoidanceHandlerTactile(*chain, collisionPoints, false);
