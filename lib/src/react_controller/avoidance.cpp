@@ -230,7 +230,7 @@ Eigen::MatrixXd AvoidanceHandlerTactile::getVLIM(const Eigen::MatrixXd &v_lim)
             }
             s = s * -1.0; //we reverse the direction to obtain joint velocities that bring about avoidance
             // printMessage(2,"s * (-1) -> joint contributions toward avoidance: \n (%s) \n",s.toString(3,3).c_str());
-            cout << s;
+            // cout << s;
             for (int j=0; j<s.size(); j++)
             {
                 // printMessage(2,"        Joint: %d, s[j]: %f, limits before: Min: %f, Max: %f\n",j,s[j],VLIM(j,0),VLIM(j,1));
