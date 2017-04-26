@@ -237,12 +237,12 @@ bool CtrlThread::goToPoseNoCheck(double px, double py, double pz,
     Eigen::VectorXd est_vels = solveIK(exit_code);
     // q_dot = est_vels;
 
-    // std::vector<double> des_poss(chain->getNrOfJoints());
-    // for (size_t i = 0, _i = chain->getNrOfJoints(); i < _i; ++i)
-    // {
-    //     des_poss[i] = chain->getAng(i) + (dT * est_vels[i]);
-    // }
-    //
+    std::vector<double> des_poss(chain->getNrOfJoints());
+    for (size_t i = 0, _i = chain->getNrOfJoints(); i < _i; ++i)
+    {
+        des_poss[i] = chain->getAng(i) + (dT * est_vels[i]);
+    }
+
     // ROS_INFO("sending joint position: %s", toString(des_poss).c_str());
 
     if (exit_code != 0 && is_debug)        return false;
