@@ -235,16 +235,14 @@ bool CtrlThread::goToPoseNoCheck(double px, double py, double pz,
 
     int exit_code = -1;
     Eigen::VectorXd est_vels = solveIK(exit_code);
-
-    std::vector<double> des_poss(chain->getNrOfJoints());
-
-    for (size_t i = 0, _i = chain->getNrOfJoints(); i < _i; ++i)
-    {
-        des_poss[i] = chain->getAng(i) + (dT * est_vels[i]);
-    }
-
     // q_dot = est_vels;
 
+    // std::vector<double> des_poss(chain->getNrOfJoints());
+    // for (size_t i = 0, _i = chain->getNrOfJoints(); i < _i; ++i)
+    // {
+    //     des_poss[i] = chain->getAng(i) + (dT * est_vels[i]);
+    // }
+    //
     // ROS_INFO("sending joint position: %s", toString(des_poss).c_str());
 
     if (exit_code != 0 && is_debug)        return false;
@@ -252,8 +250,8 @@ bool CtrlThread::goToPoseNoCheck(double px, double py, double pz,
     if (exit_code != 0 && exit_code != -4) return false;
     if (is_debug)                          return  true;
 
-     // suppressCollisionAv();
-    if (!goToJointConfNoCheck(des_poss)) return false;
+    // suppressCollisionAv();
+    if (!goToJointConfNoCheck(des_poss))   return false;
 
     return true;
 
