@@ -33,8 +33,7 @@ CtrlThread::CtrlThread(const std::string& _name, const std::string& _limb, bool 
 
     chain = new BaxterChain(robot_model, base_link, tip_link);
 
-    x_n.resize(3); x_n.setZero();
-    o_n.resize(3); o_n.setZero();
+    x_n.setZero();
 
     q_dot.resize(chain->getNrOfJoints());
     q_dot.setZero();
@@ -130,6 +129,9 @@ bool CtrlThread::debugIPOPT()
     bool      result =  true;
     int   n_failures =     0;
 
+    // internal_state = goToPoseNoCheck(frame.p[0], frame.p[1], frame.p[2] +0.01, ox, oy, oz, ow);
+    // return internal_state;
+
     std::vector<double> increment{0.001, 0.004};
 
     // Let's do all the test together
@@ -183,22 +185,11 @@ bool CtrlThread::debugIPOPT()
     // return goToPoseNoCheck(frame.p[0], frame.p[1], frame.p[2], ox, oy, oz, ow);
 }
 
-#include <tf/transform_datatypes.h>
-
 bool CtrlThread::goToPoseNoCheck(double px, double py, double pz,
                                  double ox, double oy, double oz, double ow)
 {
-    x_n[0] = px;
-    x_n[1] = py;
-    x_n[2] = pz;
-
-    tf::Quaternion q(ox, oy, oz, ow);
-    tf::Matrix3x3 m(q);
-    double roll, pitch, yaw;
-    m.getRPY(roll, pitch, yaw);
-    o_n[0] = roll;
-    o_n[1] = pitch;
-    o_n[2] = yaw;
+    x_n = Vector3d(px, py, pz);
+    o_n = Quaterniond(ow, ox, oy, oz);
 
     if (!isNoRobot())
     {
@@ -238,7 +229,7 @@ bool CtrlThread::goToPoseNoCheck(double px, double py, double pz,
     // q_dot = est_vels;
 
     std::vector<double> des_poss(chain->getNrOfJoints());
-    for (size_t i = 0, _i = chain->getNrOfJoints(); i < _i; ++i)
+    for (size_t i = 0; i < chain->getNrOfJoints(); ++i)
     {
         des_poss[i] = chain->getAng(i) + (dT * est_vels[i]);
     }
@@ -259,14 +250,10 @@ bool CtrlThread::goToPoseNoCheck(double px, double py, double pz,
 
 VectorXd CtrlThread::solveIK(int &_exit_code)
 {
-    VectorXd xr(6);
-    xr.block<3, 1>(0, 0) = x_n;
-    xr.block<3, 1>(3, 0) = o_n;
-
     nlp->set_ctrl_ori(false);
     nlp->set_dt(dT);
     // nlp->set_v_lim(vLim);
-    nlp->set_x_r(xr);
+    nlp->set_x_r(x_n, o_n);
     nlp->set_v_0(q_dot);
     nlp->init();
 

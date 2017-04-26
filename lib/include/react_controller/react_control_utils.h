@@ -50,6 +50,12 @@ Eigen::MatrixXd axis2dcm(const Eigen::VectorXd &v);
  */
 Eigen::Vector3d cross(const Eigen::MatrixXd &A, int colA, const Eigen::MatrixXd &B, int colB);
 
+/**
+ * [skew description]
+ * @param  w [description]
+ * @return   [description]
+ */
+Eigen::Matrix3d skew(const Eigen::Vector3d &w);
 
 struct collisionPoint
 {

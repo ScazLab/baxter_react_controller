@@ -16,8 +16,8 @@ private:
     bool is_debug;        // Flag to enable debug mode (without using the robot)
     bool internal_state;  // Flag to know the internal state. True if OK.
 
-    Eigen::VectorXd x_n;  // Desired next end-effector position
-    Eigen::VectorXd o_n;  // Desired next end-effector orientation
+    Eigen::Vector3d    x_n;  // Desired next end-effector position
+    Eigen::Quaterniond o_n;  // Desired next end-effector orientation
 
     Eigen::VectorXd q_dot; // vector of initial joint angles in arm chain
 

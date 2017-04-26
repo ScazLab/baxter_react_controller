@@ -17,13 +17,24 @@ void SVD(const MatrixXd &in, Matrix3d &U, Vector3d &S, Matrix3d &V)
 
 Vector3d cross(const MatrixXd &A, int colA, const MatrixXd &B, int colB)
 {
-
     Vector3d v;
     v[0]=A(1,colA)*B(2,colB)-A(2,colA)*B(1,colB);
     v[1]=A(2,colA)*B(0,colB)-A(0,colA)*B(2,colB);
     v[2]=A(0,colA)*B(1,colB)-A(1,colA)*B(0,colB);
 
     return v;
+}
+
+Matrix3d skew(const Vector3d &w)
+{
+    Matrix3d S;
+
+    S(0,0)=S(1,1)=S(2,2)=0.0;
+    S(1,0)= w[2]; S(0,1)=-S(1,0);
+    S(2,0)=-w[1]; S(0,2)=-S(2,0);
+    S(2,1)= w[0]; S(1,2)=-S(2,1);
+
+    return S;
 }
 
 MatrixXd axis2dcm(const VectorXd &v)

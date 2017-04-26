@@ -13,20 +13,19 @@ using namespace   std;
 ControllerNLP::ControllerNLP(BaxterChain chain_, double dt_, bool ctrl_ori_) :
                              chain(chain_), dt(dt_), ctrl_ori(ctrl_ori_),
                              q_0(chain_.getNrOfJoints()), v_0(chain_.getNrOfJoints()),
-                             J0_xyz(3,chain_.getNrOfJoints()), J0_ang(3,chain_.getNrOfJoints()),
-                             x_r(6), v_e(chain.getNrOfJoints()), q_lim(chain.getNrOfJoints(),2),
+                             J_0_xyz(3,chain_.getNrOfJoints()), J_0_ang(3,chain_.getNrOfJoints()),
+                             v_e(chain.getNrOfJoints()), q_lim(chain.getNrOfJoints(),2),
                              v_lim(chain_.getNrOfJoints(),2), bounds(chain.getNrOfJoints(),2),
                              qGuard(chain.getNrOfJoints()),
                              qGuardMinExt(chain.getNrOfJoints()), qGuardMinInt(chain.getNrOfJoints()),
                              qGuardMinCOG(chain.getNrOfJoints()), qGuardMaxExt(chain.getNrOfJoints()),
                              qGuardMaxInt(chain.getNrOfJoints()), qGuardMaxCOG(chain.getNrOfJoints())
 {
-    x_r.setZero();
     v_0.setZero();
     v_e.setZero();
-    H_0.setIdentity();
-    H_e.setIdentity();
-    H_r.setIdentity();
+
+    R_e.setIdentity();
+    R_r.setIdentity();
 
     for (size_t r=0; r<chain.getNrOfJoints(); r++)
     {
@@ -94,45 +93,19 @@ void ControllerNLP::computeBounds()
 }
 
 /****************************************************************/
-MatrixXd ControllerNLP::v2m(const VectorXd &x)
+void ControllerNLP::set_x_r(const Eigen::Vector3d &_p_r, const Eigen::Quaterniond &_o_r)
 {
-    ROS_ASSERT(x.size()>=6);
-    Vector4d ang; ang.setZero();
-    ang.block<3,1>(0, 0) = x.tail(3);
-    double ang_mag=ang.norm();
-    if (ang_mag>0.0)
-        ang/=ang_mag;
-    ang(3, 0) = ang_mag;
-    MatrixXd H = axis2dcm(ang);
-    H(0,3)=x[0];
-    H(1,3)=x[1];
-    H(2,3)=x[2];
-    return H;
-}
+    ROS_ASSERT(p_r.size() == _p_r.size());
 
-/****************************************************************/
-MatrixXd ControllerNLP::skew(const VectorXd &w)
-{
-    ROS_ASSERT(w.size()>=3);
-    MatrixXd S(3,3);
-    S(0,0)=S(1,1)=S(2,2)=0.0;
-    S(1,0)= w[2]; S(0,1)=-S(1,0);
-    S(2,0)=-w[1]; S(0,2)=-S(2,0);
-    S(2,1)= w[0]; S(1,2)=-S(2,1);
-    return S;
-}
+    p_r = _p_r;
+    o_r = _o_r;
+    R_r =  o_r.toRotationMatrix();
 
-/****************************************************************/
-void ControllerNLP::set_x_r(const VectorXd &_x_r)
-{
-    ROS_ASSERT(x_r.size() == _x_r.size());
-    x_r=_x_r;
+    // cout << "R_r: \n" << R_r << endl;
 
-    H_r=v2m(x_r);
-    p_r=x_r.block<3,1>(0, 0);
-    skew_nr=skew(H_r.col(0));
-    skew_sr=skew(H_r.col(1));
-    skew_ar=skew(H_r.col(2));
+    skew_nr = skew(R_r.col(0));
+    skew_sr = skew(R_r.col(1));
+    skew_ar = skew(R_r.col(2));
 }
 
 /****************************************************************/
@@ -164,16 +137,22 @@ void ControllerNLP::set_v_0(const VectorXd &_v_0)
 void ControllerNLP::init()
 {
     q_0= chain.getAng();
-    H_0=   chain.getH();
+
+    Matrix4d H_0= chain.getH();
     R_0= H_0.block<3,3>(0,0);
     p_0= H_0.col(3).block<3,1>(0,0);
 
-    MatrixXd J0=chain.GeoJacobian();
-    J0_xyz=J0.block(0,0,3,chain.getNrOfJoints());
-    J0_ang=J0.block(3,0,3,chain.getNrOfJoints());
+    // cout << "H_0: \n" << H_0 << endl;
+    // cout << "R_0: \n" << R_0 << endl;
+    // cout << "p_0: \t" << p_0.transpose() << endl;
 
-    // cout << "J0_xyz:\n" << J0_xyz << endl;
-    // cout << "J0_ang:\n" << J0_ang << endl;
+    MatrixXd J_0=chain.GeoJacobian();
+    J_0_xyz=J_0.block(0,0,3,chain.getNrOfJoints());
+    J_0_ang=J_0.block(3,0,3,chain.getNrOfJoints());
+
+    // cout << "J_0:    \n" << J_0     << endl;
+    // cout << "J_0_xyz:\n" << J_0_xyz << endl;
+    // cout << "J_0_ang:\n" << J_0_ang << endl;
 
     computeBounds();
 }
@@ -222,7 +201,9 @@ bool ControllerNLP::get_starting_point(Ipopt::Index n, bool init_x, Ipopt::Numbe
                         Ipopt::Index m, bool init_lambda, Ipopt::Number *lambda)
 {
     for (Ipopt::Index i=0; i<n; ++i)
+    {
         x[i]=std::min(std::max(bounds(i,0),v_0[i]),bounds(i,1));
+    }
     return true;
 }
 
@@ -236,30 +217,29 @@ void ControllerNLP::computeQuantities(const Ipopt::Number *x, const bool new_x)
             v_e[i]=x[i];
         }
 
-        Vector3d ww = J0_ang*v_e;
-        double theta = ww.squaredNorm();
-        if (theta > 0.0)      { ww /= theta; }
+        Vector3d  ww = J_0_ang*v_e;
+        double theta =  ww.norm();
+        if (theta > 0.0) { ww /= theta; }
+        AngleAxisd aa_e(theta * dt, ww);
+        // cout << "aa_e: \t" << aa_e.axis().transpose() << " " << aa_e.angle() << endl;
 
-        Vector4d w;
-        w.block<3,1>(0,0) = ww;
-        w[3] = theta * dt;
-        H_e.block<3,3>(0,0) = axis2dcm(w).block<3,3>(0,0) * R_0;
+        R_e = aa_e.toRotationMatrix() * R_0;
+        // cout << "R_e: \n" << R_e << endl;
+        p_e = p_0 + dt * (J_0_xyz * v_e);
 
-        p_e=p_0+dt*(J0_xyz*v_e);
-        H_e(0,3)=p_e[0];
-        H_e(1,3)=p_e[1];
-        H_e(2,3)=p_e[2];
+        err_xyz = p_r-p_e;
 
-        err_xyz=p_r-p_e;
+        AngleAxisd aa_err((R_r)*(R_e.transpose()));
+        err_ang = aa_err.axis() * sin(aa_err.angle());
 
-        err_ang=dcm2axis(H_r*H_e.transpose());
-        err_ang*=err_ang[3];
-        err_ang = err_ang.block<3, 1>(0, 0);
+        // cout << " aa_err: " << aa_err.axis().transpose() << " " << aa_err.angle() << endl;
+        // cout << "err_ang: " << err_ang.transpose() << endl;
 
-        MatrixXd L=-0.5*(skew_nr*skew(H_e.col(0))+
-                         skew_sr*skew(H_e.col(1))+
-                         skew_ar*skew(H_e.col(2)));
-        Derr_ang=-dt*(L*J0_ang);
+        MatrixXd L=-0.5*(skew_nr*skew(R_e.col(0))+
+                         skew_sr*skew(R_e.col(1))+
+                         skew_ar*skew(R_e.col(2)));
+
+        Derr_ang=-dt*(L*J_0_ang);
     }
 }
 
@@ -269,7 +249,7 @@ bool ControllerNLP::eval_f(Ipopt::Index n, const Ipopt::Number *x, bool new_x,
 {
     computeQuantities(x,new_x);
     obj_value=(ctrl_ori?err_ang.squaredNorm():0.0);
-    // ROS_INFO_THROTTLE(0.01, "err_ang.squaredNorm() %g", err_ang.squaredNorm());
+    // ROS_INFO("err_ang.squaredNorm() %g", err_ang.squaredNorm());
     return true;
 }
 
@@ -294,7 +274,7 @@ bool ControllerNLP::eval_g(Ipopt::Index n, const Ipopt::Number *x, bool new_x,
 
     // reaching in position
     g[0]=err_xyz.squaredNorm();
-    // ROS_INFO("g[0] %g", g[0]);
+    // ROS_INFO("err_xyz.squaredNorm() %g", g[0]);
 
     return true;
 }
@@ -324,7 +304,7 @@ bool ControllerNLP::eval_jac_g(Ipopt::Index n, const Ipopt::Number *x, bool new_
         // reaching in position
         for (Ipopt::Index i=0; i<n; ++i)
         {
-            values[i]=-2.0*dt*(err_xyz.dot(J0_xyz.col(i)));
+            values[i]=-2.0*dt*(err_xyz.dot(J_0_xyz.col(i)));
             idx++;
         }
     }

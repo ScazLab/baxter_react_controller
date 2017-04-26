@@ -29,29 +29,27 @@ private:
     bool ctrl_ori;
 
     Eigen::Vector3d     p_0;  // Initial 3D position
-    Eigen::Quaterniond  o_0;  // Initial 3D orientation
     Eigen::VectorXd     q_0;  // Initial ND joint configuration
     Eigen::VectorXd     v_0;  // Initial ND joint velocities
-    Eigen::Matrix4d     H_0;  // Initial 4x4 transform matrix
     Eigen::Matrix3d     R_0;  // Initial 3x3 rotation matrix
-    Eigen::MatrixXd  J0_xyz;  // Initial Jacobian (positional component)
-    Eigen::MatrixXd  J0_ang;  // Initial Jacobian (orientational component)
+    Eigen::MatrixXd J_0_xyz;  // Initial Jacobian (positional component)
+    Eigen::MatrixXd J_0_ang;  // Initial Jacobian (orientation component)
 
-    Eigen::VectorXd x_r;      // Reference 6D  pose
-    Eigen::Vector3d p_r;      // Reference 3D  position
-    Eigen::Matrix4d H_r;      // Reference 4x4 transform matrix
+    Eigen::Vector3d      p_r; // Reference 3D  position
+    Eigen::Quaterniond   o_r; // Reference quaternion orientation
+    Eigen::Matrix3d      R_r; // Reference 4x4 transform matrix
+    Eigen::MatrixXd  skew_nr; // Skew-symmetric matrix of the first  column of R_r
+    Eigen::MatrixXd  skew_sr; // Skew-symmetric matrix of the second column of R_r
+    Eigen::MatrixXd  skew_ar; // Skew-symmetric matrix of the third  column of R_r
 
     Eigen::VectorXd v_e;      // Estimated joint velocities
     Eigen::Vector3d p_e;      // Estimated 3D position
-    Eigen::Matrix4d H_e;      // Estimated 4x4 transform matrix
+    Eigen::Matrix3d R_e;      // Estimated 3x3 rotation matrix
 
-    Eigen::VectorXd err_xyz;  // Positional error
-    Eigen::VectorXd err_ang;  // Orientational error
-    Eigen::MatrixXd Derr_ang; // Derivative of the orientational error
+    Eigen::Vector3d  err_xyz; // Positional error
+    Eigen::Vector3d  err_ang; // Orientation error
+    Eigen::MatrixXd Derr_ang; // Derivative of the orientation error
 
-    Eigen::MatrixXd  skew_nr;
-    Eigen::MatrixXd  skew_sr;
-    Eigen::MatrixXd  skew_ar;
     Eigen::MatrixX2d q_lim;
     Eigen::MatrixX2d v_lim;
 
@@ -68,8 +66,6 @@ private:
     /****************************************************************/
     void computeGuard();
     void computeBounds();
-    Eigen::MatrixXd v2m(const Eigen::VectorXd &x);
-    Eigen::MatrixXd skew(const Eigen::VectorXd &w);
 
 public:
     ControllerNLP(BaxterChain chain_, double dt_ = 0.01, bool ctrl_ori_ = false);
@@ -87,7 +83,7 @@ public:
                            const Ipopt::Number *z_U, Ipopt::Index m, const Ipopt::Number *g, const Ipopt::Number *lambda,
                            Ipopt::Number obj_value, const Ipopt::IpoptData *ip_data, Ipopt::IpoptCalculatedQuantities *ip_cq);
 
-    void set_x_r(const Eigen::VectorXd &_x_r);
+    void set_x_r(const Eigen::Vector3d &_p_r, const Eigen::Quaterniond &_o_r);
     void set_v_lim(const Eigen::MatrixXd &_v_lim);
     void set_ctrl_ori(const bool _ctrl_ori);
     void set_dt(const double _dt);
