@@ -263,6 +263,7 @@ bool ControllerNLP::eval_f(Ipopt::Index n, const Ipopt::Number *x, bool new_x,
 {
     computeQuantities(x,new_x);
     obj_value=(ctrl_ori?err_ang.squaredNorm():0.0);
+    // ROS_INFO_THROTTLE(0.01, "err_ang.squaredNorm() %g", err_ang.squaredNorm());
     return true;
 }
 
@@ -286,6 +287,7 @@ bool ControllerNLP::eval_g(Ipopt::Index n, const Ipopt::Number *x, bool new_x,
 
     // reaching in position
     g[0]=err_xyz.squaredNorm();
+    // ROS_INFO("g[0] %g", g[0]);
 
     return true;
 }
@@ -346,12 +348,15 @@ void ControllerNLP::finalize_solution(Ipopt::SolverReturn status, Ipopt::Index n
         // Error codes: https://www.coin-or.org/Ipopt/doxygen/classorg_1_1coinor_1_1Ipopt.html
     }
 
-    ROS_INFO("  initial  position: %s", toString(std::vector<double>(x_0.data(),
-                                              x_0.data() + x_0.size())).c_str());
-    ROS_INFO("  desired  position: %s", toString(std::vector<double>(pr.data(),
-                                               pr.data() + pr.size())).c_str());
-    ROS_INFO("  computed position: %s", toString(std::vector<double>(pe.data(),
-                                               pe.data() + pe.size())).c_str());
+    // ROS_INFO("  initial  position: %s", toString(std::vector<double>(x_0.data(),
+    //                                           x_0.data() + x_0.size())).c_str());
+    // ROS_INFO("  desired  position: %s", toString(std::vector<double>(pr.data(),
+    //                                            pr.data() + pr.size())).c_str());
+    // ROS_INFO("  computed position: %s", toString(std::vector<double>(pe.data(),
+    //                                            pe.data() + pe.size())).c_str());
+    Eigen::VectorXd pos_err = pe-x_0;
+    ROS_INFO("   positional error: %s\tnorm: %g", toString(std::vector<double>(pos_err.data(),
+                           pos_err.data() + pos_err.size())).c_str(), pos_err.squaredNorm());
 
     VectorXd j(chain.getNrOfJoints());
 
@@ -360,14 +365,14 @@ void ControllerNLP::finalize_solution(Ipopt::SolverReturn status, Ipopt::Index n
         j(i) = q_0[i] + (dt * v[i]);
     }
 
-    ROS_INFO("initial  joint vels: %s", toString(std::vector<double>(v_0.data(),
-                                                v_0.data() + v_0.size())).c_str());
-    ROS_INFO("initial joint state: %s", toString(std::vector<double>(q_0.data(),
-                                              q_0.data() + q_0.size())).c_str());
-    ROS_INFO("computed joint vels: %s", toString(std::vector<double>(v.data(),
-                                                v.data() + v.size())).c_str());
-    ROS_INFO("computed next state: %s", toString(std::vector<double>(j.data(),
-                                                j.data() + j.size())).c_str());
+    // ROS_INFO("initial  joint vels: %s", toString(std::vector<double>(v_0.data(),
+    //                                             v_0.data() + v_0.size())).c_str());
+    // ROS_INFO("initial joint state: %s", toString(std::vector<double>(q_0.data(),
+    //                                           q_0.data() + q_0.size())).c_str());
+    // ROS_INFO("computed joint vels: %s", toString(std::vector<double>(v.data(),
+    //                                             v.data() + v.size())).c_str());
+    // ROS_INFO("computed next state: %s", toString(std::vector<double>(j.data(),
+    //                                             j.data() + j.size())).c_str());
 }
 
 ControllerNLP::~ControllerNLP()

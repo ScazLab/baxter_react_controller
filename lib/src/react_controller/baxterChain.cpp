@@ -240,7 +240,6 @@ bool BaxterChain::JntToJac(const KDL::JntArray& q_in, KDL::Jacobian& jac, int se
     KDL::Twist t_tmp;
     SetToZero(t_tmp);
 
-    std::vector<bool> locked_joints_(getNrOfJoints(), false);
     int j=0, k=0;
 
     for (size_t i=0; i<segmentNr; ++i)
