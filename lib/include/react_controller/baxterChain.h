@@ -104,7 +104,7 @@ public:
      * @return geometric Jacobian in he form of an Eigen Matrix
      */
     Eigen::MatrixXd GeoJacobian();
-    Eigen::MatrixXd GeoJacobian(const unsigned int _i);
+    Eigen::MatrixXd GeoJacobian(const size_t _i);
 
     /**
      * Function to get array of joint angles for the chain
@@ -112,7 +112,7 @@ public:
      * return: array of joint angles in the form of Eigen::Vector
      */
     Eigen::VectorXd     getAng();
-    double              getAng(const unsigned int _i) { return getAng()[_i]; };
+    double              getAng(const size_t _i) { return getAng()[_i]; };
 
     /**
      * Functions to set the joint angles of the arm chain. Used
@@ -131,7 +131,7 @@ public:
      * return: pose matrix of _i'th (or end effector) joint
      */
     Eigen::MatrixXd getH();
-    Eigen::MatrixXd getH(const unsigned int _i);
+    Eigen::MatrixXd getH(const size_t _i);
 
     /**
      * Functions to get joint angle limits for the _i'th joint
@@ -140,8 +140,8 @@ public:
      *
      * return: value of joint limit
      */
-    double getMax(const unsigned int _i);
-    double getMin(const unsigned int _i);
+    double getMax(const size_t _i);
+    double getMin(const size_t _i);
 
     ~BaxterChain();
 };
