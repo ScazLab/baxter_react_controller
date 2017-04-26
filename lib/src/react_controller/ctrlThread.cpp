@@ -219,25 +219,6 @@ bool CtrlThread::goToPoseNoCheck(double px, double py, double pz,
     //                                             _q.position.data() + _q.position.size())).c_str());
     nlp = new ControllerNLP(*chain);
 
-    if (coll_av)
-    {
-        std::vector<Eigen::Vector3d> positions;
-        chain->GetJointPositions(positions);
-
-        Eigen::Vector3d point(0.63, -0.17, 0.0);
-        std::vector<collisionPoint> collisionPoints;
-        computeCollisionPoints(positions, point, collisionPoints);
-        AvoidanceHandlerAbstract *avhdl;
-        avhdl = new AvoidanceHandlerTactile(*chain, collisionPoints, false);
-        // // cout << vLim << "\n";
-        vLimCollision = avhdl->getVLIM(vLim);
-        nlp->set_v_lim(vLimCollision);
-    }
-    else
-    {
-        nlp->set_v_lim(vLim);
-    }
-
     int exit_code = -1;
     Eigen::VectorXd est_vels = solveIK(exit_code);
     // q_dot = est_vels;
@@ -265,9 +246,28 @@ bool CtrlThread::goToPoseNoCheck(double px, double py, double pz,
 VectorXd CtrlThread::solveIK(int &_exit_code)
 {
     NLPOptionsFromParameterServer();
+
+    if (coll_av)
+    {
+        std::vector<Eigen::Vector3d> positions;
+        chain->GetJointPositions(positions);
+
+        Eigen::Vector3d point(0.63, -0.17, 0.0);
+        std::vector<collisionPoint> collisionPoints;
+        computeCollisionPoints(positions, point, collisionPoints);
+        AvoidanceHandlerAbstract *avhdl;
+        avhdl = new AvoidanceHandlerTactile(*chain, collisionPoints, false);
+        // // cout << vLim << "\n";
+        vLimCollision = avhdl->getVLIM(vLim);
+        nlp->set_v_lim(vLimCollision);
+    }
+    else
+    {
+        nlp->set_v_lim(vLim);
+    }
+
     nlp->set_ctrl_ori(nlp_ctrl_ori);
     nlp->set_dt(dT);
-    // nlp->set_v_lim(vLim);
     nlp->set_x_r(x_n, o_n);
     nlp->set_v_0(q_dot);
     nlp->init();
