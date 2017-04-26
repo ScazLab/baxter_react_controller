@@ -28,11 +28,13 @@ Vector3d cross(const MatrixXd &A, int colA, const MatrixXd &B, int colB)
 
 MatrixXd axis2dcm(const VectorXd &v)
 {
-    MatrixXd R(4, 4); R.setIdentity();
+    ROS_ASSERT(v.size()>=4);
+
+    MatrixXd R(4, 4);
+    R.setIdentity();
 
     double theta=v[3];
-    if (theta==0.0)
-        return R;
+    if (theta==0.0) { return R; }
 
     double c=cos(theta);
     double s=sin(theta);

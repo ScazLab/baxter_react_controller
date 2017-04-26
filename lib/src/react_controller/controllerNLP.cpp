@@ -1,3 +1,5 @@
+#include <iostream>
+
 #include <math.h>
 #include <ros/ros.h>
 
@@ -9,19 +11,23 @@ using namespace   std;
 
 /****************************************************************/
 ControllerNLP::ControllerNLP(BaxterChain chain_, double dt_, bool ctrl_ori_) :
-                                chain(chain_), dt(dt_), ctrl_ori(ctrl_ori_)
+                             chain(chain_), dt(dt_), ctrl_ori(ctrl_ori_),
+                             q_0(chain_.getNrOfJoints()), v_0(chain_.getNrOfJoints()),
+                             J0_xyz(3,chain_.getNrOfJoints()), J0_ang(3,chain_.getNrOfJoints()),
+                             x_r(6), q_lim(chain.getNrOfJoints(),2), v_lim(chain.getNrOfJoints(),2),
+                             v(chain_.getNrOfJoints()), bounds(chain.getNrOfJoints(),2),
+                             qGuard(chain.getNrOfJoints()),
+                             qGuardMinExt(chain.getNrOfJoints()), qGuardMinInt(chain.getNrOfJoints()),
+                             qGuardMinCOG(chain.getNrOfJoints()), qGuardMaxExt(chain.getNrOfJoints()),
+                             qGuardMaxInt(chain.getNrOfJoints()), qGuardMaxCOG(chain.getNrOfJoints())
 {
-    xr.resize(6);
-    xr.setZero();
+    x_r.setZero();
+    v_0.setZero();
+    v.setZero();
+    H_0.setIdentity();
+    H_e.setIdentity();
+    H_r.setIdentity();
 
-    v_0.resize(chain.getNrOfJoints()); v_0.setZero();
-    v=v_0;
-    He.resize(4, 4);
-    He.setZero();
-    He(3,3)=1.0;
-
-    q_lim.resize(chain.getNrOfJoints(),2);
-    v_lim.resize(chain.getNrOfJoints(),2);
     for (size_t r=0; r<chain.getNrOfJoints(); r++)
     {
         /* angle bounds */
@@ -40,15 +46,8 @@ ControllerNLP::ControllerNLP(BaxterChain chain_, double dt_, bool ctrl_ori_) :
 void ControllerNLP::computeGuard()
 {
     double guardRatio=0.1;
-    qGuard.resize(chain.getNrOfJoints());
-    qGuardMinExt.resize(chain.getNrOfJoints());
-    qGuardMinInt.resize(chain.getNrOfJoints());
-    qGuardMinCOG.resize(chain.getNrOfJoints());
-    qGuardMaxExt.resize(chain.getNrOfJoints());
-    qGuardMaxInt.resize(chain.getNrOfJoints());
-    qGuardMaxCOG.resize(chain.getNrOfJoints());
 
-    for (size_t i=0, DOF=chain.getNrOfJoints(); i<DOF; i++)
+    for (size_t i=0; i<chain.getNrOfJoints(); ++i)
     {
         qGuard[i]=0.25*guardRatio*(chain.getMax(i)-chain.getMin(i));
 
@@ -67,11 +66,13 @@ void ControllerNLP::computeBounds()
 {
     bounds.resize(chain.getNrOfJoints(), 2);
 
-    for (size_t i=0, DOF=chain.getNrOfJoints(); i<DOF; i++)
+    for (size_t i=0; i<chain.getNrOfJoints(); ++i)
     {
         double qi=q_0[i];
         if ((qi>=qGuardMinInt[i]) && (qi<=qGuardMaxInt[i]))
+        {
             bounds(i,0)=bounds(i,1)=1.0;
+        }
         else if (qi<qGuardMinInt[i])
         {
             bounds(i,0)=(qi<=qGuardMinExt[i]?0.0:
@@ -84,8 +85,8 @@ void ControllerNLP::computeBounds()
             bounds(i,1)=(qi>=qGuardMaxExt[i]?0.0:
                          0.5*(1.0+tanh(-10.0*(qi-qGuardMaxCOG[i])/qGuard[i])));
         }
-    };
-    for (size_t i=0; i<chain.getNrOfJoints(); i++)
+    }
+    for (size_t i=0; i<chain.getNrOfJoints(); ++i)
     {
         bounds(i,0)*=v_lim(i,0);
         bounds(i,1)*=v_lim(i,1);
@@ -122,16 +123,16 @@ MatrixXd ControllerNLP::skew(const VectorXd &w)
 }
 
 /****************************************************************/
-void ControllerNLP::set_xr(const VectorXd &_xr)
+void ControllerNLP::set_x_r(const VectorXd &_x_r)
 {
-    ROS_ASSERT(xr.size() == _xr.size());
-    xr=_xr;
+    ROS_ASSERT(x_r.size() == _x_r.size());
+    x_r=_x_r;
 
-    Hr=v2m(xr);
-    pr=xr.block<3,1>(0, 0);
-    skew_nr=skew(Hr.col(0));
-    skew_sr=skew(Hr.col(1));
-    skew_ar=skew(Hr.col(2));
+    H_r=v2m(x_r);
+    p_r=x_r.block<3,1>(0, 0);
+    skew_nr=skew(H_r.col(0));
+    skew_sr=skew(H_r.col(1));
+    skew_ar=skew(H_r.col(2));
 }
 
 /****************************************************************/
@@ -164,12 +165,15 @@ void ControllerNLP::init()
 {
     q_0= chain.getAng();
     H_0=   chain.getH();
-    R_0= H_0.block(0,0,3,3);
-    x_0= H_0.col(3).block<3,1>(0, 0);
+    R_0= H_0.block<3,3>(0,0);
+    p_0= H_0.col(3).block<3,1>(0,0);
 
     MatrixXd J0=chain.GeoJacobian();
     J0_xyz=J0.block(0,0,3,chain.getNrOfJoints());
     J0_ang=J0.block(3,0,3,chain.getNrOfJoints());
+
+    // cout << "J0_xyz:\n" << J0_xyz << endl;
+    // cout << "J0_ang:\n" << J0_ang << endl;
 
     computeBounds();
 }
@@ -200,7 +204,7 @@ bool ControllerNLP::get_bounds_info(Ipopt::Index n, Ipopt::Number *x_l, Ipopt::N
                                     Ipopt::Index m, Ipopt::Number *g_l, Ipopt::Number *g_u)
 {
 
-    for (Ipopt::Index i=0; i<n; i++)
+    for (Ipopt::Index i=0; i<n; ++i)
     {
         x_l[i]=bounds(i,0);
         x_u[i]=bounds(i,1);
@@ -217,7 +221,7 @@ bool ControllerNLP::get_starting_point(Ipopt::Index n, bool init_x, Ipopt::Numbe
                         bool init_z, Ipopt::Number *z_L, Ipopt::Number *z_U,
                         Ipopt::Index m, bool init_lambda, Ipopt::Number *lambda)
 {
-    for (Ipopt::Index i=0; i<n; i++)
+    for (Ipopt::Index i=0; i<n; ++i)
         x[i]=std::min(std::max(bounds(i,0),v_0[i]),bounds(i,1));
     return true;
 }
@@ -227,32 +231,33 @@ void ControllerNLP::computeQuantities(const Ipopt::Number *x, const bool new_x)
 {
     if (new_x)
     {
-        for (int i=0; i<v.size(); i++) v[i]=x[i];
-
-        Vector4d w; w.setZero();
-        Vector3d tmp = J0_ang*v;
-        w.block<3,1>(0, 0) = tmp;
-        double theta = w.squaredNorm();
-        if (theta > 0.0) {
-            tmp /= theta;
+        for (int i=0; i<v.size(); ++i)
+        {
+            v[i]=x[i];
         }
-        w.block<3,1>(0, 0) = tmp;
-        w[3] = (theta * dt);
-        He.block<3,3>(0, 0) = axis2dcm(w).block<3,3>(0,0) * R_0;
 
-        pe=x_0+dt*(J0_xyz*v);
-        He(0,3)=pe[0];
-        He(1,3)=pe[1];
-        He(2,3)=pe[2];
+        Vector3d ww = J0_ang*v;
+        double theta = ww.squaredNorm();
+        if (theta > 0.0)      { ww /= theta; }
 
-        err_xyz=pr-pe;
-        err_ang=dcm2axis(Hr*He.transpose());
+        Vector4d w;
+        w.block<3,1>(0,0) = ww;
+        w[3] = theta * dt;
+        H_e.block<3,3>(0,0) = axis2dcm(w).block<3,3>(0,0) * R_0;
+
+        p_e=p_0+dt*(J0_xyz*v);
+        H_e(0,3)=p_e[0];
+        H_e(1,3)=p_e[1];
+        H_e(2,3)=p_e[2];
+
+        err_xyz=p_r-p_e;
+        err_ang=dcm2axis(H_r*H_e.transpose());
         err_ang*=err_ang[3];
         err_ang = err_ang.block<3, 1>(0, 0);
 
-        MatrixXd L=-0.5*(skew_nr*skew(He.col(0))+
-                       skew_sr*skew(He.col(1))+
-                       skew_ar*skew(He.col(2)));
+        MatrixXd L=-0.5*(skew_nr*skew(H_e.col(0))+
+                         skew_sr*skew(H_e.col(1))+
+                         skew_ar*skew(H_e.col(2)));
         Derr_ang=-dt*(L*J0_ang);
     }
 }
@@ -272,7 +277,8 @@ bool ControllerNLP::eval_grad_f(Ipopt::Index n, const Ipopt::Number* x, bool new
                  Ipopt::Number *grad_f)
 {
     computeQuantities(x,new_x);
-    for (Ipopt::Index i=0; i<n; i++) {
+    for (Ipopt::Index i=0; i<n; ++i)
+    {
         grad_f[i]=(ctrl_ori?2.0*err_ang.dot(Derr_ang.col(i)):0.0);
     }
 
@@ -302,7 +308,7 @@ bool ControllerNLP::eval_jac_g(Ipopt::Index n, const Ipopt::Number *x, bool new_
         Ipopt::Index idx=0;
 
         // reaching in position
-        for (Ipopt::Index i=0; i<n; i++)
+        for (Ipopt::Index i=0; i<n; ++i)
         {
             iRow[i]=0; jCol[i]=i;
             idx++;
@@ -315,7 +321,7 @@ bool ControllerNLP::eval_jac_g(Ipopt::Index n, const Ipopt::Number *x, bool new_
         Ipopt::Index idx=0;
 
         // reaching in position
-        for (Ipopt::Index i=0; i<n; i++)
+        for (Ipopt::Index i=0; i<n; ++i)
         {
             values[i]=-2.0*dt*(err_xyz.dot(J0_xyz.col(i)));
             idx++;
@@ -333,12 +339,13 @@ void ControllerNLP::finalize_solution(Ipopt::SolverReturn status, Ipopt::Index n
                                       Ipopt::Number obj_value, const Ipopt::IpoptData *ip_data,
                                       Ipopt::IpoptCalculatedQuantities *ip_cq)
 {
-    for (Ipopt::Index i=0; i<n; i++)
+    for (Ipopt::Index i=0; i<n; ++i)
         v[i]=x[i];
 
     printf("\n");
 
-    switch(status) {
+    switch(status)
+    {
         case Ipopt::SUCCESS             : break;
         case Ipopt::CPUTIME_EXCEEDED    : ROS_WARN("Maximum CPU time exceeded.");  break;
         case Ipopt::LOCAL_INFEASIBILITY : ROS_WARN("Algorithm converged to a point of local infeasibility. "
@@ -348,13 +355,13 @@ void ControllerNLP::finalize_solution(Ipopt::SolverReturn status, Ipopt::Index n
         // Error codes: https://www.coin-or.org/Ipopt/doxygen/classorg_1_1coinor_1_1Ipopt.html
     }
 
-    // ROS_INFO("  initial  position: %s", toString(std::vector<double>(x_0.data(),
-    //                                           x_0.data() + x_0.size())).c_str());
-    // ROS_INFO("  desired  position: %s", toString(std::vector<double>(pr.data(),
-    //                                            pr.data() + pr.size())).c_str());
-    // ROS_INFO("  computed position: %s", toString(std::vector<double>(pe.data(),
-    //                                            pe.data() + pe.size())).c_str());
-    Eigen::VectorXd pos_err = pe-x_0;
+    // ROS_INFO("  initial  position: %s", toString(std::vector<double>(p_0.data(),
+    //                                           p_0.data() + p_0.size())).c_str());
+    // ROS_INFO("  desired  position: %s", toString(std::vector<double>(p_r.data(),
+    //                                           p_r.data() + p_r.size())).c_str());
+    // ROS_INFO("  computed position: %s", toString(std::vector<double>(p_e.data(),
+    //                                           p_e.data() + p_e.size())).c_str());
+    Eigen::VectorXd pos_err = p_e-p_0;
     ROS_INFO("   positional error: %s\tnorm: %g", toString(std::vector<double>(pos_err.data(),
                            pos_err.data() + pos_err.size())).c_str(), pos_err.squaredNorm());
 

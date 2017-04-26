@@ -5,14 +5,6 @@
 
 using namespace std;
 
-#define CTRL_DEG2RAD (M_PI/180.0)
-
-// using namespace yarp::sig;
-// using namespace yarp::math;
-// using namespace yarp::os;
-// using namespace iCub::iKin;
-// using namespace iCub::skinDynLib;
-
 AvoidanceHandlerAbstract::AvoidanceHandlerAbstract(const BaxterChain &_chain, const std::vector<collisionPoint> &_collisionPoints,const unsigned int _verbosity) :  chain(_chain), collisionPoints(_collisionPoints), verbosity(_verbosity)
 {
         if (!collisionPoints.empty()){

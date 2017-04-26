@@ -15,6 +15,8 @@
 
 #include <eigen_conversions/eigen_kdl.h>
 
+#include <ros/ros.h>
+
 /**
  * [SVD description]
  * @param in [description]

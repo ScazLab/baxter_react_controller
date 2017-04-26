@@ -88,7 +88,7 @@ void CtrlThread::initializeApp(bool _verbosity)
     app->Options()->SetIntegerValue("acceptable_iter",0);
     app->Options()->SetStringValue ("mu_strategy","adaptive");
     if (is_debug == false) { app->Options()->SetStringValue ("linear_solver", "ma57"); }
-    app->Options()->SetNumericValue("max_cpu_time", 0.95 * dT);
+    app->Options()->SetNumericValue("max_cpu_time", 0.95 * dT / 1000.0);
     // app->Options()->SetStringValue ("nlp_scaling_method","gradient-based");
     app->Options()->SetStringValue ("hessian_approximation","limited-memory");
     // app->Options()->SetStringValue ("derivative_test",verbosity?"first-order":"none");
@@ -210,11 +210,10 @@ bool CtrlThread::goToPoseNoCheck(double px, double py, double pz,
         chain->setAng(getJointStates());
     }
 
-    int exit_code = -1;
-
     // ROS_INFO("actual joint  pos: %s", toString(std::vector<double>(_q.position.data(),
     //                                             _q.position.data() + _q.position.size())).c_str());
     nlp = new ControllerNLP(*chain);
+
     if (coll_av)
     {
         std::vector<Eigen::Vector3d> positions;
@@ -234,12 +233,7 @@ bool CtrlThread::goToPoseNoCheck(double px, double py, double pz,
         nlp->set_v_lim(vLim);
     }
 
-    // for (size_t i = 0; i < positions.size(); ++i)
-    // {
-    //     ROS_INFO("joint %zu at x: %g y: %g z: %g", i, positions[i](0), positions[i](1), positions[i](2));
-    // }
-
-
+    int exit_code = -1;
     Eigen::VectorXd est_vels = solveIK(exit_code);
 
     std::vector<double> des_poss(chain->getNrOfJoints());
@@ -251,14 +245,14 @@ bool CtrlThread::goToPoseNoCheck(double px, double py, double pz,
 
     // q_dot = est_vels;
 
-    ROS_INFO("sending joint position: %s", toString(des_poss).c_str());
+    // ROS_INFO("sending joint position: %s", toString(des_poss).c_str());
 
     if (exit_code != 0 && is_debug)        return false;
     if (exit_code == 4 && is_debug)        return false;
     if (exit_code != 0 && exit_code != -4) return false;
     if (is_debug)                          return  true;
 
-    // suppressCollisionAv();
+     // suppressCollisionAv();
     if (!goToJointConfNoCheck(des_poss)) return false;
 
     return true;
@@ -267,9 +261,6 @@ bool CtrlThread::goToPoseNoCheck(double px, double py, double pz,
 
 VectorXd CtrlThread::solveIK(int &_exit_code)
 {
-    size_t DoFs = chain->getNrOfJoints();
-    VectorXd res(DoFs); res.setZero();
-
     VectorXd xr(6);
     xr.block<3, 1>(0, 0) = x_n;
     xr.block<3, 1>(3, 0) = o_n;
@@ -277,7 +268,7 @@ VectorXd CtrlThread::solveIK(int &_exit_code)
     nlp->set_ctrl_ori(false);
     nlp->set_dt(dT);
     // nlp->set_v_lim(vLim);
-    nlp->set_xr(xr);
+    nlp->set_x_r(xr);
     nlp->set_v_0(q_dot);
     nlp->init();
 

@@ -19,37 +19,43 @@
 class ControllerNLP : public Ipopt::TNLP
 {
 private:
-
+    // Chain to solve the IK against
     BaxterChain chain;
 
+    // Period of the control thread
     double dt;
 
+    // Flag to know if to control the orientation or not
     bool ctrl_ori;
 
-    Eigen::VectorXd x_0;
-    Eigen::VectorXd q_0;
-    Eigen::VectorXd v_0;
+    Eigen::Vector3d     p_0;  // Initial 3D position
+    Eigen::Quaterniond  o_0;  // Initial 3D orientation
+    Eigen::VectorXd     q_0;  // Initial ND joint configuration
+    Eigen::VectorXd     v_0;  // Initial ND joint velocities
+    Eigen::Matrix4d     H_0;  // Initial 4x4 transform matrix
+    Eigen::Matrix3d     R_0;  // Initial 3x3 rotation matrix
+    Eigen::MatrixXd  J0_xyz;  // Initial Jacobian (positional component)
+    Eigen::MatrixXd  J0_ang;  // Initial Jacobian (orientational component)
 
-    Eigen::VectorXd xr;
-    Eigen::VectorXd pr;
-    Eigen::MatrixXd Hr;
+    Eigen::VectorXd x_r;      // Reference 6D  pose
+    Eigen::Vector3d p_r;      // Reference 3D  position
+    Eigen::Matrix4d H_r;      // Reference 4x4 transform matrix
 
-    Eigen::VectorXd pe;
-    Eigen::MatrixXd skew_nr;
-    Eigen::MatrixXd skew_sr;
-    Eigen::MatrixXd skew_ar;
-    Eigen::MatrixXd q_lim;
-    Eigen::MatrixXd v_lim;
-    Eigen::VectorXd v;
-    Eigen::MatrixXd H_0;
-    Eigen::MatrixXd R_0;
-    Eigen::MatrixXd He;
-    Eigen::MatrixXd J0_xyz;
-    Eigen::MatrixXd J0_ang;
-    Eigen::MatrixXd Derr_ang;
-    Eigen::VectorXd err_xyz;
-    Eigen::VectorXd err_ang;
-    Eigen::MatrixXd bounds;
+    Eigen::Vector3d p_e;      // Estimated 3D position
+    Eigen::Matrix4d H_e;      // Estimated 4x4 transform matrix
+
+    Eigen::VectorXd err_xyz;  // Positional error
+    Eigen::VectorXd err_ang;  // Orientational error
+    Eigen::MatrixXd Derr_ang; // Derivative of the orientational error
+
+    Eigen::MatrixXd  skew_nr;
+    Eigen::MatrixXd  skew_sr;
+    Eigen::MatrixXd  skew_ar;
+    Eigen::MatrixX2d q_lim;
+    Eigen::MatrixX2d v_lim;
+    Eigen::VectorXd  v;
+
+    Eigen::MatrixX2d bounds;
 
     Eigen::VectorXd qGuard;
     Eigen::VectorXd qGuardMinExt;
@@ -81,7 +87,7 @@ public:
                            const Ipopt::Number *z_U, Ipopt::Index m, const Ipopt::Number *g, const Ipopt::Number *lambda,
                            Ipopt::Number obj_value, const Ipopt::IpoptData *ip_data, Ipopt::IpoptCalculatedQuantities *ip_cq);
 
-    void set_xr(const Eigen::VectorXd &_xr);
+    void set_x_r(const Eigen::VectorXd &_x_r);
     void set_v_lim(const Eigen::MatrixXd &_v_lim);
     void set_ctrl_ori(const bool _ctrl_ori);
     void set_dt(const double _dt);
