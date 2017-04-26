@@ -39,7 +39,7 @@ public:
      *
      * @param _verbosity verbosity flag
      */
-    void initializeApp(bool _verbosity);
+    void initializeNLP(bool _verbosity);
 
     /**
      * Overridden version of the robot_interface function. Takes position and

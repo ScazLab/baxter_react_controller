@@ -46,7 +46,7 @@ CtrlThread::CtrlThread(const std::string& _name, const std::string& _limb, bool 
         vLim(r, 1) =  vMax;
     }
 
-    initializeApp(false);
+    initializeNLP(true);
 
     if (is_debug == true)
     {
@@ -79,7 +79,7 @@ CtrlThread::CtrlThread(const std::string& _name, const std::string& _limb, bool 
     }
 }
 
-void CtrlThread::initializeApp(bool _verbosity)
+void CtrlThread::initializeNLP(bool _verbosity)
 {
     app=new Ipopt::IpoptApplication;
     app->Options()->SetNumericValue("tol", tol/10);

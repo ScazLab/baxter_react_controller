@@ -14,8 +14,8 @@ ControllerNLP::ControllerNLP(BaxterChain chain_, double dt_, bool ctrl_ori_) :
                              chain(chain_), dt(dt_), ctrl_ori(ctrl_ori_),
                              q_0(chain_.getNrOfJoints()), v_0(chain_.getNrOfJoints()),
                              J0_xyz(3,chain_.getNrOfJoints()), J0_ang(3,chain_.getNrOfJoints()),
-                             x_r(6), q_lim(chain.getNrOfJoints(),2), v_lim(chain.getNrOfJoints(),2),
-                             v(chain_.getNrOfJoints()), bounds(chain.getNrOfJoints(),2),
+                             x_r(6), v_e(chain.getNrOfJoints()), q_lim(chain.getNrOfJoints(),2),
+                             v_lim(chain_.getNrOfJoints(),2), bounds(chain.getNrOfJoints(),2),
                              qGuard(chain.getNrOfJoints()),
                              qGuardMinExt(chain.getNrOfJoints()), qGuardMinInt(chain.getNrOfJoints()),
                              qGuardMinCOG(chain.getNrOfJoints()), qGuardMaxExt(chain.getNrOfJoints()),
@@ -23,7 +23,7 @@ ControllerNLP::ControllerNLP(BaxterChain chain_, double dt_, bool ctrl_ori_) :
 {
     x_r.setZero();
     v_0.setZero();
-    v.setZero();
+    v_e.setZero();
     H_0.setIdentity();
     H_e.setIdentity();
     H_r.setIdentity();
@@ -181,7 +181,7 @@ void ControllerNLP::init()
 /****************************************************************/
 VectorXd ControllerNLP::get_result() const
 {
-    return v;
+    return v_e;
 }
 
 /****************************************************************/
@@ -231,12 +231,12 @@ void ControllerNLP::computeQuantities(const Ipopt::Number *x, const bool new_x)
 {
     if (new_x)
     {
-        for (int i=0; i<v.size(); ++i)
+        for (int i=0; i<v_e.size(); ++i)
         {
-            v[i]=x[i];
+            v_e[i]=x[i];
         }
 
-        Vector3d ww = J0_ang*v;
+        Vector3d ww = J0_ang*v_e;
         double theta = ww.squaredNorm();
         if (theta > 0.0)      { ww /= theta; }
 
@@ -245,12 +245,13 @@ void ControllerNLP::computeQuantities(const Ipopt::Number *x, const bool new_x)
         w[3] = theta * dt;
         H_e.block<3,3>(0,0) = axis2dcm(w).block<3,3>(0,0) * R_0;
 
-        p_e=p_0+dt*(J0_xyz*v);
+        p_e=p_0+dt*(J0_xyz*v_e);
         H_e(0,3)=p_e[0];
         H_e(1,3)=p_e[1];
         H_e(2,3)=p_e[2];
 
         err_xyz=p_r-p_e;
+
         err_ang=dcm2axis(H_r*H_e.transpose());
         err_ang*=err_ang[3];
         err_ang = err_ang.block<3, 1>(0, 0);
@@ -340,7 +341,9 @@ void ControllerNLP::finalize_solution(Ipopt::SolverReturn status, Ipopt::Index n
                                       Ipopt::IpoptCalculatedQuantities *ip_cq)
 {
     for (Ipopt::Index i=0; i<n; ++i)
-        v[i]=x[i];
+    {
+        v_e[i]=x[i];
+    }
 
     printf("\n");
 
@@ -367,19 +370,19 @@ void ControllerNLP::finalize_solution(Ipopt::SolverReturn status, Ipopt::Index n
 
     VectorXd j(chain.getNrOfJoints());
 
-    for (size_t i = 0, _i = chain.getNrOfJoints(); i < _i; ++i)
+    for (size_t i = 0; i < chain.getNrOfJoints(); ++i)
     {
-        j(i) = q_0[i] + (dt * v[i]);
+        j(i) = q_0[i] + (dt * v_e[i]);
     }
 
     // ROS_INFO("initial  joint vels: %s", toString(std::vector<double>(v_0.data(),
-    //                                             v_0.data() + v_0.size())).c_str());
+    //                                          v_0.data() + v_0.size())).c_str());
     // ROS_INFO("initial joint state: %s", toString(std::vector<double>(q_0.data(),
-    //                                           q_0.data() + q_0.size())).c_str());
-    // ROS_INFO("computed joint vels: %s", toString(std::vector<double>(v.data(),
-    //                                             v.data() + v.size())).c_str());
+    //                                          q_0.data() + q_0.size())).c_str());
+    // ROS_INFO("computed joint vels: %s", toString(std::vector<double>(v_e.data(),
+    //                                          v_e.data() + v_e.size())).c_str());
     // ROS_INFO("computed next state: %s", toString(std::vector<double>(j.data(),
-    //                                             j.data() + j.size())).c_str());
+    //                                            j.data() + j.size())).c_str());
 }
 
 ControllerNLP::~ControllerNLP()
