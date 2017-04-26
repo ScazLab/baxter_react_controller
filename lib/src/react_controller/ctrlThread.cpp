@@ -8,8 +8,8 @@ using namespace            Eigen;
 CtrlThread::CtrlThread(const std::string& _name, const std::string& _limb, bool _no_robot, double _ctrl_freq,
                        bool _is_debug, double _tol, double _vMax, bool _coll_av) :
                        RobotInterface(_name, _limb, _no_robot, _ctrl_freq, true, false, true, true), chain(0),
-                       is_debug(_is_debug), internal_state(true), dT(1000.0/_ctrl_freq), tol(_tol), vMax(_vMax),
-                       coll_av(_coll_av)
+                       is_debug(_is_debug), internal_state(true), nlp_ctrl_ori(false), nlp_derivative_test("none"),
+                       nlp_print_level(0), dT(1000.0/_ctrl_freq), tol(_tol), vMax(_vMax), coll_av(_coll_av)
 {
     urdf::Model robot_model;
     std::string xml_string;
@@ -45,7 +45,7 @@ CtrlThread::CtrlThread(const std::string& _name, const std::string& _limb, bool 
         vLim(r, 1) =  vMax;
     }
 
-    initializeNLP(false);
+    initializeNLP();
 
     if (is_debug == true)
     {
@@ -78,7 +78,7 @@ CtrlThread::CtrlThread(const std::string& _name, const std::string& _limb, bool 
     }
 }
 
-void CtrlThread::initializeNLP(bool _verbosity)
+void CtrlThread::initializeNLP()
 {
     app=new Ipopt::IpoptApplication;
     app->Options()->SetNumericValue("tol", tol/10);
@@ -90,9 +90,23 @@ void CtrlThread::initializeNLP(bool _verbosity)
     app->Options()->SetNumericValue("max_cpu_time", 0.95 * dT / 1000.0);
     // app->Options()->SetStringValue ("nlp_scaling_method","gradient-based");
     app->Options()->SetStringValue ("hessian_approximation","limited-memory");
-    // app->Options()->SetStringValue ("derivative_test",verbosity?"first-order":"none");
-    app->Options()->SetStringValue ("derivative_test","none");
-    app->Options()->SetIntegerValue("print_level",(_verbosity && !is_debug)?4:0);
+}
+
+void CtrlThread::NLPOptionsFromParameterServer()
+{
+    _n.param<bool>("ctrl_ori", nlp_ctrl_ori, false);
+    _n.param<string>("derivative_test", nlp_derivative_test, "none");
+    _n.param<int>("print_level", nlp_print_level, 0);
+
+    if (nlp_print_level > 0)
+    {
+        ROS_INFO("[NLP]         Print Level: %i", nlp_print_level);
+        ROS_INFO("[NLP] Orientation Control: %s", nlp_ctrl_ori?"on":"off");
+        ROS_INFO("[NLP]     Derivative Test: %s", nlp_derivative_test.c_str());
+    }
+
+    app->Options()->SetStringValue ("derivative_test", nlp_derivative_test);
+    app->Options()->SetIntegerValue(    "print_level",     nlp_print_level);
     app->Initialize();
 }
 
@@ -250,7 +264,8 @@ bool CtrlThread::goToPoseNoCheck(double px, double py, double pz,
 
 VectorXd CtrlThread::solveIK(int &_exit_code)
 {
-    nlp->set_ctrl_ori(false);
+    NLPOptionsFromParameterServer();
+    nlp->set_ctrl_ori(nlp_ctrl_ori);
     nlp->set_dt(dT);
     // nlp->set_v_lim(vLim);
     nlp->set_x_r(x_n, o_n);

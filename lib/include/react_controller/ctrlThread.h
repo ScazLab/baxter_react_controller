@@ -13,20 +13,25 @@ private:
 
     Ipopt::SmartPtr<ControllerNLP> nlp;
 
-    bool is_debug;        // Flag to enable debug mode (without using the robot)
+    bool       is_debug;  // Flag to enable debug mode (without using the robot)
     bool internal_state;  // Flag to know the internal state. True if OK.
+
+    // IPOPT params
+    bool               nlp_ctrl_ori;  // Flag to know if to control the orientation or not
+    std::string nlp_derivative_test;  // String to enable the derivative test
+    int             nlp_print_level;  // Print level of the IPOPT app
 
     Eigen::Vector3d    x_n;  // Desired next end-effector position
     Eigen::Quaterniond o_n;  // Desired next end-effector orientation
 
-    Eigen::VectorXd q_dot; // vector of initial joint angles in arm chain
+    Eigen::VectorXd q_dot;   // Vector of initial joint velocities in arm chain
 
-    Eigen::MatrixXd vLim; // matrix of maximum joint velocities per joint
+    Eigen::MatrixXd          vLim; // matrix of maximum joint velocities per joint
     Eigen::MatrixXd vLimCollision; // matrix of maximum joint velocities per joint
 
-    double dT;          // time constraint for IpOpt solver time per optimization
-    double tol;         // tolerance for constraint violations
-    double vMax;        // maximum velocity of joints
+    double    dT;          // time constraint for IpOpt solver time per optimization
+    double   tol;         // tolerance for constraint violations
+    double  vMax;        // maximum velocity of joints
     bool coll_av;       // collision avoidance mode
 
 public:
@@ -36,10 +41,13 @@ public:
     /**
      * Initializes the IpoptApplication with default values for every time the solver
      * is called.
-     *
-     * @param _verbosity verbosity flag
      */
-    void initializeNLP(bool _verbosity);
+    void initializeNLP();
+
+    /**
+     * Reads some NLP options from the parameter server and initializes the app
+     */
+    void NLPOptionsFromParameterServer();
 
     /**
      * Overridden version of the robot_interface function. Takes position and
