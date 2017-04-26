@@ -45,7 +45,7 @@ CtrlThread::CtrlThread(const std::string& _name, const std::string& _limb, bool 
         vLim(r, 1) =  vMax;
     }
 
-    initializeNLP(true);
+    initializeNLP(false);
 
     if (is_debug == true)
     {
