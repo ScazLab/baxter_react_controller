@@ -29,14 +29,14 @@ private:
     Eigen::MatrixXd          vLim; // matrix of maximum joint velocities per joint
     Eigen::MatrixXd vLimCollision; // matrix of maximum joint velocities per joint
 
-    double    dT;          // time constraint for IpOpt solver time per optimization
-    double   tol;         // tolerance for constraint violations
-    double  vMax;        // maximum velocity of joints
+    double    dT;       // time constraint for IpOpt solver time per optimization
+    double   tol;       // tolerance for constraint violations
+    double  vMax;       // maximum velocity of joints
     bool coll_av;       // collision avoidance mode
 
 public:
     CtrlThread(const std::string& _name, const std::string& _limb, bool _no_robot, double _ctrl_freq,
-               bool _is_debug = false, double tol = 1e-7, double vMax = 60.0, bool _coll_av = false);
+               bool _is_debug = false, double tol = 1e-3, double vMax = 60.0, bool _coll_av = false);
 
     /**
      * Initializes the IpoptApplication with default values for every time the solver
