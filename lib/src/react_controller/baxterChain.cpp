@@ -114,42 +114,6 @@ void BaxterChain::initChain(urdf::Model _robot_model,
 
 }
 
-// MatrixXd  BaxterChain::GeoJacobian(const size_t i)
-// {
-//     // yAssert(i<N);
-
-//     Matrix J(6,i+1);
-//     Matrix PN,Z;
-//     Vector w;
-
-//     deque<Matrix> intH;
-//     intH.push_back(H0);
-
-//     for (size_t j=0; j<=i; j++)
-//         intH.push_back(intH[j]*_q[j].getH(true));
-
-//     PN=intH[i+1];
-//     if (i>=N-1)
-//         PN=PN*HN;
-
-//     for (size_t j=0; j<=i; j++)
-//     {
-//         Z=intH[j];
-//         w=cross(Z,2,PN-Z,3);
-
-//         J(0,j)=w[0];
-//         J(1,j)=w[1];
-//         J(2,j)=w[2];
-//         J(3,j)=Z(0,2);
-//         J(4,j)=Z(1,2);
-//         J(5,j)=Z(2,2);
-//     }
-
-//     return J;
-// }
-
-
-
 MatrixXd BaxterChain::GeoJacobian()
 {
     KDL::Jacobian J;
@@ -328,13 +292,30 @@ bool BaxterChain::GetJointPositions(std::vector<Eigen::Vector3d>& positions)
     return true;
 }
 
+geometry_msgs::Pose BaxterChain::getPose()
+{
+    geometry_msgs::Pose result;
 
-MatrixXd BaxterChain::getH()
+    Matrix4d H = getH();
+    result.position.x = H(0,3);
+    result.position.y = H(1,3);
+    result.position.z = H(2,3);
+
+    Quaterniond    q(H.block<3,3>(0,0));
+    result.orientation.x = q.x();
+    result.orientation.y = q.y();
+    result.orientation.z = q.z();
+    result.orientation.w = q.w();
+
+    return result;
+}
+
+Matrix4d BaxterChain::getH()
 {
     return getH(q.size() - 1);
 }
 
-MatrixXd BaxterChain::getH(const size_t _i)
+Matrix4d BaxterChain::getH(const size_t _i)
 {
     //num joints in chain
     size_t num_joints = q.size();

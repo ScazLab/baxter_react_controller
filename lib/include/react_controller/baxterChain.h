@@ -99,12 +99,9 @@ public:
      * Function to return the geometric Jacobian of the _i'th segment
      * in the chain, or the end effector if no parameter given.
      *
-     * @param _i [index of segment to return]
-     *
-     * @return geometric Jacobian in he form of an Eigen Matrix
+     * @return geometric Jacobian in the form of an Eigen Matrix
      */
     Eigen::MatrixXd GeoJacobian();
-    Eigen::MatrixXd GeoJacobian(const size_t _i);
 
     /**
      * Function to get array of joint angles for the chain
@@ -125,13 +122,20 @@ public:
     bool     setAng(sensor_msgs::JointState _q);
 
     /**
+     * Function that returns the current pose as a geometry_msgs::Pose
+     *
+     * @return the current pose as a geometry_msgs::Pose
+     */
+    geometry_msgs::Pose getPose();
+
+    /**
      * Functions to get pose matrix of a joint in the chain. If called
      * without a parameter, gets pose matrix of end effector.
      *
      * return: pose matrix of _i'th (or end effector) joint
      */
-    Eigen::MatrixXd getH();
-    Eigen::MatrixXd getH(const size_t _i);
+    Eigen::Matrix4d getH();
+    Eigen::Matrix4d getH(const size_t _i);
 
     /**
      * Functions to get joint angle limits for the _i'th joint
