@@ -47,16 +47,16 @@ CtrlThread::CtrlThread(const std::string& _name, const std::string& _limb, bool 
 
     initializeNLP();
 
+    if (waitForJointAngles(2.0))   { chain->setAng(getJointStates()); }
+
+    if (!isNoRobot())    { ROS_INFO("Curr pose: %s", toString(RobotInterface::getPose()).c_str()); }
+    else                 { ROS_INFO("Curr pose: %s", toString(         chain->getPose()).c_str()); }
+
     if (is_debug == true)
     {
         if (debugIPOPT()) ROS_INFO("Success! IPOPT works.");
         else              ROS_ERROR("IPOPT does not work!");
     }
-
-    if (waitForJointAngles(2.0))   { chain->setAng(getJointStates()); }
-
-    if (!isNoRobot())    { ROS_INFO("Curr pose: %s", toString(RobotInterface::getPose()).c_str()); }
-    else                 { ROS_INFO("Curr pose: %s", toString(         chain->getPose()).c_str()); }
 
     if (is_debug == true)
     {
@@ -105,15 +105,7 @@ void CtrlThread::NLPOptionsFromParameterServer()
 
 bool CtrlThread::debugIPOPT()
 {
-    if (!isNoRobot())
-    {
-        if (!waitForJointAngles())
-        {
-            return false;
-        }
-
-        chain->setAng(getJointStates());
-    }
+    if (waitForJointAngles(2.0))   { chain->setAng(getJointStates()); }
 
     KDL::JntArray jnts(chain->getNrOfJoints());
     VectorXd angles = chain->getAng();
@@ -136,7 +128,7 @@ bool CtrlThread::debugIPOPT()
     bool      result =  true;
     int   n_failures =     0;
 
-    // internal_state = goToPoseNoCheck(frame.p[0], frame.p[1], frame.p[2] +0.01, ox, oy, oz, ow);
+    // internal_state = goToPoseNoCheck(frame.p[0], frame.p[1], frame.p[2] + 0.001, ox, oy, oz, ow);
     // return internal_state;
 
     std::vector<double> increment{0.001, 0.004};
@@ -198,15 +190,7 @@ bool CtrlThread::goToPoseNoCheck(double px, double py, double pz,
     x_n = Vector3d(px, py, pz);
     o_n = Quaterniond(ow, ox, oy, oz);
 
-    if (!isNoRobot())
-    {
-        if (!waitForJointAngles())
-        {
-            return false;
-        }
-
-        chain->setAng(getJointStates());
-    }
+    if ((not is_debug) && waitForJointAngles(2.0))   { chain->setAng(getJointStates()); }
 
     // ROS_INFO("actual joint  pos: %s", toString(std::vector<double>(_q.position.data(),
     //                                             _q.position.data() + _q.position.size())).c_str());
