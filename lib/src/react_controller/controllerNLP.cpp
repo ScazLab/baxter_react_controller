@@ -325,7 +325,7 @@ void ControllerNLP::finalize_solution(Ipopt::SolverReturn status, Ipopt::Index n
         v_e[i]=x[i];
     }
 
-    printf("\n");
+    // printf("\n");
 
     switch(status)
     {

@@ -94,9 +94,12 @@ void CtrlThread::initializeNLP()
 
 void CtrlThread::NLPOptionsFromParameterServer()
 {
+    bool derivative_test = false;
     _n.param<bool>("ctrl_ori", nlp_ctrl_ori, false);
-    _n.param<string>("derivative_test", nlp_derivative_test, "none");
-    _n.param<int>("print_level", nlp_print_level, 0);
+    _n.param<bool>("derivative_test", derivative_test, false);
+    _n.param<int> ("print_level", nlp_print_level, 0);
+
+    nlp_derivative_test = derivative_test?"first-order":"none";
 
     if (nlp_print_level > 0)
     {
