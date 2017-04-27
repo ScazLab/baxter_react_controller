@@ -26,7 +26,6 @@ class BaxterChain : public KDL::Chain
 private:
     std::vector<double> q;    // vector of joint angles in the arm chain
     KDL::JntArray lb, ub;     // lower bound, upper bound joint arrays
-    int num_segments;         // number of segments in the chain
 
 public:
 
@@ -138,6 +137,8 @@ public:
     Eigen::Matrix4d getH();
     Eigen::Matrix4d getH(const size_t _i);
 
+    void removeSegment();
+
     /**
      * Functions to get joint angle limits for the _i'th joint
      *
@@ -147,9 +148,6 @@ public:
      */
     double getMax(const size_t _i);
     double getMin(const size_t _i);
-
-    double getNumSegs()                       { return num_segments };
-    void   setNumSegs(const size_t _val);
 
     ~BaxterChain();
 };
