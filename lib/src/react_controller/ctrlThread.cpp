@@ -216,7 +216,7 @@ bool CtrlThread::goToPoseNoCheck(double px, double py, double pz,
     if (!isNoRobot())
     {
         // suppressCollisionAv();
-        if (!goToJointConfNoCheck(des_poss))   return false;
+        if (goToJointConfNoCheck(des_poss))   return true;
     }
 
     return false;
