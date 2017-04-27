@@ -21,6 +21,7 @@ BaxterChain::BaxterChain(urdf::Model _robot_model,
         // middle of its operational range
         q.push_back((lb.data[i]+ub.data[i])/2);
     }
+    num_segments = getNrOfJoints();
 }
 
 BaxterChain::BaxterChain(urdf::Model _robot_model,
@@ -38,6 +39,7 @@ BaxterChain::BaxterChain(urdf::Model _robot_model,
     {
         q.push_back(_q_0[i]);
     }
+    num_segments = getNrOfJoints();
 }
 
 void BaxterChain::initChain(urdf::Model _robot_model,
@@ -345,12 +347,19 @@ Matrix4d BaxterChain::getH(const size_t _i)
     return KDLFrameToEigen(frame);
 }
 
-double BaxterChain::getMax(const size_t _i) {
+double BaxterChain::getMax(const size_t _i)
+{
     return ub.data[_i];
 }
 
-double BaxterChain::getMin(const size_t _i) {
+double BaxterChain::getMin(const size_t _i)
+{
     return lb.data[_i];
+}
+
+void BaxterChain::setNumSegs(const size_t _val)
+{
+    num_segments = _val;
 }
 
 BaxterChain::~BaxterChain()
