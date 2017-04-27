@@ -338,22 +338,33 @@ void ControllerNLP::finalize_solution(Ipopt::SolverReturn status, Ipopt::Index n
         // Error codes: https://www.coin-or.org/Ipopt/doxygen/classorg_1_1coinor_1_1Ipopt.html
     }
 
+    Eigen::VectorXd pos_err = p_e-p_0;
+    ROS_INFO("   positional error: %s\tnorm: %g", toString(std::vector<double>(pos_err.data(),
+                           pos_err.data() + pos_err.size())).c_str(), pos_err.squaredNorm());
+
+    if (ctrl_ori)
+    {
+        Quaterniond o_0(R_0);
+        Quaterniond o_e(R_e);
+
+        cout << "o_0: " << o_0.vec().transpose() << " " << o_0.w() << endl;
+        cout << "o_e: " << o_e.vec().transpose() << " " << o_e.w() << endl;
+        ROS_INFO("orientational error: %g %g", o_0.dot(o_e), o_e.dot(o_0));
+    }
+
     // ROS_INFO("  initial  position: %s", toString(std::vector<double>(p_0.data(),
     //                                           p_0.data() + p_0.size())).c_str());
     // ROS_INFO("  desired  position: %s", toString(std::vector<double>(p_r.data(),
     //                                           p_r.data() + p_r.size())).c_str());
     // ROS_INFO("  computed position: %s", toString(std::vector<double>(p_e.data(),
     //                                           p_e.data() + p_e.size())).c_str());
-    Eigen::VectorXd pos_err = p_e-p_0;
-    ROS_INFO("   positional error: %s\tnorm: %g", toString(std::vector<double>(pos_err.data(),
-                           pos_err.data() + pos_err.size())).c_str(), pos_err.squaredNorm());
 
-    VectorXd j(chain.getNrOfJoints());
+    // VectorXd j(chain.getNrOfJoints());
 
-    for (size_t i = 0; i < chain.getNrOfJoints(); ++i)
-    {
-        j(i) = q_0[i] + (dt * v_e[i]);
-    }
+    // for (size_t i = 0; i < chain.getNrOfJoints(); ++i)
+    // {
+    //     j(i) = q_0[i] + (dt * v_e[i]);
+    // }
 
     // ROS_INFO("initial  joint vels: %s", toString(std::vector<double>(v_0.data(),
     //                                          v_0.data() + v_0.size())).c_str());
