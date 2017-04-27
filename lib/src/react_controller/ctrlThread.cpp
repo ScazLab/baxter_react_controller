@@ -53,20 +53,10 @@ CtrlThread::CtrlThread(const std::string& _name, const std::string& _limb, bool 
         else              ROS_ERROR("IPOPT does not work!");
     }
 
-    std::vector<double> positions_init;
+    if (waitForJointAngles(2.0))   { chain->setAng(getJointStates()); }
 
-    if (!isNoRobot())
-    {
-        waitForJointAngles();
-        chain->setAng(getJointStates());
-
-        for (size_t i = 0; i < chain->getNrOfJoints(); ++i)
-        {
-            positions_init.push_back(chain->getAng(i));
-        }
-
-        ROS_INFO("Current Pose: %s", toString(getPose()).c_str());
-    }
+    if (!isNoRobot())    { ROS_INFO("Curr pose: %s", toString(RobotInterface::getPose()).c_str()); }
+    else                 { ROS_INFO("Curr pose: %s", toString(         chain->getPose()).c_str()); }
 
     if (is_debug == true)
     {
@@ -239,11 +229,13 @@ bool CtrlThread::goToPoseNoCheck(double px, double py, double pz,
     if (exit_code != 0 && exit_code != -4) return false;
     if (is_debug)                          return  true;
 
-    // suppressCollisionAv();
-    if (!goToJointConfNoCheck(des_poss))   return false;
+    if (!isNoRobot())
+    {
+        // suppressCollisionAv();
+        if (!goToJointConfNoCheck(des_poss))   return false;
+    }
 
-    return true;
-
+    return false;
 }
 
 VectorXd CtrlThread::solveIK(int &_exit_code)
