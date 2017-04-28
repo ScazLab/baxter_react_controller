@@ -1,0 +1,6 @@
+<launch>
+    <!-- Let's load the baxter URDF from the parameter server -->
+    <include file="$(find baxter_collaboration_lib)/launch/baxter_urdf.launch" />
+
+    <test test-name="test_baxter_chain" pkg="baxter_react_controller" type="test_baxter_chain" />
+</launch>

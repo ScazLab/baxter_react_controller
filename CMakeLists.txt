@@ -176,8 +176,8 @@ if(CATKIN_ENABLE_TESTING)
   find_package(rostest            REQUIRED)
   find_package(baxter_description REQUIRED)
 
-  catkin_add_gtest(test_baxterchain test/test_baxterchain.cpp)
-  target_link_libraries(test_baxterchain react_controller)
+  catkin_add_gtest(test_baxterchain test/test_baxterchain.launch test/test_baxterchain.cpp)
+  target_link_libraries(test_baxterchain react_controller ${catkin_LIBRARIES})
 
   add_rostest_gtest(test_ipopt test/test_ipopt.launch test/test_ipopt.cpp)
   target_link_libraries(test_ipopt  react_controller ${catkin_LIBRARIES})

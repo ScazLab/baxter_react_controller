@@ -21,13 +21,31 @@
 // with my code
 
 /****************************************************************/
+
+
 class BaxterChain : public KDL::Chain
 {
 private:
     std::vector<double> q;    // vector of joint angles in the arm chain
     KDL::JntArray lb, ub;     // lower bound, upper bound joint arrays
+    unsigned int nrOfJoints;
+    unsigned int nrOfSegments;
 
 public:
+
+    std::vector<KDL::Segment> segments;
+    BaxterChain();
+    BaxterChain(const KDL::Chain& in);
+    BaxterChain& operator = (const KDL::Chain& arg);
+    // BaxterChain& operator = (const BaxterChain& arg);
+
+    void addSegment(const KDL::Segment& segment);
+    void addChain(const KDL::Chain& chain);
+
+    unsigned int getNrOfJoints()const {return nrOfJoints;};
+    unsigned int getNrOfSegments()const {return nrOfSegments;};
+
+    const KDL::Segment& getSegment(unsigned int nr)const;
 
     /**
      * Takes an arm chain and returns the KDL::Frame of the end effector w.r.t
@@ -138,6 +156,7 @@ public:
     Eigen::Matrix4d getH(const size_t _i);
 
     void removeSegment();
+    void removeJoint();
 
     /**
      * Functions to get joint angle limits for the _i'th joint

@@ -338,18 +338,17 @@ void ControllerNLP::finalize_solution(Ipopt::SolverReturn status, Ipopt::Index n
         // Error codes: https://www.coin-or.org/Ipopt/doxygen/classorg_1_1coinor_1_1Ipopt.html
     }
 
-    Eigen::VectorXd pos_err = p_e-p_r;
-    pos_err *= 1000.0;
-    ROS_INFO("   positional error [mm]: %s\tnorm: %g", toString(std::vector<double>(pos_err.data(),
-                                 pos_err.data() + pos_err.size())).c_str(), pos_err.squaredNorm());
+    Eigen::VectorXd pos_err = (p_e-p_r) * 1000.0;
+    ROS_INFO("  pos err [mm]: %s\tsquared norm [mm]: %g", toString(std::vector<double>(pos_err.data(),
+                                    pos_err.data() + pos_err.size())).c_str(), pos_err.squaredNorm());
 
     if (ctrl_ori)
     {
         Quaterniond o_e(R_e);
 
-        // cout << "o_r: " << o_r.vec().transpose() << " " << o_r.w() << endl;
-        // cout << "o_e: " << o_e.vec().transpose() << " " << o_e.w() << endl;
-        ROS_INFO("  orientation error [  ]: %g %g", o_r.dot(o_e), o_e.dot(o_r));
+        cout << "o_r: " << o_r.vec().transpose() << " " << o_r.w() << endl;
+        cout << "o_e: " << o_e.vec().transpose() << " " << o_e.w() << endl;
+        ROS_INFO("  ori err [quaternion dot product]: %g err_ang %g", o_e.dot(o_r), err_ang.squaredNorm());
     }
 
     // ROS_INFO("  initial  position: %s", toString(std::vector<double>(p_0.data(),

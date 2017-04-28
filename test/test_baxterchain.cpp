@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+#include <ros/ros.h>
 
 #include "react_controller/baxterChain.h"
 
@@ -79,6 +80,43 @@ TEST(BaxterChainTest, testCollisionPoints)
     EXPECT_EQ(coll_points[2].n[0], -1);
     EXPECT_EQ(coll_points[2].n[1],  0);
     EXPECT_EQ(coll_points[2].n[2],  0);
+}
+
+#include <iostream>
+TEST(BaxterChainTest, testRemoveSegmentRightArm)
+{
+    urdf::Model robot_model;
+    string xml_string;
+    ros::NodeHandle _n("baxter_react_controller");
+
+    string urdf_xml,full_urdf_xml;
+    _n.param<std::string>("urdf_xml",urdf_xml,"/robot_description");
+    _n.searchParam(urdf_xml,full_urdf_xml);
+
+    EXPECT_TRUE(_n.getParam(full_urdf_xml, xml_string));
+
+    _n.param(full_urdf_xml,xml_string,std::string());
+    robot_model.initString(xml_string);
+
+    string base_link = "base";
+    string  tip_link = "right_gripper";
+
+    BaxterChain chain(robot_model, base_link, tip_link);
+    EXPECT_EQ(chain.getNrOfJoints(), 7);
+
+    printf("%i\n", chain.getNrOfSegments());
+
+    Matrix4d H = chain.getH(chain.getNrOfJoints() - 2);
+
+    chain.removeJoint();
+
+    Matrix4d H_prime = chain.getH();
+
+    EXPECT_EQ(chain.getNrOfJoints(), 6);
+    cout << H << endl;
+    cout << H_prime << endl;
+
+    // EXPECT_EQ(H, H_prime);
 }
 
 // Run all the tests that were declared with TEST()
