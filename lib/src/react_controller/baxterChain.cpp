@@ -10,20 +10,17 @@ using namespace   std;
 /*                            BaxterChain                                 */
 /**************************************************************************/
 
-BaxterChain::BaxterChain():
-             nrOfJoints(0),
-             nrOfSegments(0),
-             segments(0)
-     {
-     }
-
-BaxterChain::BaxterChain(const KDL::Chain& in):
-        nrOfJoints(0),
-        nrOfSegments(0),
-        segments(0)
+BaxterChain::BaxterChain(): nrOfJoints(0), nrOfSegments(0), segments(0)
 {
-    for(unsigned int i=0;i<in.getNrOfSegments();i++)
+
+}
+
+BaxterChain::BaxterChain(const KDL::Chain& in): BaxterChain()
+{
+    for(size_t i=0; i<in.getNrOfSegments(); ++i)
+    {
         this->addSegment(in.getSegment(i));
+    }
 }
 
 BaxterChain& BaxterChain::operator=(const KDL::Chain& arg)
@@ -31,8 +28,10 @@ BaxterChain& BaxterChain::operator=(const KDL::Chain& arg)
     nrOfJoints=0;
     nrOfSegments=0;
     segments.resize(0);
-    for(unsigned int i=0;i<arg.getNrOfSegments();i++)
+    for(size_t i=0; i<arg.getNrOfSegments(); ++i)
+    {
         addSegment(arg.getSegment(i));
+    }
     return *this;
 }
 
@@ -46,11 +45,13 @@ void BaxterChain::addSegment(const KDL::Segment& segment)
 
 void BaxterChain::addChain(const KDL::Chain& chain)
 {
-    for(unsigned int i=0;i<chain.getNrOfSegments();i++)
+    for(size_t i=0; i<chain.getNrOfSegments(); ++i)
+    {
         this->addSegment(chain.getSegment(i));
+    }
 }
 
-const KDL::Segment& BaxterChain::getSegment(unsigned int nr)const
+const KDL::Segment& BaxterChain::getSegment(size_t nr)const
 {
     return segments[nr];
 }
@@ -58,9 +59,7 @@ const KDL::Segment& BaxterChain::getSegment(unsigned int nr)const
 BaxterChain::BaxterChain(urdf::Model _robot_model,
                          const string& _base_link,
                           const string& _tip_link):
-                         nrOfJoints(0),
-                         nrOfSegments(0),
-                         segments(0)
+                         BaxterChain()
 {
     initChain(_robot_model, _base_link, _tip_link);
 
@@ -412,14 +411,15 @@ void BaxterChain::removeSegment()
 
 void BaxterChain::removeJoint()
 {
-    while(segments.back().getJoint().getType()==KDL::Joint::None)
-    {
-        nrOfSegments--;
-        segments.pop_back();
-        if (nrOfSegments == 0) {
-            ROS_ERROR("Could not remove joint, no joints left.");
-        }
-    }
+    printf("%i\n", segments.back().getJoint().getType());
+    // while(segments.back().getJoint().getType()==KDL::Joint::None)
+    // {
+    //     nrOfSegments--;
+    //     segments.pop_back();
+    //     if (nrOfSegments == 0) {
+    //         ROS_ERROR("Could not remove joint, no joints left.");
+    //     }
+    // }
     segments.pop_back();
     nrOfSegments--;
     nrOfJoints--;
