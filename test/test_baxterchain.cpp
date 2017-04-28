@@ -1,5 +1,4 @@
 #include <gtest/gtest.h>
-#include <ros/ros.h>
 
 #include "react_controller/baxterChain.h"
 
@@ -102,17 +101,23 @@ TEST(BaxterChainTest, testRemoveSegmentRightArm)
     string  tip_link = "right_gripper";
 
     BaxterChain chain(robot_model, base_link, tip_link);
-    EXPECT_EQ(chain.getNrOfJoints(), 7);
+    EXPECT_EQ(chain.getNrOfJoints(),    7);
+    EXPECT_EQ(chain.getNrOfSegments(), 12);
 
-    printf("%i\n", chain.getNrOfSegments());
+    Matrix4d H = chain.getH(6);
 
-    Matrix4d H = chain.getH(chain.getNrOfJoints() - 2);
+    // 8 means Joint::None
+    EXPECT_EQ(chain.segments.back().getJoint().getType(), 8);
+    chain.removeSegment();
+    EXPECT_EQ(chain.getNrOfJoints(),    7);
+    EXPECT_EQ(chain.getNrOfSegments(), 11);
 
     chain.removeJoint();
+    EXPECT_EQ(chain.getNrOfJoints(),    6);
+    EXPECT_EQ(chain.getNrOfSegments(),  8);
 
     Matrix4d H_prime = chain.getH();
 
-    EXPECT_EQ(chain.getNrOfJoints(), 6);
     cout << H << endl;
     cout << H_prime << endl;
 
