@@ -402,28 +402,31 @@ void BaxterChain::removeSegment()
 {
     if(segments.back().getJoint().getType()!=KDL::Joint::None)
     {
-        nrOfJoints--;
+        --nrOfJoints;
         q.pop_back();
     }
     segments.pop_back();
-    nrOfSegments--;
+    --nrOfSegments;
+
+    return;
 }
 
 void BaxterChain::removeJoint()
 {
-    printf("%i\n", segments.back().getJoint().getType());
-    // while(segments.back().getJoint().getType()==KDL::Joint::None)
-    // {
-    //     nrOfSegments--;
-    //     segments.pop_back();
-    //     if (nrOfSegments == 0) {
-    //         ROS_ERROR("Could not remove joint, no joints left.");
-    //     }
-    // }
-    segments.pop_back();
-    nrOfSegments--;
-    nrOfJoints--;
-    q.pop_back();
+    while(true)
+    {
+        if(segments.back().getJoint().getType()!=KDL::Joint::None)
+        {
+            removeSegment();
+            break;
+        }
+        else
+        {
+            removeSegment();
+        }
+    }
+
+    return;
 }
 
 double BaxterChain::getMax(const size_t _i)
