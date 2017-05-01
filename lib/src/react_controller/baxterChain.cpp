@@ -219,8 +219,8 @@ bool BaxterChain::JntToCart(const KDL::JntArray& _q_in, KDL::Frame& _p_out, int 
 
     _p_out = KDL::Frame::Identity();
 
-    if      (_q_in.rows()!=getNrOfJoints()) { return false; }
-    else if (segmentNr>getNrOfSegments())   { return false; }
+    // if      (_q_in.rows()!=getNrOfJoints()) { return false; }
+    if (segmentNr>getNrOfSegments())   { return false; }
     else
     {
         int j=0;
@@ -289,6 +289,7 @@ bool BaxterChain::JntToJac(const KDL::JntArray& q_in, KDL::Jacobian& jac, int se
 
         T_tmp = total;
     }
+
     return true;
 }
 
@@ -372,30 +373,39 @@ Matrix4d BaxterChain::getH()
 Matrix4d BaxterChain::getH(const size_t _i)
 {
     //num joints in chain
-    size_t num_joints = q.size();
+    size_t num_joints = getNrOfJoints();
 
     // TODO also here, remove the assert, place a ROS_ERROR, and return
     // if i > than num_joints
     ROS_ASSERT_MSG(_i < num_joints, "_i %lu, num_joints %lu", _i, num_joints);
 
-    KDL::JntArray jnts(getNrOfJoints());
+    KDL::JntArray jnts(_i + 1);
 
-    for (size_t i = 0; i < _i; ++i)
+    ROS_INFO("_i: %zu, num_joints: %zu", _i, num_joints);
+
+    for (size_t i = 0; i < _i + 1; ++i)
     {
         jnts(i) = q[i];
     }
 
     KDL::Frame frame;
-    JntToCart(jnts,frame, getNrOfSegments());
 
-    // if (!JntToCart(jnts, frame))
-    // {
-    //     ROS_ERROR("Something went wrong with jnt to cart");
-    //     ROS_ERROR("getNrOfJoints %u getNrOfSegments %u jnts.size() %u",
-    //                      getNrOfJoints(), getNrOfSegments(), jnts.rows());
-    // }
+    size_t seg_nr = 0;
+    if (_i + 1 == getNrOfJoints()) { seg_nr = getNrOfSegments(); }
+    else
+    {
+        size_t jnt_counter = 0;
+        while (jnt_counter < _i + 1) {
+            if (getSegment(seg_nr++).getJoint().getType() != KDL::Joint::None)
+            {
+                jnt_counter++;
+            }
+            if (seg_nr == getNrOfSegments()) { break; }
+        }
+    }
 
-    // return KDLFrameToEigen(getSegment(_i).pose(q[_i]));
+    JntToCart(jnts,frame, seg_nr);
+
     return KDLFrameToEigen(frame);
 }
 

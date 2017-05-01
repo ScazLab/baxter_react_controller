@@ -104,8 +104,6 @@ TEST(BaxterChainTest, testRemoveSegmentRightArm)
     BaxterChain chain(robot_model, base_link, tip_link);
     EXPECT_EQ(chain.getNrOfJoints(), 7);
 
-    printf("%i\n", chain.getNrOfSegments());
-
     Matrix4d H = chain.getH(chain.getNrOfJoints() - 2);
 
     chain.removeJoint();
@@ -113,10 +111,45 @@ TEST(BaxterChainTest, testRemoveSegmentRightArm)
     Matrix4d H_prime = chain.getH();
 
     EXPECT_EQ(chain.getNrOfJoints(), 6);
+
     cout << H << endl;
     cout << H_prime << endl;
 
-    // EXPECT_EQ(H, H_prime);
+    EXPECT_EQ(H, H_prime);
+}
+
+TEST(BaxterChainTest, testSegmentTypes)
+{
+    urdf::Model robot_model;
+    string xml_string;
+    ros::NodeHandle _n("baxter_react_controller");
+
+    string urdf_xml,full_urdf_xml;
+    _n.param<std::string>("urdf_xml",urdf_xml,"/robot_description");
+    _n.searchParam(urdf_xml,full_urdf_xml);
+
+    EXPECT_TRUE(_n.getParam(full_urdf_xml, xml_string));
+
+    _n.param(full_urdf_xml,xml_string,std::string());
+    robot_model.initString(xml_string);
+
+    string base_link = "base";
+    string  tip_link = "right_gripper";
+
+    BaxterChain chain(robot_model, base_link, tip_link);
+
+    EXPECT_EQ(chain.getSegment(0).getJoint().getType(), KDL::Joint::None);
+    EXPECT_EQ(chain.getSegment(1).getJoint().getType(), KDL::Joint::None);
+    EXPECT_EQ(chain.getSegment(2).getJoint().getType(), KDL::Joint::RotAxis);
+    EXPECT_EQ(chain.getSegment(3).getJoint().getType(), KDL::Joint::RotAxis);
+    EXPECT_EQ(chain.getSegment(4).getJoint().getType(), KDL::Joint::RotAxis);
+    EXPECT_EQ(chain.getSegment(5).getJoint().getType(), KDL::Joint::RotAxis);
+    EXPECT_EQ(chain.getSegment(6).getJoint().getType(), KDL::Joint::RotAxis);
+    EXPECT_EQ(chain.getSegment(7).getJoint().getType(), KDL::Joint::RotAxis);
+    EXPECT_EQ(chain.getSegment(8).getJoint().getType(), KDL::Joint::RotAxis);
+    EXPECT_EQ(chain.getSegment(9).getJoint().getType(), KDL::Joint::None);
+    EXPECT_EQ(chain.getSegment(10).getJoint().getType(), KDL::Joint::None);
+    EXPECT_EQ(chain.getSegment(11).getJoint().getType(), KDL::Joint::None);
 }
 
 // Run all the tests that were declared with TEST()
