@@ -186,15 +186,38 @@ public:
     geometry_msgs::Pose getPose();
 
     /**
-     * Functions to get pose matrix of a joint in the chain. If called
-     * without a parameter, gets pose matrix of end effector.
+     * Gets pose matrix of chain end effector.
      *
-     * return: pose matrix of _i'th (or end effector) joint
+     * return: pose matrix of end-effector joint
      */
     Eigen::Matrix4d getH();
+
+
+    /**
+     * Gets pose matrix of the i'th joint in the chain. The means it gets the
+     * transformation matrix of the last segment before the next joint. For example,
+     * if the first segment is a joint, the second is not a joint, and the third is a joint,
+     * getH(0) will return the transformation matrix as if the second segment were the
+     * end effector of the chain.
+     *
+     * @param _i [index of joint in chain]
+     *
+     * return: pose matrix of _i'th joint
+     */
     Eigen::Matrix4d getH(const size_t _i);
 
+    /**
+     * Removes a segment from the chain. The segment may or may not include a joint.
+     * Decrements nrOfSegments and if there is a joint also being removed, decrements
+     * nrOfJoints and pops a value off of q.
+     */
     void removeSegment();
+
+    /**
+     * Removes a joint from the chain. The joint may not be the last segment in the chain,
+     * so the function removes segments until it removes a segment that also includes a joint.
+     * Decrements nrOfSegments and nrOfJoints appropriately.
+     */
     void removeJoint();
 
     /**

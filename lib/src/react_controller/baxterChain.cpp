@@ -394,12 +394,12 @@ Matrix4d BaxterChain::getH(const size_t _i)
     else
     {
         size_t jnt_counter = 0;
-        while (jnt_counter < _i + 1) {
+        while (jnt_counter < _i + 1)
+        {
             if (getSegment(seg_nr++).getJoint().getType() != KDL::Joint::None)
             {
                 jnt_counter++;
             }
-            if (seg_nr == getNrOfSegments()) { break; }
         }
     }
 

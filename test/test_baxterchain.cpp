@@ -81,7 +81,6 @@ TEST(BaxterChainTest, testCollisionPoints)
     EXPECT_EQ(coll_points[2].n[2],  0);
 }
 
-#include <iostream>
 TEST(BaxterChainTest, testRemoveSegmentRightArm)
 {
     urdf::Model robot_model;
@@ -104,7 +103,12 @@ TEST(BaxterChainTest, testRemoveSegmentRightArm)
     EXPECT_EQ(chain.getNrOfJoints(),    7);
     EXPECT_EQ(chain.getNrOfSegments(), 12);
 
-    Matrix4d H = chain.getH(5);
+    Matrix4d H5 = chain.getH(5);
+    Matrix4d H4 = chain.getH(4);
+    Matrix4d H3 = chain.getH(3);
+    Matrix4d H2 = chain.getH(2);
+    Matrix4d H1 = chain.getH(1);
+    Matrix4d H0 = chain.getH(0);
 
     // 8 means Joint::None
     EXPECT_EQ(chain.segments.back().getJoint().getType(), 8);
@@ -115,15 +119,18 @@ TEST(BaxterChainTest, testRemoveSegmentRightArm)
     chain.removeJoint();
     EXPECT_EQ(chain.getNrOfJoints(),    6);
     EXPECT_EQ(chain.getNrOfSegments(),  8);
+    EXPECT_EQ(H5, chain.getH());
 
-    Matrix4d H_prime = chain.getH();
-
-    EXPECT_EQ(chain.getNrOfJoints(), 6);
-
-    cout << H << endl;
-    cout << H_prime << endl;
-
-    EXPECT_EQ(H, H_prime);
+    chain.removeJoint();
+    EXPECT_EQ(H4, chain.getH());
+    chain.removeJoint();
+    EXPECT_EQ(H3, chain.getH());
+    chain.removeJoint();
+    EXPECT_EQ(H2, chain.getH());
+    chain.removeJoint();
+    EXPECT_EQ(H1, chain.getH());
+    chain.removeJoint();
+    EXPECT_EQ(H0, chain.getH());
 }
 
 TEST(BaxterChainTest, testSegmentTypes)
