@@ -101,8 +101,6 @@ void ControllerNLP::set_x_r(const Eigen::Vector3d &_p_r, const Eigen::Quaternion
     o_r = _o_r;
     R_r =  o_r.toRotationMatrix();
 
-    // cout << "R_r: \n" << R_r << endl;
-
     skew_nr = skew(R_r.col(0));
     skew_sr = skew(R_r.col(1));
     skew_ar = skew(R_r.col(2));
@@ -346,8 +344,8 @@ void ControllerNLP::finalize_solution(Ipopt::SolverReturn status, Ipopt::Index n
     {
         Quaterniond o_e(R_e);
 
-        cout << "o_r: " << o_r.vec().transpose() << " " << o_r.w() << endl;
-        cout << "o_e: " << o_e.vec().transpose() << " " << o_e.w() << endl;
+        // cout << "o_r: " << o_r.vec().transpose() << " " << o_r.w() << endl;
+        // cout << "o_e: " << o_e.vec().transpose() << " " << o_e.w() << endl;
         ROS_INFO("  ori err [quaternion dot product]: %g err_ang %g", o_e.dot(o_r), err_ang.squaredNorm());
     }
 

@@ -237,8 +237,8 @@ VectorXd CtrlThread::solveIK(int &_exit_code)
         computeCollisionPoints(positions, point, collisionPoints);
         AvoidanceHandlerAbstract *avhdl;
         avhdl = new AvoidanceHandlerTactile(*chain, collisionPoints, false);
-        // // cout << vLim << "\n";
         vLimCollision = avhdl->getVLIM(vLim);
+        cout << vLimCollision << endl;
         nlp->set_v_lim(vLimCollision);
     }
     else

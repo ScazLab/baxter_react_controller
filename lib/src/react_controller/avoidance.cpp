@@ -1,5 +1,6 @@
 #include <Eigen/Dense>
 #include <math.h>
+#include <ros/ros.h>
 
 #include "react_controller/avoidance.h"
 
@@ -8,76 +9,30 @@ using namespace std;
 AvoidanceHandlerAbstract::AvoidanceHandlerAbstract(const BaxterChain &_chain, const std::vector<collisionPoint> &_collisionPoints,const unsigned int _verbosity) :  chain(_chain), collisionPoints(_collisionPoints), verbosity(_verbosity)
 {
         if (!collisionPoints.empty()){
-            for(std::vector<collisionPoint>::const_iterator it = collisionPoints.begin(); it != collisionPoints.end(); ++it) {
-                // size_t dim = chain.getNrOfSegments();
-                BaxterChain customChain = chain; //instantiates a new chain, copying from the old (full) one
+            BaxterChain customChain = chain;
+            for (size_t i = 0, num_jnts = chain.getNrOfJoints(); i < num_jnts - 1; ++i) {
+                customChain.removeJoint();
+            }
+            for (size_t i = 0, num_jnts = chain.getNrOfJoints(), num_segs = customChain.getNrOfSegments(); i < num_jnts - 1; ++i) {
+                customChain.addSegment(chain.getSegment(num_segs++));
+                while (chain.getSegment(num_segs).getJoint().getType() == KDL::Joint::None) {
+                    customChain.addSegment(chain.getSegment(num_segs++));
+                }
+                BaxterChain nextChain = customChain; //instantiates a new chain, copying from the old (full) one
+                Eigen::Matrix4d HN;
+                HN.setIdentity();
+                computeFoR((collisionPoints[i]).x,(collisionPoints[i]).n,HN);
 
-                // if (verbosity >= 5){
-                //     printf("Full chain has %d DOF \n",chain.getNrOfSegments());
-                //     printf("chain.getH() (end-effector): \n %s \n",chain.getH().toString(3,3).c_str());
-                // }
-                // int linkNrForCurrentSkinPartFrame = 0;
-                // if (verbosity >= 5){
-                //     if (dim ==7){
-                //         printf("SkinPart %s, linkNum %d, chain.getH() (skin part frame): \n %s \n",SkinPart_s[(*it).skin_part].c_str(),SkinPart_2_LinkNum[(*it).skin_part].linkNum,chain.getH(SkinPart_2_LinkNum[(*it).skin_part].linkNum).toString(3,3).c_str());
-                //     }
-                //     else if (dim == 10){
-                //         printf("SkinPart %s, linkNum %d + 3, chain.getH() (skin part frame): \n %s \n",SkinPart_s[(*it).skin_part].c_str(),SkinPart_2_LinkNum[(*it).skin_part].linkNum,chain.getH(SkinPart_2_LinkNum[(*it).skin_part].linkNum + 3).toString(3,3).c_str());
-                //     }
-                // }
-                Eigen::MatrixXd JfullChain = chain.GeoJacobian(); //6 rows, n columns for every active DOF
-                //printf("GeoJacobian matrix for canonical end-effector (palm): \n %s \n",JfullChain.toString(3,3).c_str());
-
-                // Remove all the more distal links after the collision point
-                // if the skin part is a hand, no need to remove any links from the chain
-                // if (((*it).skin_part == SKIN_LEFT_FOREARM) ||  ((*it).skin_part == SKIN_RIGHT_FOREARM)){
-                //     if(dim == 10){
-                //         customChain.rmLink(9); customChain.rmLink(8);
-                //         // we keep link 7 from elbow to wrist - it is getH(7) that is the FoR at the wrist in which forearm skin is expressed; and we want to keep the elbow joint part of the game
-                        // printMessage(2,"obstacle threatening skin part %s, blocking links 8 and 9 on subchain for avoidance\n",SkinPart_s[(*it).skin_part].c_str());
-                //     }
-                //     else if(dim==7){
-                //         customChain.rmLink(6); customChain.rmLink(5);
-                //         // we keep link 4 from elbow to wrist - it is getH(4) that is the FoR at the wrist in which forearm skin is expressed; and we want to keep the elbow joint part of the game
-                //         customChain.blockLink(6); customChain.blockLink(5);//wrist joints
-                        // printMessage(2,"obstacle threatening skin part %s, blocking links 5 and 6 on subchain for avoidance\n",SkinPart_s[(*it).skin_part].c_str());
-
-                //     }
-                // }
-                // else if (((*it).skin_part == SKIN_LEFT_UPPER_ARM) ||  ((*it).skin_part == SKIN_RIGHT_UPPER_ARM)){
-                //     if(dim == 10){
-                //         customChain.rmLink(9); customChain.rmLink(8);customChain.rmLink(7);customChain.rmLink(6);
-                        // printMessage(2,"obstacle threatening skin part %s, blocking links 6-9 on subchain for avoidance\n",SkinPart_s[(*it).skin_part].c_str());
-                //     }
-                //     else if(dim==7){
-                //         customChain.rmLink(6); customChain.rmLink(5);customChain.rmLink(4);customChain.rmLink(3);
-                        // printMessage(2,"obstacle threatening skin part %s, blocking links 3-6 on subchain for avoidance\n",SkinPart_s[(*it).skin_part].c_str());
-                //     }
-                // }
-
-
-                // SetHN to move the end effector toward the point to be controlled - the average locus of collision threat from safety margin
-                // Eigen::Matrix4d HN;
-                // HN.setIdentity();
-                // computeFoR((*it).x,(*it).n,HN);
-                // printMessage(5,"HN matrix at collision point w.r.t. local frame: \n %s \n",HN.toString(3,3).c_str());
-                // customChain.setHN(HN); //setting the end-effector transform to the collision point w.r.t subchain
-                // if (verbosity >=5){
-                //     Eigen::MatrixXd H = customChain.getH();
-                //     printf("H matrix at collision point w.r.t. root: \n %s \n",H.toString(3,3).c_str());
-                // }
-
-                // printMessage(5,"Normal at collision point w.r.t. skin part frame: %s, norm %f.\n",(*it).n.toString(3,3).c_str(),yarp::math::norm((*it).n));
-                // //yarp::sig::Vector normalAtCollisionInRootFoR = chain_local.getH() * (*it).n;
-                // //normalAtCollisionInRootFoR.subVector(0,3); //take out the dummy element from homogenous transform
-                // printMessage(5,"Normal at collision point w.r.t. Root: %s, norm %f.\n",normalAtCollisionInRootFoR.toString(3,3).c_str(),yarp::math::norm(normalAtCollisionInRootFoR));
-
-                //for testing
-                //yarp::sig::Vector normalAtCollisionInEndEffFrame(4,0.0);
-                //normalAtCollisionInEndEffFrame(2) = 1.0; //z-axis ~ normal
-                //yarp::sig::Vector normalAtCollisionInRootFoR_2 = chain_local.getHN() * normalAtCollisionInEndEffFrame;
-
-                ctrlPointChains.push_back(customChain);
+                KDL::Vector x, y, z, pos;
+                tf::vectorEigenToKDL(HN.block<3,1>(0,0), x);
+                tf::vectorEigenToKDL(HN.block<3,1>(0,1), y);
+                tf::vectorEigenToKDL(HN.block<3,1>(0,2), z);
+                tf::vectorEigenToKDL(HN.block<3,1>(0,3), pos);
+                KDL::Rotation rot = KDL::Rotation(x, y, z);
+                KDL::Segment s = KDL::Segment(KDL::Joint(KDL::Joint::None),
+                                                KDL::Frame(rot, pos));
+                nextChain.addSegment(s);
+                ctrlPointChains.push_back(nextChain);
 
             }
         }

@@ -380,8 +380,6 @@ Matrix4d BaxterChain::getH(const size_t _i)
 
     KDL::JntArray jnts(_i + 1);
 
-    ROS_INFO("_i: %zu, num_joints: %zu", _i, num_joints);
-
     for (size_t i = 0; i < _i + 1; ++i)
     {
         jnts(i) = q[i];
