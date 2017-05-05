@@ -138,12 +138,12 @@ TEST(BaxterChainTest, testRemoveSegmentRightArm)
     EXPECT_EQ(chainL.getNrOfJoints(),    7);
     EXPECT_EQ(chainL.getNrOfSegments(), 12);
 
-    Matrix4d H5 = chainL.getH(5);
-    Matrix4d H4 = chainL.getH(4);
-    Matrix4d H3 = chainL.getH(3);
-    Matrix4d H2 = chainL.getH(2);
-    Matrix4d H1 = chainL.getH(1);
-    Matrix4d H0 = chainL.getH(0);
+    H5 = chainL.getH(5);
+    H4 = chainL.getH(4);
+    H3 = chainL.getH(3);
+    H2 = chainL.getH(2);
+    H1 = chainL.getH(1);
+    H0 = chainL.getH(0);
 
     // 8 means Joint::None
     EXPECT_EQ(chainL.segments.back().getJoint().getType(), 8);
