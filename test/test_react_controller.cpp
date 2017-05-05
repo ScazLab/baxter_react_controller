@@ -152,8 +152,11 @@ TEST(ReactControllerTest, testWayPoints)
     reactControllerTester rct("right");
 
     // CTRL_DONE is there to test the tester, but it should be removed.
-    EXPECT_TRUE(rct.waitReactCtrlState(State(CTRL_DONE)) || rct.waitReactCtrlState(State(START)));
-    EXPECT_TRUE(rct.testWayPoints());
+    bool test_waypoints = rct.waitReactCtrlState(State(CTRL_DONE)) ||
+                          rct.waitReactCtrlState(State(START));
+    EXPECT_TRUE(test_waypoints);
+
+    if (test_waypoints)    { EXPECT_TRUE(rct.testWayPoints()); }
 }
 
 // Run all the tests that were declared with TEST()
