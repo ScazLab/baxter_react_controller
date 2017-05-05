@@ -99,38 +99,73 @@ TEST(BaxterChainTest, testRemoveSegmentRightArm)
     string base_link = "base";
     string  tip_link = "right_gripper";
 
-    BaxterChain chain(robot_model, base_link, tip_link);
-    EXPECT_EQ(chain.getNrOfJoints(),    7);
-    EXPECT_EQ(chain.getNrOfSegments(), 12);
+    BaxterChain chainR(robot_model, base_link, tip_link);
+    EXPECT_EQ(chainR.getNrOfJoints(),    7);
+    EXPECT_EQ(chainR.getNrOfSegments(), 12);
 
-    Matrix4d H5 = chain.getH(5);
-    Matrix4d H4 = chain.getH(4);
-    Matrix4d H3 = chain.getH(3);
-    Matrix4d H2 = chain.getH(2);
-    Matrix4d H1 = chain.getH(1);
-    Matrix4d H0 = chain.getH(0);
+    Matrix4d H5 = chainR.getH(5);
+    Matrix4d H4 = chainR.getH(4);
+    Matrix4d H3 = chainR.getH(3);
+    Matrix4d H2 = chainR.getH(2);
+    Matrix4d H1 = chainR.getH(1);
+    Matrix4d H0 = chainR.getH(0);
 
     // 8 means Joint::None
-    EXPECT_EQ(chain.segments.back().getJoint().getType(), 8);
-    chain.removeSegment();
-    EXPECT_EQ(chain.getNrOfJoints(),    7);
-    EXPECT_EQ(chain.getNrOfSegments(), 11);
+    EXPECT_EQ(chainR.segments.back().getJoint().getType(), 8);
+    chainR.removeSegment();
+    EXPECT_EQ(chainR.getNrOfJoints(),    7);
+    EXPECT_EQ(chainR.getNrOfSegments(), 11);
 
-    chain.removeJoint();
-    EXPECT_EQ(chain.getNrOfJoints(),    6);
-    EXPECT_EQ(chain.getNrOfSegments(),  8);
-    EXPECT_EQ(H5, chain.getH());
+    chainR.removeJoint();
+    EXPECT_EQ(chainR.getNrOfJoints(),    6);
+    EXPECT_EQ(chainR.getNrOfSegments(),  8);
+    EXPECT_EQ(H5, chainR.getH());
 
-    chain.removeJoint();
-    EXPECT_EQ(H4, chain.getH());
-    chain.removeJoint();
-    EXPECT_EQ(H3, chain.getH());
-    chain.removeJoint();
-    EXPECT_EQ(H2, chain.getH());
-    chain.removeJoint();
-    EXPECT_EQ(H1, chain.getH());
-    chain.removeJoint();
-    EXPECT_EQ(H0, chain.getH());
+    chainR.removeJoint();
+    EXPECT_EQ(H4, chainR.getH());
+    chainR.removeJoint();
+    EXPECT_EQ(H3, chainR.getH());
+    chainR.removeJoint();
+    EXPECT_EQ(H2, chainR.getH());
+    chainR.removeJoint();
+    EXPECT_EQ(H1, chainR.getH());
+    chainR.removeJoint();
+    EXPECT_EQ(H0, chainR.getH());
+
+    tip_link = "left_gripper";
+
+    BaxterChain chainL(robot_model, base_link, tip_link);
+    EXPECT_EQ(chainL.getNrOfJoints(),    7);
+    EXPECT_EQ(chainL.getNrOfSegments(), 12);
+
+    Matrix4d H5 = chainL.getH(5);
+    Matrix4d H4 = chainL.getH(4);
+    Matrix4d H3 = chainL.getH(3);
+    Matrix4d H2 = chainL.getH(2);
+    Matrix4d H1 = chainL.getH(1);
+    Matrix4d H0 = chainL.getH(0);
+
+    // 8 means Joint::None
+    EXPECT_EQ(chainL.segments.back().getJoint().getType(), 8);
+    chainL.removeSegment();
+    EXPECT_EQ(chainL.getNrOfJoints(),    7);
+    EXPECT_EQ(chainL.getNrOfSegments(), 11);
+
+    chainL.removeJoint();
+    EXPECT_EQ(chainL.getNrOfJoints(),    6);
+    EXPECT_EQ(chainL.getNrOfSegments(),  8);
+    EXPECT_EQ(H5, chainL.getH());
+
+    chainL.removeJoint();
+    EXPECT_EQ(H4, chainL.getH());
+    chainL.removeJoint();
+    EXPECT_EQ(H3, chainL.getH());
+    chainL.removeJoint();
+    EXPECT_EQ(H2, chainL.getH());
+    chainL.removeJoint();
+    EXPECT_EQ(H1, chainL.getH());
+    chainL.removeJoint();
+    EXPECT_EQ(H0, chainL.getH());
 }
 
 TEST(BaxterChainTest, testSegmentTypes)
@@ -151,20 +186,37 @@ TEST(BaxterChainTest, testSegmentTypes)
     string base_link = "base";
     string  tip_link = "right_gripper";
 
-    BaxterChain chain(robot_model, base_link, tip_link);
+    BaxterChain chainR(robot_model, base_link, tip_link);
 
-    EXPECT_EQ(chain.getSegment(0).getJoint().getType(), KDL::Joint::None);
-    EXPECT_EQ(chain.getSegment(1).getJoint().getType(), KDL::Joint::None);
-    EXPECT_EQ(chain.getSegment(2).getJoint().getType(), KDL::Joint::RotAxis);
-    EXPECT_EQ(chain.getSegment(3).getJoint().getType(), KDL::Joint::RotAxis);
-    EXPECT_EQ(chain.getSegment(4).getJoint().getType(), KDL::Joint::RotAxis);
-    EXPECT_EQ(chain.getSegment(5).getJoint().getType(), KDL::Joint::RotAxis);
-    EXPECT_EQ(chain.getSegment(6).getJoint().getType(), KDL::Joint::RotAxis);
-    EXPECT_EQ(chain.getSegment(7).getJoint().getType(), KDL::Joint::RotAxis);
-    EXPECT_EQ(chain.getSegment(8).getJoint().getType(), KDL::Joint::RotAxis);
-    EXPECT_EQ(chain.getSegment(9).getJoint().getType(), KDL::Joint::None);
-    EXPECT_EQ(chain.getSegment(10).getJoint().getType(), KDL::Joint::None);
-    EXPECT_EQ(chain.getSegment(11).getJoint().getType(), KDL::Joint::None);
+    EXPECT_EQ(chainR.getSegment(0).getJoint().getType(), KDL::Joint::None);
+    EXPECT_EQ(chainR.getSegment(1).getJoint().getType(), KDL::Joint::None);
+    EXPECT_EQ(chainR.getSegment(2).getJoint().getType(), KDL::Joint::RotAxis);
+    EXPECT_EQ(chainR.getSegment(3).getJoint().getType(), KDL::Joint::RotAxis);
+    EXPECT_EQ(chainR.getSegment(4).getJoint().getType(), KDL::Joint::RotAxis);
+    EXPECT_EQ(chainR.getSegment(5).getJoint().getType(), KDL::Joint::RotAxis);
+    EXPECT_EQ(chainR.getSegment(6).getJoint().getType(), KDL::Joint::RotAxis);
+    EXPECT_EQ(chainR.getSegment(7).getJoint().getType(), KDL::Joint::RotAxis);
+    EXPECT_EQ(chainR.getSegment(8).getJoint().getType(), KDL::Joint::RotAxis);
+    EXPECT_EQ(chainR.getSegment(9).getJoint().getType(), KDL::Joint::None);
+    EXPECT_EQ(chainR.getSegment(10).getJoint().getType(), KDL::Joint::None);
+    EXPECT_EQ(chainR.getSegment(11).getJoint().getType(), KDL::Joint::None);
+
+    tip_link = "left_gripper";
+
+    BaxterChain chainL(robot_model, base_link, tip_link);
+
+    EXPECT_EQ(chainL.getSegment(0).getJoint().getType(), KDL::Joint::None);
+    EXPECT_EQ(chainL.getSegment(1).getJoint().getType(), KDL::Joint::None);
+    EXPECT_EQ(chainL.getSegment(2).getJoint().getType(), KDL::Joint::RotAxis);
+    EXPECT_EQ(chainL.getSegment(3).getJoint().getType(), KDL::Joint::RotAxis);
+    EXPECT_EQ(chainL.getSegment(4).getJoint().getType(), KDL::Joint::RotAxis);
+    EXPECT_EQ(chainL.getSegment(5).getJoint().getType(), KDL::Joint::RotAxis);
+    EXPECT_EQ(chainL.getSegment(6).getJoint().getType(), KDL::Joint::RotAxis);
+    EXPECT_EQ(chainL.getSegment(7).getJoint().getType(), KDL::Joint::RotAxis);
+    EXPECT_EQ(chainL.getSegment(8).getJoint().getType(), KDL::Joint::RotAxis);
+    EXPECT_EQ(chainL.getSegment(9).getJoint().getType(), KDL::Joint::None);
+    EXPECT_EQ(chainL.getSegment(10).getJoint().getType(), KDL::Joint::None);
+    EXPECT_EQ(chainL.getSegment(11).getJoint().getType(), KDL::Joint::None);
 }
 
 // Run all the tests that were declared with TEST()
