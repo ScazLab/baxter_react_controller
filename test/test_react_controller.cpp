@@ -9,17 +9,19 @@ class reactControllerTester
 private:
     ros::NodeHandle  nh;
 
+    std::string    limb;
+
     ros::Publisher  pub;
 
     std::vector<geometry_msgs::Pose> _wp;
 
 public:
-    reactControllerTester() : nh("baxter_react_controller")
+    reactControllerTester(std::string _limb) : nh("baxter_react_controller"), limb(_limb)
     {
         EXPECT_TRUE(importWayPoints(nh, _wp));
 
         pub = nh.advertise<baxter_collaboration_msgs::GoToPose>(
-             "/baxter_react_controller/right/go_to_pose", 10, true);
+             "/baxter_react_controller/" + limb + "/go_to_pose", 10, true);
     }
 
     /**
@@ -35,7 +37,7 @@ public:
         _wp.clear();
         XmlRpc::XmlRpcValue    waypoints;
 
-        if(!_nh.getParam("/"+_nh.getNamespace()+"/waypoints", waypoints))
+        if(!_nh.getParam("/"+_nh.getNamespace()+"/waypoints/" + limb, waypoints))
         {
             ROS_INFO("No objects' database found in the parameter server. "
                      "Looked up param is %s", ("/"+_nh.getNamespace()+"/waypoints").c_str());
@@ -91,7 +93,7 @@ public:
 // Declare a test
 TEST(ReactControllerTest, testWayPoints)
 {
-    reactControllerTester rct;
+    reactControllerTester rct("right");
 
     EXPECT_TRUE(rct.testWayPoints());
 }
