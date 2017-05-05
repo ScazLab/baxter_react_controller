@@ -199,7 +199,7 @@ bool CtrlThread::goToPoseNoCheck(double px, double py, double pz,
 
     int exit_code = -1;
     Eigen::VectorXd est_vels = solveIK(exit_code);
-    // q_dot = est_vels;
+    q_dot = est_vels;
 
     std::vector<double> des_poss(chain->getNrOfJoints());
     for (size_t i = 0; i < chain->getNrOfJoints(); ++i)
