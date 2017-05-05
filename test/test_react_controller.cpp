@@ -1,8 +1,11 @@
 #include <gtest/gtest.h>
 
 #include <baxter_collaboration_msgs/GoToPose.h>
+#include <baxter_collaboration_msgs/ArmState.h>
 #include <robot_utils/utils.h>
 #include "react_controller/baxterChain.h"
+
+#include <memory>
 
 class reactControllerTester
 {
@@ -12,17 +15,11 @@ private:
     std::string    limb;
 
     ros::Publisher  pub;
+    ros::Subscriber sub;  // Subscriber for the arm state
+
+    std::shared_ptr<baxter_collaboration_msgs::ArmState> arm_state_ptr;
 
     std::vector<geometry_msgs::Pose> _wp;
-
-public:
-    reactControllerTester(std::string _limb) : nh("baxter_react_controller"), limb(_limb)
-    {
-        EXPECT_TRUE(importWayPoints(nh, _wp));
-
-        pub = nh.advertise<baxter_collaboration_msgs::GoToPose>(
-             "/baxter_react_controller/" + limb + "/go_to_pose", 10, true);
-    }
 
     /**
      * Imports waypoints from the parameter server
@@ -45,7 +42,7 @@ public:
         }
 
         EXPECT_EQ  (waypoints.getType(), XmlRpc::XmlRpcValue::TypeArray);
-        EXPECT_TRUE(waypoints.size());
+        EXPECT_TRUE(waypoints.size() > 0);
 
         for (int i = 0; i < waypoints.size(); ++i)
         {
@@ -65,8 +62,65 @@ public:
         }
 
         return true;
+    };
+
+    /**
+     * Callback for the subscriber.
+     *
+     * @param msg the message received.
+     */
+    void armStateCb(const baxter_collaboration_msgs::ArmState& msg)
+    {
+        *arm_state_ptr = msg;
+    };
+
+public:
+    reactControllerTester(std::string _limb) : nh("test_react_controller"), limb(_limb),
+                                               arm_state_ptr(new baxter_collaboration_msgs::ArmState)
+    {
+        EXPECT_TRUE(importWayPoints(nh, _wp));
+
+        pub = nh.advertise<baxter_collaboration_msgs::GoToPose>(
+             "/baxter_react_controller/" + limb + "/go_to_pose", 10, true);
+
+        sub = nh.subscribe("/baxter_react_controller/" + limb + "/state", SUBSCRIBER_BUFFER,
+                                                  &reactControllerTester::armStateCb, this);
+    };
+
+
+    /*
+     * Waits for states to be received from the subscriber.
+     *
+     * @return true  when expected state has been received
+     * @return false if expected state has not been received
+     */
+    bool waitReactCtrlState(State _as, double _wait_time = 20.0)
+    {
+        ros::Time _init = ros::Time::now();
+
+        ros::Rate r(100);
+        while (ros::ok())
+        {
+            if (std::string(_as) == arm_state_ptr->state)     { return true; }
+
+            ros::spinOnce();
+            r.sleep();
+
+            if ((ros::Time::now()-_init).toSec() > _wait_time)
+            {
+                ROS_WARN("No reactController state %s in %gs!", std::string(_as).c_str(), _wait_time);
+                return false;
+            }
+        }
+
+        return false;
     }
 
+    /**
+     * Tests waypoints against the ctrl thread.
+     *
+     * @return true/false if success/failure
+     */
     bool testWayPoints()
     {
         for (size_t i = 0; i < _wp.size(); ++i)
@@ -81,11 +135,13 @@ public:
             ROS_INFO("Testing waypoint %lu: %s", i, toString(_wp[i]).c_str());
 
             pub.publish(msg);
-            ros::Duration(6.0).sleep();
+
+            if (not waitReactCtrlState(State(CTRL_RUNNING))) { return false; }
+            if (not waitReactCtrlState(State(CTRL_DONE)))    { return false; }
         }
 
         return true;
-    }
+    };
 
     ~reactControllerTester() {};
 };
@@ -95,6 +151,8 @@ TEST(ReactControllerTest, testWayPoints)
 {
     reactControllerTester rct("right");
 
+    // CTRL_DONE is there to test the tester, but it should be removed.
+    EXPECT_TRUE(rct.waitReactCtrlState(State(CTRL_DONE)) || rct.waitReactCtrlState(State(START)));
     EXPECT_TRUE(rct.testWayPoints());
 }
 
