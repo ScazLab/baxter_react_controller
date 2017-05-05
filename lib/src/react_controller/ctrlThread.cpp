@@ -99,6 +99,9 @@ void CtrlThread::NLPOptionsFromParameterServer()
         ROS_INFO("[NLP]     Derivative Test: %s", nlp_derivative_test.c_str());
     }
 
+    if (nlp_ctrl_ori == true)     {     setCtrlType("pose"); }
+    else                          { setCtrlType("position"); }
+
     app->Options()->SetStringValue ("derivative_test", nlp_derivative_test);
     app->Options()->SetIntegerValue(    "print_level",     nlp_print_level);
     app->Initialize();
