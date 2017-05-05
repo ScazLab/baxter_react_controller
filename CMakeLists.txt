@@ -175,6 +175,8 @@ target_link_libraries(baxter_react_controller               react_controller
 if(CATKIN_ENABLE_TESTING)
   find_package(rostest            REQUIRED)
   find_package(baxter_description REQUIRED)
+  find_package(baxter_tools       REQUIRED)
+  find_package(baxter_gazebo      REQUIRED)
 
   add_rostest_gtest(test_baxterchain test/test_baxterchain.test test/test_baxterchain.cpp)
   target_link_libraries(test_baxterchain react_controller ${catkin_LIBRARIES})

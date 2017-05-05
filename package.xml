@@ -48,7 +48,8 @@
   <depend>eigen_conversions</depend>
 
   <test_depend>baxter_description</test_depend>
-
+  <test_depend>baxter_tools</test_depend>
+  <test_depend>baxter_gazebo</test_depend>
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>
