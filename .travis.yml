@@ -53,7 +53,8 @@ cache:
   - apt
 
 notifications:
- slack: scazlab:8EDCWkzrKK7EsZoVPIXXd7oD
+  email: false
+  slack: scazlab:8EDCWkzrKK7EsZoVPIXXd7oD
 
 # Configuration variables. All variables are global now, but this can be used to
 # trigger a build matrix for different ROS distributions if desired.
