@@ -68,6 +68,7 @@ env:
     - ROS_PARALLEL_JOBS='-j8 -l6'
     - REPO_NAME=$(echo $TRAVIS_REPO_SLUG | cut -d"/" -f2) # if you have multiple packages per repo, change this variable accordingly
     - IPOPT_DIR=~/src/ipopt/build
+    - DISPLAY=localhost:10.0
 
 ################################################################################
 
