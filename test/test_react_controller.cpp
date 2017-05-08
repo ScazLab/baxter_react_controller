@@ -207,8 +207,9 @@ public:
 
             pub.publish(msg);
 
-            ASSERT_TRUE(waitReactCtrlState(State(CTRL_RUNNING),  4.0));
-            ASSERT_TRUE(waitReactCtrlState(State(   CTRL_DONE), 60.0));
+            ASSERT_TRUE(waitReactCtrlState(State(CTRL_RUNNING),   4.0));
+            ASSERT_TRUE(waitReactCtrlState(State(   CTRL_DONE), 100.0));
+            ROS_INFO("Done.");
         }
     };
 
