@@ -210,11 +210,13 @@ void ControllerNLP::computeQuantities(const Ipopt::Number *x, const bool new_x)
 {
     if (new_x)
     {
+        // Let's update the estimated velocities
         for (int i=0; i<v_e.size(); ++i)
         {
             v_e[i]=x[i];
         }
 
+        // Now, let's compute the positional and orientational erros
         Vector3d  ww = J_0_ang*v_e;
         double theta =  ww.norm();
         if (theta > 0.0) { ww /= theta; }
