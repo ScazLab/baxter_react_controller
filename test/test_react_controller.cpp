@@ -121,7 +121,7 @@ public:
      *
      * @return true/false if success/failure
      */
-    bool testWayPoints()
+    void testWayPoints()
     {
         for (size_t i = 0; i < _wp.size(); ++i)
         {
@@ -136,11 +136,9 @@ public:
 
             pub.publish(msg);
 
-            if (not waitReactCtrlState(State(CTRL_RUNNING))) { return false; }
-            if (not waitReactCtrlState(State(CTRL_DONE)))    { return false; }
+            ASSERT_TRUE(waitReactCtrlState(State(CTRL_RUNNING),  4.0));
+            ASSERT_TRUE(waitReactCtrlState(State(   CTRL_DONE), 40.0));
         }
-
-        return true;
     };
 
     ~reactControllerTester() {};
@@ -151,12 +149,15 @@ TEST(ReactControllerTest, testWayPoints)
 {
     reactControllerTester rct("right");
 
+    ROS_INFO("Waiting for robot to be ready..");
     // CTRL_DONE is there to test the tester, but it should be removed.
-    bool test_waypoints = rct.waitReactCtrlState(State(CTRL_DONE)) ||
-                          rct.waitReactCtrlState(State(START));
+    bool test_waypoints = rct.waitReactCtrlState(State(CTRL_DONE), 10.0) ||
+                          rct.waitReactCtrlState(State(START), 10.0);
     EXPECT_TRUE(test_waypoints);
 
-    if (test_waypoints)    { EXPECT_TRUE(rct.testWayPoints()); }
+    ROS_INFO("Done. Testing waypoints..");
+    rct.testWayPoints();
+    ROS_INFO("Done.");
 }
 
 // Run all the tests that were declared with TEST()
