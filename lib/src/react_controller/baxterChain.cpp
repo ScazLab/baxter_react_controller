@@ -61,12 +61,13 @@ bool BaxterChain::initChain(urdf::Model _robot_model,
                        const std::string& _base_link,
                         const std::string& _tip_link)
 {
-    ROS_INFO("Reading joints and links from URDF");
-    KDL::Tree tree;
+    ROS_INFO("Reading joints and links from URDF, from %s link to %s link",
+                                    _base_link.c_str(), _tip_link.c_str());
 
+    KDL::Tree tree;
     if (not kdl_parser::treeFromUrdfModel(_robot_model, tree))
     {
-        ROS_FATAL("Failed to extract kdl tree from xml robot description");
+        ROS_FATAL("Failed to extract KDL tree from xml robot description");
     }
 
     KDL::Chain chain;
@@ -201,9 +202,9 @@ void BaxterChain::addSegment(const KDL::Segment& segment)
     {
         nrOfJoints++;
 
-        lb.resize(getNrOfJoints());
-        ub.resize(getNrOfJoints());
-         q.resize(getNrOfJoints());
+        lb.conservativeResize(getNrOfJoints());
+        ub.conservativeResize(getNrOfJoints());
+         q.conservativeResize(getNrOfJoints());
     }
 }
 
@@ -464,7 +465,9 @@ void BaxterChain::removeSegment()
     if(segments.back().getJoint().getType()!=KDL::Joint::None)
     {
         --nrOfJoints;
-        q.resize(getNrOfJoints());
+        lb.conservativeResize(getNrOfJoints());
+        ub.conservativeResize(getNrOfJoints());
+        q.conservativeResize(getNrOfJoints());
     }
     segments.pop_back();
     --nrOfSegments;
