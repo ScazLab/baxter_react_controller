@@ -107,12 +107,11 @@ public:
     size_t getNrOfSegments()const {return nrOfSegments;};
 
     /**
-     * Request the nr'd segment of the chain. There is no boundary
+     * Request the nth segment of the chain. There is no boundary
      * checking.
      *
      * @param nr the nr of the segment starting from 0
-     *
-     * @return a constant reference to the nr'd segment
+     * @return a constant reference to the nth segment
      */
     const KDL::Segment& getSegment(size_t nr)const;
 
@@ -120,20 +119,19 @@ public:
      * Takes an arm chain and returns the KDL::Frame of the end effector w.r.t
      * the base of the arm.
      *
-     * @param _p_out:     KDL::Frame of end effector, populated by function
-     * @param _segmentNr: segment to get frame for, default is end effector
-     *
-     * return:     true/false if success/failure
+     * @param _H      KDL::Frame of end effector, populated by function
+     * @param _seg_nr segment to get frame for, default is end effector
+     * return         true/false if success/failure
      */
-    bool JntToCart(KDL::Frame& _p_out, int seg_nr=-1);
+    bool JntToCart(KDL::Frame& _H, int _seg_nr=-1);
 
     /**
      * TODO
-     * @param  jac    [description]
-     * @param  seg_nr [description]
-     * @return        [description]
+     * @param    _J   [description]
+     * @param _seg_nr segment to get frame for, default is end effector
+     * return         true/false if success/failure
      */
-    bool JntToJac(KDL::Jacobian& jac, int seg_nr=-1);
+    bool JntToJac(KDL::Jacobian& _J, int _seg_nr=-1);
 
     /**
      * Gets all collision points and normal vectors for each segment in the arm.

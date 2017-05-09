@@ -254,13 +254,13 @@ bool BaxterChain::setAng(std::vector<double> _q)
     return true;
 }
 
-bool BaxterChain::JntToCart(KDL::Frame& _p_out, int seg_nr)
+bool BaxterChain::JntToCart(KDL::Frame& _H, int _seg_nr)
 {
     size_t segmentNr;
-    if (seg_nr<0) { segmentNr = getNrOfSegments()-1; }
-    else          { segmentNr =              seg_nr; }
+    if (_seg_nr<0) { segmentNr = getNrOfSegments()-1; }
+    else           { segmentNr =              _seg_nr; }
 
-    _p_out = KDL::Frame::Identity();
+    _H = KDL::Frame::Identity();
 
     if (segmentNr>=getNrOfSegments())   { return false; }
     else
@@ -270,27 +270,29 @@ bool BaxterChain::JntToCart(KDL::Frame& _p_out, int seg_nr)
         {
             if (getSegment(i).getJoint().getType()!=KDL::Joint::None)
             {
-                _p_out = _p_out*getSegment(i).pose(q(j));
+                _H = _H*getSegment(i).pose(q(j));
                 ++j;
             }
             else
             {
-                _p_out = _p_out*getSegment(i).pose(0.0);
+                _H = _H*getSegment(i).pose(0.0);
             }
         }
         return true;
     }
+
+    return false;
 }
 
-bool BaxterChain::JntToJac(KDL::Jacobian& jac, int seg_nr)
+bool BaxterChain::JntToJac(KDL::Jacobian& _J, int _seg_nr)
 {
     size_t segmentNr;
-    if (seg_nr<0) { segmentNr = getNrOfSegments(); }
-    else          { segmentNr =            seg_nr; }
+    if (_seg_nr<0) { segmentNr = getNrOfSegments(); }
+    else           { segmentNr =            _seg_nr; }
 
     //Initialize Jacobian to zero since only segmentNr columns are computed
-    jac.resize(getNrOfJoints());
-    SetToZero(jac);
+    _J.resize(getNrOfJoints());
+    SetToZero(_J);
 
     if (segmentNr>getNrOfSegments())   { return false; }
 
@@ -319,13 +321,13 @@ bool BaxterChain::JntToJac(KDL::Jacobian& jac, int seg_nr)
         }
 
         //Changing Refpoint of all columns to new ee
-        changeRefPoint(jac,total.p-T_tmp.p,jac);
+        changeRefPoint(_J, total.p-T_tmp.p, _J);
 
         //Only increase jointnr if the segment has a joint
         if (getSegment(i).getJoint().getType()!=KDL::Joint::None)
         {
             //Only put the twist inside if it is not locked
-            jac.setColumn(k++,t_tmp);
+            _J.setColumn(k++,t_tmp);
             ++j;
         }
 
