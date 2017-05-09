@@ -256,45 +256,36 @@ bool BaxterChain::setAng(std::vector<double> _q)
 
 bool BaxterChain::JntToCart(KDL::Frame& _H, int _seg_nr)
 {
-    size_t segmentNr;
-    if (_seg_nr<0) { segmentNr = getNrOfSegments()-1; }
-    else           { segmentNr =              _seg_nr; }
+    if (_seg_nr<0) { _seg_nr = int(getNrOfSegments()-1); }
 
     _H = KDL::Frame::Identity();
 
-    if (segmentNr>=getNrOfSegments())   { return false; }
-    else
-    {
-        int j=0;
-        for (size_t i=0; i<=segmentNr; ++i)
-        {
-            if (getSegment(i).getJoint().getType()!=KDL::Joint::None)
-            {
-                _H = _H*getSegment(i).pose(q(j));
-                ++j;
-            }
-            else
-            {
-                _H = _H*getSegment(i).pose(0.0);
-            }
-        }
-        return true;
-    }
+    if (_seg_nr>=int(getNrOfSegments()))   { return false; }
 
-    return false;
+    int j=0;
+    for (size_t i=0; i<=size_t(_seg_nr); ++i)
+    {
+        if (getSegment(i).getJoint().getType()!=KDL::Joint::None)
+        {
+            _H = _H*getSegment(i).pose(q(j));
+            ++j;
+        }
+        else
+        {
+            _H = _H*getSegment(i).pose(0.0);
+        }
+    }
+    return true;
 }
 
 bool BaxterChain::JntToJac(KDL::Jacobian& _J, int _seg_nr)
 {
-    size_t segmentNr;
-    if (_seg_nr<0) { segmentNr = getNrOfSegments(); }
-    else           { segmentNr =            _seg_nr; }
+    if (_seg_nr<0) { _seg_nr = int(getNrOfSegments()-1); }
 
-    //Initialize Jacobian to zero since only segmentNr columns are computed
     _J.resize(getNrOfJoints());
     SetToZero(_J);
 
-    if (segmentNr>getNrOfSegments())   { return false; }
+    if (_seg_nr>=int(getNrOfSegments()))   { return false; }
 
     KDL::Frame T_tmp(KDL::Frame::Identity());
     KDL::Frame total(KDL::Frame::Identity());
@@ -304,7 +295,7 @@ bool BaxterChain::JntToJac(KDL::Jacobian& _J, int _seg_nr)
 
     int j=0, k=0;
 
-    for (size_t i=0; i<segmentNr; ++i)
+    for (size_t i=0; i<=size_t(_seg_nr); ++i)
     {
         //Calculate new Frame_base_ee
         if (getSegment(i).getJoint().getType()!=KDL::Joint::None)
@@ -312,7 +303,6 @@ bool BaxterChain::JntToJac(KDL::Jacobian& _J, int _seg_nr)
             //pose of the new end-point expressed in the base
             total = T_tmp*getSegment(i).pose(q(j));
             //changing base of new segment's twist to base frame if it is not locked
-            //t_tmp = T_tmp.M*chain.getSegment(i).twist(1.0);
             t_tmp = T_tmp.M*getSegment(i).twist(q(j),1.0);
         }
         else

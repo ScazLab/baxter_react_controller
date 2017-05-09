@@ -23,6 +23,14 @@ private:
     Eigen::VectorXd lb;    // lower bounds
     Eigen::VectorXd ub;    // upper bounds
 
+    /**
+     * TODO
+     * @param    _J   [description]
+     * @param _seg_nr segment to get frame for, default is end effector
+     * return         true/false if success/failure
+     */
+    bool JntToJac(KDL::Jacobian& _J, int _seg_nr=-1);
+
 public:
 
     std::vector<KDL::Segment> segments;
@@ -124,14 +132,6 @@ public:
      * return         true/false if success/failure
      */
     bool JntToCart(KDL::Frame& _H, int _seg_nr=-1);
-
-    /**
-     * TODO
-     * @param    _J   [description]
-     * @param _seg_nr segment to get frame for, default is end effector
-     * return         true/false if success/failure
-     */
-    bool JntToJac(KDL::Jacobian& _J, int _seg_nr=-1);
 
     /**
      * Gets all collision points and normal vectors for each segment in the arm.
