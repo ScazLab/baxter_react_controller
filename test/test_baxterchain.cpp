@@ -114,8 +114,14 @@ TEST(BaxterChainTest, testClass)
     EXPECT_EQ(chain.GeoJacobian().rows(), 6);
     EXPECT_EQ(chain.GeoJacobian().cols(), 7);
 
-    Eigen::VectorXd q_0(chain.getNrOfJoints());
+    // getH() is expected to be different from getH(6) because of
+    // some segments that are attached at the end of the chain.
+    EXPECT_NE(chain.getH(), chain.getH(chain.getNrOfJoints()-1));
+    // Eigen::IOFormat HeavyFmt(FullPrecision, 0, ", ", ";\n", "[", "]", "[", "]");
+    // cout << "getH (): " << chain.getH( ).format(HeavyFmt) << endl;
+    // cout << "getH(6): " << chain.getH(6).format(HeavyFmt) << endl;
 
+    Eigen::VectorXd q_0(chain.getNrOfJoints());
     for (size_t i = 0; i < chain.getNrOfJoints(); ++i)
     {
         // This will initialize the joint in the
@@ -127,8 +133,8 @@ TEST(BaxterChainTest, testClass)
     EXPECT_EQ(q_0, chain.getAng());
     for (size_t i = 0; i < chain.getNrOfJoints(); ++i)
     {
-        EXPECT_EQ(q_0[i], chain.getAng()[i]);
-        EXPECT_EQ(q_0[i], chain.getAng(i));
+        EXPECT_EQ(q_0[i], chain.getAng()[i]) << "q_0[i] and chain.getAng()[i]  differ at" << i;
+        EXPECT_EQ(q_0[i], chain.getAng(i))   << "q_0[i] and chain.getAng(i) differ at" << i;
     }
 
     q_0[1] = 0.4;
@@ -162,36 +168,48 @@ TEST(BaxterChainTest, testRemoveSegment)
     EXPECT_EQ(chainR.getNrOfSegments(),    8);
     EXPECT_EQ(chainR.GeoJacobian().cols(), 6);
     EXPECT_EQ(H5, chainR.getH());
+    // cout << "getH (): " << chainR.getH( ) << endl;
+    // cout << "     H5: " <<             H5 << endl;
 
     chainR.removeJoint();
     EXPECT_EQ(chainR.getNrOfJoints(),      5);
     EXPECT_EQ(chainR.getNrOfSegments(),    7);
     EXPECT_EQ(chainR.GeoJacobian().cols(), 5);
     EXPECT_EQ(H4, chainR.getH());
+    // cout << "getH (): " << chainR.getH( ) << endl;
+    // cout << "     H4: " <<             H4 << endl;
 
     chainR.removeJoint();
     EXPECT_EQ(chainR.getNrOfJoints(),      4);
     EXPECT_EQ(chainR.getNrOfSegments(),    6);
     EXPECT_EQ(chainR.GeoJacobian().cols(), 4);
     EXPECT_EQ(H3, chainR.getH());
+    // cout << "getH (): " << chainR.getH( ) << endl;
+    // cout << "     H3: " <<             H3 << endl;
 
     chainR.removeJoint();
     EXPECT_EQ(chainR.getNrOfJoints(),      3);
     EXPECT_EQ(chainR.getNrOfSegments(),    5);
     EXPECT_EQ(chainR.GeoJacobian().cols(), 3);
     EXPECT_EQ(H2, chainR.getH());
+    // cout << "getH (): " << chainR.getH( ) << endl;
+    // cout << "     H2: " <<             H2 << endl;
 
     chainR.removeJoint();
     EXPECT_EQ(chainR.getNrOfJoints(),      2);
     EXPECT_EQ(chainR.getNrOfSegments(),    4);
     EXPECT_EQ(chainR.GeoJacobian().cols(), 2);
     EXPECT_EQ(H1, chainR.getH());
+    // cout << "getH (): " << chainR.getH( ) << endl;
+    // cout << "     H1: " <<             H1 << endl;
 
     chainR.removeJoint();
     EXPECT_EQ(chainR.getNrOfJoints(),      1);
     EXPECT_EQ(chainR.getNrOfSegments(),    3);
     EXPECT_EQ(chainR.GeoJacobian().cols(), 1);
     EXPECT_EQ(H0, chainR.getH());
+    // cout << "getH (): " << chainR.getH( ) << endl;
+    // cout << "     H0: " <<             H0 << endl;
 
     // Left chain tests
     H5 = chainL.getH(5);

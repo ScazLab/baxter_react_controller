@@ -261,25 +261,26 @@ bool BaxterChain::setAng(std::vector<double> _q)
     return true;
 }
 
+#include <iostream>
+
 bool BaxterChain::JntToCart(const KDL::JntArray& _q_in, KDL::Frame& _p_out, int seg_nr)
 {
     size_t segmentNr;
-    if (seg_nr<0) { segmentNr = getNrOfSegments(); }
-    else          { segmentNr =            seg_nr; }
+    if (seg_nr<0) { segmentNr = getNrOfSegments()-1; }
+    else          { segmentNr =              seg_nr; }
 
     _p_out = KDL::Frame::Identity();
 
-    // if      (_q_in.rows()!=getNrOfJoints()) { return false; }
-    if (segmentNr>getNrOfSegments())   { return false; }
+    if (segmentNr>=getNrOfSegments())   { return false; }
     else
     {
         int j=0;
-        for (size_t i=0; i<segmentNr; ++i)
+        for (size_t i=0; i<=segmentNr; ++i)
         {
             if (getSegment(i).getJoint().getType()!=KDL::Joint::None)
             {
                 _p_out = _p_out*getSegment(i).pose(_q_in(j));
-                j++;
+                ++j;
             }
             else
             {
@@ -334,7 +335,7 @@ bool BaxterChain::JntToJac(const KDL::JntArray& q_in, KDL::Jacobian& jac, int se
         {
             //Only put the twist inside if it is not locked
             jac.setColumn(k++,t_tmp);
-            j++;
+            ++j;
         }
 
         T_tmp = total;
@@ -368,7 +369,7 @@ bool BaxterChain::GetJointPositions(std::vector<Eigen::Vector3d>& positions)
             Eigen::Vector3d posEig;
             tf::vectorKDLToEigen(posKDL, posEig);
             positions.push_back(posEig);
-            j++;
+            ++j;
         }
         else
         {
@@ -399,18 +400,26 @@ geometry_msgs::Pose BaxterChain::getPose()
 
 Matrix4d BaxterChain::getH()
 {
-    return getH(getNrOfJoints() - 1);
+    KDL::Frame H;
+
+    KDL::JntArray jnts(getNrOfJoints());
+
+    for (size_t i = 0; i < getNrOfJoints(); ++i)
+    {
+        jnts(i) = q[i];
+    }
+
+    JntToCart(jnts,H);
+
+    return KDLFrameToEigen(H);
 }
 
 Matrix4d BaxterChain::getH(const size_t _i)
 {
-    //num joints in chain
-    size_t num_joints = getNrOfJoints();
-
-    // TODO also here, remove the assert, place a ROS_ERROR, and return
     // if i > than num_joints
-    ROS_ASSERT_MSG(_i < num_joints, "_i %lu, num_joints %lu", _i, num_joints);
+    ROS_ASSERT_MSG(_i < getNrOfJoints(), "_i %lu, num_joints %lu", _i, getNrOfJoints());
 
+    KDL::Frame H;
     KDL::JntArray jnts(_i + 1);
 
     for (size_t i = 0; i < _i + 1; ++i)
@@ -418,25 +427,19 @@ Matrix4d BaxterChain::getH(const size_t _i)
         jnts(i) = q[i];
     }
 
-    KDL::Frame frame;
-
-    size_t seg_nr = 0;
-    if (_i + 1 == getNrOfJoints()) { seg_nr = getNrOfSegments(); }
-    else
+    size_t j=0, s=0;
+    for (s=0; s<getNrOfSegments(); ++s)
     {
-        size_t jnt_counter = 0;
-        while (jnt_counter < _i + 1)
+        if (getSegment(s).getJoint().getType()!=KDL::Joint::None)
         {
-            if (getSegment(seg_nr++).getJoint().getType() != KDL::Joint::None)
-            {
-                jnt_counter++;
-            }
+            if (j == _i) { break; }
+            ++j;
         }
     }
 
-    JntToCart(jnts,frame, seg_nr);
+    JntToCart(jnts,H, s);
 
-    return KDLFrameToEigen(frame);
+    return KDLFrameToEigen(H);
 }
 
 void BaxterChain::removeSegment()
