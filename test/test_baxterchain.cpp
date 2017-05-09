@@ -111,7 +111,33 @@ TEST(BaxterChainTest, testClass)
     EXPECT_EQ(chain.getNrOfJoints(),    7);
     EXPECT_EQ(chain.getNrOfSegments(), 12);
 
-    // cout << "Joint configuration: " << chain.getAng().transpose() << endl;
+    EXPECT_EQ(chain.GeoJacobian().rows(), 6);
+    EXPECT_EQ(chain.GeoJacobian().cols(), 7);
+
+    Eigen::VectorXd q_0(chain.getNrOfJoints());
+
+    for (size_t i = 0; i < chain.getNrOfJoints(); ++i)
+    {
+        // This will initialize the joint in the
+        // middle of its operational range
+        q_0[i] = (chain.getMin(i)+chain.getMax(i))/2;
+    }
+
+    EXPECT_EQ(q_0.size(), chain.getAng().size());
+    EXPECT_EQ(q_0, chain.getAng());
+    for (size_t i = 0; i < chain.getNrOfJoints(); ++i)
+    {
+        EXPECT_EQ(q_0[i], chain.getAng()[i]);
+        EXPECT_EQ(q_0[i], chain.getAng(i));
+    }
+
+    q_0[1] = 0.4;
+    q_0[4] = 0.8;
+
+    EXPECT_TRUE(chain.setAng(q_0));
+    EXPECT_FALSE(chain.setAng(    Eigen::VectorXd(chain.getNrOfJoints()+1)));
+    EXPECT_FALSE(chain.setAng(std::vector<double>(chain.getNrOfJoints()+1)));
+    EXPECT_EQ(q_0, chain.getAng());
 }
 
 TEST(BaxterChainTest, testRemoveSegment)
@@ -128,37 +154,43 @@ TEST(BaxterChainTest, testRemoveSegment)
     Matrix4d H0 = chainR.getH(0);
 
     chainR.removeSegment();
-    EXPECT_EQ(chainR.getNrOfJoints(),    7);
-    EXPECT_EQ(chainR.getNrOfSegments(), 11);
+    EXPECT_EQ(chainR.getNrOfJoints(),      7);
+    EXPECT_EQ(chainR.getNrOfSegments(),   11);
 
     chainR.removeJoint();
-    EXPECT_EQ(chainR.getNrOfJoints(),    6);
-    EXPECT_EQ(chainR.getNrOfSegments(),  8);
+    EXPECT_EQ(chainR.getNrOfJoints(),      6);
+    EXPECT_EQ(chainR.getNrOfSegments(),    8);
+    EXPECT_EQ(chainR.GeoJacobian().cols(), 6);
     EXPECT_EQ(H5, chainR.getH());
 
     chainR.removeJoint();
-    EXPECT_EQ(chainR.getNrOfJoints(),    5);
-    EXPECT_EQ(chainR.getNrOfSegments(),  7);
+    EXPECT_EQ(chainR.getNrOfJoints(),      5);
+    EXPECT_EQ(chainR.getNrOfSegments(),    7);
+    EXPECT_EQ(chainR.GeoJacobian().cols(), 5);
     EXPECT_EQ(H4, chainR.getH());
 
     chainR.removeJoint();
-    EXPECT_EQ(chainR.getNrOfJoints(),    4);
-    EXPECT_EQ(chainR.getNrOfSegments(),  6);
+    EXPECT_EQ(chainR.getNrOfJoints(),      4);
+    EXPECT_EQ(chainR.getNrOfSegments(),    6);
+    EXPECT_EQ(chainR.GeoJacobian().cols(), 4);
     EXPECT_EQ(H3, chainR.getH());
 
     chainR.removeJoint();
-    EXPECT_EQ(chainR.getNrOfJoints(),    3);
-    EXPECT_EQ(chainR.getNrOfSegments(),  5);
+    EXPECT_EQ(chainR.getNrOfJoints(),      3);
+    EXPECT_EQ(chainR.getNrOfSegments(),    5);
+    EXPECT_EQ(chainR.GeoJacobian().cols(), 3);
     EXPECT_EQ(H2, chainR.getH());
 
     chainR.removeJoint();
-    EXPECT_EQ(chainR.getNrOfJoints(),    2);
-    EXPECT_EQ(chainR.getNrOfSegments(),  4);
+    EXPECT_EQ(chainR.getNrOfJoints(),      2);
+    EXPECT_EQ(chainR.getNrOfSegments(),    4);
+    EXPECT_EQ(chainR.GeoJacobian().cols(), 2);
     EXPECT_EQ(H1, chainR.getH());
 
     chainR.removeJoint();
-    EXPECT_EQ(chainR.getNrOfJoints(),    1);
-    EXPECT_EQ(chainR.getNrOfSegments(),  3);
+    EXPECT_EQ(chainR.getNrOfJoints(),      1);
+    EXPECT_EQ(chainR.getNrOfSegments(),    3);
+    EXPECT_EQ(chainR.GeoJacobian().cols(), 1);
     EXPECT_EQ(H0, chainR.getH());
 
     // Left chain tests
@@ -170,37 +202,43 @@ TEST(BaxterChainTest, testRemoveSegment)
     H0 = chainL.getH(0);
 
     chainL.removeSegment();
-    EXPECT_EQ(chainL.getNrOfJoints(),    7);
-    EXPECT_EQ(chainL.getNrOfSegments(), 11);
+    EXPECT_EQ(chainL.getNrOfJoints(),      7);
+    EXPECT_EQ(chainL.getNrOfSegments(),   11);
 
     chainL.removeJoint();
-    EXPECT_EQ(chainL.getNrOfJoints(),    6);
-    EXPECT_EQ(chainL.getNrOfSegments(),  8);
+    EXPECT_EQ(chainL.getNrOfJoints(),      6);
+    EXPECT_EQ(chainL.getNrOfSegments(),    8);
+    EXPECT_EQ(chainL.GeoJacobian().cols(), 6);
     EXPECT_EQ(H5, chainL.getH());
 
     chainL.removeJoint();
-    EXPECT_EQ(chainL.getNrOfJoints(),    5);
-    EXPECT_EQ(chainL.getNrOfSegments(),  7);
+    EXPECT_EQ(chainL.getNrOfJoints(),      5);
+    EXPECT_EQ(chainL.getNrOfSegments(),    7);
+    EXPECT_EQ(chainL.GeoJacobian().cols(), 5);
     EXPECT_EQ(H4, chainL.getH());
 
     chainL.removeJoint();
-    EXPECT_EQ(chainL.getNrOfJoints(),    4);
-    EXPECT_EQ(chainL.getNrOfSegments(),  6);
+    EXPECT_EQ(chainL.getNrOfJoints(),      4);
+    EXPECT_EQ(chainL.getNrOfSegments(),    6);
+    EXPECT_EQ(chainL.GeoJacobian().cols(), 4);
     EXPECT_EQ(H3, chainL.getH());
 
     chainL.removeJoint();
-    EXPECT_EQ(chainL.getNrOfJoints(),    3);
-    EXPECT_EQ(chainL.getNrOfSegments(),  5);
+    EXPECT_EQ(chainL.getNrOfJoints(),      3);
+    EXPECT_EQ(chainL.getNrOfSegments(),    5);
+    EXPECT_EQ(chainL.GeoJacobian().cols(), 3);
     EXPECT_EQ(H2, chainL.getH());
 
     chainL.removeJoint();
-    EXPECT_EQ(chainL.getNrOfJoints(),    2);
-    EXPECT_EQ(chainL.getNrOfSegments(),  4);
+    EXPECT_EQ(chainL.getNrOfJoints(),      2);
+    EXPECT_EQ(chainL.getNrOfSegments(),    4);
+    EXPECT_EQ(chainL.GeoJacobian().cols(), 2);
     EXPECT_EQ(H1, chainL.getH());
 
     chainL.removeJoint();
-    EXPECT_EQ(chainL.getNrOfJoints(),    1);
-    EXPECT_EQ(chainL.getNrOfSegments(),  3);
+    EXPECT_EQ(chainL.getNrOfJoints(),      1);
+    EXPECT_EQ(chainL.getNrOfSegments(),    3);
+    EXPECT_EQ(chainL.GeoJacobian().cols(), 1);
     EXPECT_EQ(H0, chainL.getH());
 }
 

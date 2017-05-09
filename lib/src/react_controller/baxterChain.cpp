@@ -233,6 +233,8 @@ VectorXd BaxterChain::getAng()
 
 bool BaxterChain::setAng(sensor_msgs::JointState _q)
 {
+    if (_q.position.size() != getNrOfJoints()) { return false; }
+
     std::vector<double> angles;
     for (size_t i = 0; i < getNrOfJoints(); ++i)
     {
@@ -244,12 +246,16 @@ bool BaxterChain::setAng(sensor_msgs::JointState _q)
 
 bool BaxterChain::setAng(Eigen::VectorXd _q)
 {
+    if (_q.size() != int(getNrOfJoints()))     { return false; }
+
     q = _q;
     return true;
 }
 
 bool BaxterChain::setAng(std::vector<double> _q)
 {
+    if (_q.size() != getNrOfJoints())          { return false; }
+
     q = Map<VectorXd>(_q.data(), _q.size());
     return true;
 }
