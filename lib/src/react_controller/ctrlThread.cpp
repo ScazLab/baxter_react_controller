@@ -58,15 +58,6 @@ CtrlThread::CtrlThread(const std::string& _name, const std::string& _limb, bool 
         if (debugIPOPT()) ROS_INFO("Success! IPOPT works.");
         else              ROS_ERROR("IPOPT does not work!");
     }
-
-    if (is_debug == true)
-    {
-        if (chain)
-        {
-            delete chain;
-            chain = 0;
-        }
-    }
 }
 
 void CtrlThread::initializeNLP()
