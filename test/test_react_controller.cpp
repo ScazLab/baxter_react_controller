@@ -249,8 +249,8 @@ TEST(ReactControllerTest, testWayPoints)
 
     ROS_INFO("Waiting for robot to be ready..");
     // CTRL_DONE is there to test the tester, but it should be removed.
-    bool test_waypoints = rct.waitReactCtrlState(State(CTRL_DONE), 10.0) ||
-                          rct.waitReactCtrlState(State(    START), 10.0);
+    bool test_waypoints = rct.waitReactCtrlState(State(CTRL_DONE), 4.0) ||
+                          rct.waitReactCtrlState(State(    START), 4.0);
     ASSERT_TRUE(test_waypoints);
 
     ROS_INFO("Done. Testing waypoints..");
