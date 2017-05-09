@@ -44,20 +44,15 @@ BaxterChain::BaxterChain(urdf::Model _robot, const string& _base,
     *this = chain;
 
     // Read upper and lower bounds
-    std::vector<KDL::Segment> kdl_chain_segs = segments;
-
     boost::shared_ptr<const urdf::Joint> joint;
-
-    std::vector<double> l_bounds, u_bounds;
-
     uint joint_num=0;
 
-    for (size_t i = 0; i < kdl_chain_segs.size(); ++i)
+    for (size_t i = 0; i < segments.size(); ++i)
     {
-        joint = _robot.getJoint(kdl_chain_segs[i].getJoint().getName());
+        joint = _robot.getJoint(segments[i].getJoint().getName());
 
         if (joint->type != urdf::Joint::UNKNOWN &&
-            joint->type !=   urdf::Joint::FIXED)
+            joint->type != urdf::Joint::FIXED)
         {
             joint_num++;
             float lower, upper;
@@ -67,10 +62,10 @@ BaxterChain::BaxterChain(urdf::Model _robot, const string& _base,
             {
                 if (joint->safety)
                 {
-                    lower = std::max(joint->limits->lower,
-                                     joint->safety->soft_lower_limit);
-                    upper = std::min(joint->limits->upper,
-                                     joint->safety->soft_upper_limit);
+                    lower = max(joint->limits->lower,
+                                joint->safety->soft_lower_limit);
+                    upper = min(joint->limits->upper,
+                                joint->safety->soft_upper_limit);
                 }
                 else
                 {
@@ -83,13 +78,13 @@ BaxterChain::BaxterChain(urdf::Model _robot, const string& _base,
 
             if (hasLimits)
             {
-                lb(joint_num-1)=lower;
-                ub(joint_num-1)=upper;
+                lb(joint_num-1) = lower;
+                ub(joint_num-1) = upper;
             }
             else
             {
-                lb(joint_num-1)=std::numeric_limits<float>::lowest();
-                ub(joint_num-1)=std::numeric_limits<float>::max();
+                lb(joint_num-1) = numeric_limits<float>::lowest();
+                ub(joint_num-1) = numeric_limits<float>::max();
             }
 
             ROS_DEBUG_STREAM("IK Using joint "<<joint->name<<" "<<
@@ -107,7 +102,7 @@ BaxterChain::BaxterChain(urdf::Model _robot, const string& _base,
 }
 
 BaxterChain::BaxterChain(urdf::Model _robot, const string& _base,
-                         const string& _tip, std::vector<double> _q_0):
+                         const string& _tip, vector<double> _q_0):
                          BaxterChain(_robot, _base, _tip)
 
 {
@@ -222,18 +217,19 @@ MatrixXd BaxterChain::GeoJacobian()
 
 VectorXd BaxterChain::getAng()
 {
-    return Map<VectorXd>(q.data(), q.size());
+    return q;
 }
 
 bool BaxterChain::setAng(sensor_msgs::JointState _q)
 {
     if (_q.position.size() != getNrOfJoints()) { return false; }
 
-    std::vector<double> angles;
+    VectorXd angles(getNrOfJoints());
     for (size_t i = 0; i < getNrOfJoints(); ++i)
     {
-        angles.push_back(_q.position[i]);
+        angles[i] = _q.position[i];
     }
+
     setAng(angles);
     return true;
 }
@@ -246,7 +242,7 @@ bool BaxterChain::setAng(VectorXd _q)
     return true;
 }
 
-bool BaxterChain::setAng(std::vector<double> _q)
+bool BaxterChain::setAng(vector<double> _q)
 {
     if (_q.size() != getNrOfJoints())          { return false; }
 
@@ -327,7 +323,7 @@ bool BaxterChain::JntToJac(KDL::Jacobian& _J, int _seg_nr)
     return true;
 }
 
-bool BaxterChain::GetJointPositions(std::vector<Vector3d>& positions)
+bool BaxterChain::GetJointPositions(vector<Vector3d>& positions)
 {
     Vector3d point(0.40, -0.25, 0.45);
 
