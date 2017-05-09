@@ -111,16 +111,8 @@ bool CtrlThread::debugIPOPT()
 {
     if (waitForJointAngles(2.0))   { chain->setAng(getJointStates()); }
 
-    KDL::JntArray jnts(chain->getNrOfJoints());
-    VectorXd angles = chain->getAng();
-
-    for (size_t i = 0, _i = chain->getNrOfJoints(); i < _i; ++i)
-    {
-        jnts(i) = angles[i];
-    }
-
     KDL::Frame frame;
-    chain->JntToCart(jnts,frame);
+    chain->JntToCart(frame);
 
     double ox, oy, oz, ow;
     frame.M.GetQuaternion(ox, oy, oz, ow);

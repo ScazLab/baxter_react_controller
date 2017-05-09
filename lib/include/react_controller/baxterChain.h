@@ -120,22 +120,20 @@ public:
      * Takes an arm chain and returns the KDL::Frame of the end effector w.r.t
      * the base of the arm.
      *
-     * @param _q_in:      array of joint angles
      * @param _p_out:     KDL::Frame of end effector, populated by function
      * @param _segmentNr: segment to get frame for, default is end effector
      *
      * return:     true/false if success/failure
      */
-    bool JntToCart(const KDL::JntArray& _q_in, KDL::Frame& _p_out, int seg_nr=-1);
+    bool JntToCart(KDL::Frame& _p_out, int seg_nr=-1);
 
     /**
      * TODO
-     * @param  q_in   [description]
      * @param  jac    [description]
      * @param  seg_nr [description]
      * @return        [description]
      */
-    bool JntToJac(const KDL::JntArray& q_in, KDL::Jacobian& jac, int seg_nr=-1);
+    bool JntToJac(KDL::Jacobian& jac, int seg_nr=-1);
 
     /**
      * Gets all collision points and normal vectors for each segment in the arm.

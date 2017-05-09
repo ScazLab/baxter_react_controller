@@ -215,15 +215,8 @@ const KDL::Segment& BaxterChain::getSegment(size_t nr)const
 MatrixXd BaxterChain::GeoJacobian()
 {
     KDL::Jacobian J;
-    J.resize(getNrOfJoints());
-    KDL::JntArray jnts(getNrOfJoints());
+    JntToJac(J);
 
-    for (size_t i = 0, _i = getNrOfJoints(); i < _i; ++i)
-    {
-        jnts(i) = q[i];
-    }
-
-    JntToJac(jnts, J);
     return J.data;
 }
 
@@ -261,9 +254,7 @@ bool BaxterChain::setAng(std::vector<double> _q)
     return true;
 }
 
-#include <iostream>
-
-bool BaxterChain::JntToCart(const KDL::JntArray& _q_in, KDL::Frame& _p_out, int seg_nr)
+bool BaxterChain::JntToCart(KDL::Frame& _p_out, int seg_nr)
 {
     size_t segmentNr;
     if (seg_nr<0) { segmentNr = getNrOfSegments()-1; }
@@ -279,7 +270,7 @@ bool BaxterChain::JntToCart(const KDL::JntArray& _q_in, KDL::Frame& _p_out, int 
         {
             if (getSegment(i).getJoint().getType()!=KDL::Joint::None)
             {
-                _p_out = _p_out*getSegment(i).pose(_q_in(j));
+                _p_out = _p_out*getSegment(i).pose(q(j));
                 ++j;
             }
             else
@@ -291,17 +282,17 @@ bool BaxterChain::JntToCart(const KDL::JntArray& _q_in, KDL::Frame& _p_out, int 
     }
 }
 
-bool BaxterChain::JntToJac(const KDL::JntArray& q_in, KDL::Jacobian& jac, int seg_nr)
+bool BaxterChain::JntToJac(KDL::Jacobian& jac, int seg_nr)
 {
     size_t segmentNr;
     if (seg_nr<0) { segmentNr = getNrOfSegments(); }
     else          { segmentNr =            seg_nr; }
 
     //Initialize Jacobian to zero since only segmentNr columns are computed
-    SetToZero(jac) ;
+    jac.resize(getNrOfJoints());
+    SetToZero(jac);
 
-    if (q_in.rows()!=getNrOfJoints()||getNrOfJoints()!=jac.columns()) { return false; }
-    else if (segmentNr>getNrOfSegments())                             { return false; }
+    if (segmentNr>getNrOfSegments())   { return false; }
 
     KDL::Frame T_tmp(KDL::Frame::Identity());
     KDL::Frame total(KDL::Frame::Identity());
@@ -317,10 +308,10 @@ bool BaxterChain::JntToJac(const KDL::JntArray& q_in, KDL::Jacobian& jac, int se
         if (getSegment(i).getJoint().getType()!=KDL::Joint::None)
         {
             //pose of the new end-point expressed in the base
-            total = T_tmp*getSegment(i).pose(q_in(j));
+            total = T_tmp*getSegment(i).pose(q(j));
             //changing base of new segment's twist to base frame if it is not locked
             //t_tmp = T_tmp.M*chain.getSegment(i).twist(1.0);
-            t_tmp = T_tmp.M*getSegment(i).twist(q_in(j),1.0);
+            t_tmp = T_tmp.M*getSegment(i).twist(q(j),1.0);
         }
         else
         {
@@ -401,15 +392,7 @@ geometry_msgs::Pose BaxterChain::getPose()
 Matrix4d BaxterChain::getH()
 {
     KDL::Frame H;
-
-    KDL::JntArray jnts(getNrOfJoints());
-
-    for (size_t i = 0; i < getNrOfJoints(); ++i)
-    {
-        jnts(i) = q[i];
-    }
-
-    JntToCart(jnts,H);
+    JntToCart(H);
 
     return KDLFrameToEigen(H);
 }
@@ -420,12 +403,6 @@ Matrix4d BaxterChain::getH(const size_t _i)
     ROS_ASSERT_MSG(_i < getNrOfJoints(), "_i %lu, num_joints %lu", _i, getNrOfJoints());
 
     KDL::Frame H;
-    KDL::JntArray jnts(_i + 1);
-
-    for (size_t i = 0; i < _i + 1; ++i)
-    {
-        jnts(i) = q[i];
-    }
 
     size_t j=0, s=0;
     for (s=0; s<getNrOfSegments(); ++s)
@@ -437,7 +414,7 @@ Matrix4d BaxterChain::getH(const size_t _i)
         }
     }
 
-    JntToCart(jnts,H, s);
+    JntToCart(H, s);
 
     return KDLFrameToEigen(H);
 }
