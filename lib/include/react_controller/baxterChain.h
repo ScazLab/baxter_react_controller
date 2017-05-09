@@ -35,27 +35,27 @@ public:
      * Takes a urdf robot model and base/tip link to initialize KDL::Chain.
      * Automatically initializes q to average of lower and upper bounds.
      *
-     * @param _robot_model [urdf::Model of the robot]
-     * @param _base_link   [base link string of robot chain]
-     * @param _tip_link    [tip link string of robot chain]
+     * @param _robot  [urdf::Model of the robot]
+     * @param _base   [base link string of robot chain]
+     * @param _tip    [tip link string of robot chain]
      */
-    BaxterChain(urdf::Model      _robot_model,
-                const std::string& _base_link,
-                const std::string&  _tip_link);
+    BaxterChain(urdf::Model        _robot,
+                const std::string&  _base,
+                const std::string&   _tip);
 
     /**
      * Takes a urdf robot model and base/tip link to initialize KDL::Chain.
      * Initializes q to values in _q_0.
      *
-     * @param _robot_model [urdf::Model of the robot]
-     * @param _base_link   [base link string of robot chain]
-     * @param _tip_link    [tip link string of robot chain]
-     * @param _q_0         [vector of initial joint angles]
+     * @param _robot  [urdf::Model of the robot]
+     * @param _base   [base link string of robot chain]
+     * @param _tip    [tip link string of robot chain]
+     * @param _q_0    [vector of initial joint angles]
      */
-    BaxterChain(urdf::Model      _robot_model,
-                const std::string& _base_link,
-                const std::string&  _tip_link,
-                std::vector<double>      _q_0);
+    BaxterChain(urdf::Model        _robot,
+                const std::string&  _base,
+                const std::string&   _tip,
+                std::vector<double> _q_0);
 
     /**
      * Resets the chain

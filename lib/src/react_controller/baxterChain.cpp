@@ -23,24 +23,23 @@ BaxterChain::BaxterChain(const KDL::Chain& in): BaxterChain()
     }
 }
 
-BaxterChain::BaxterChain(urdf::Model _robot_model,
-                         const string& _base_link, const string& _tip_link):
-                         BaxterChain()
+BaxterChain::BaxterChain(urdf::Model _robot, const string& _base,
+                         const string& _tip): BaxterChain()
 {
     // Read joints and links from URDF
     ROS_INFO("Reading joints and links from URDF, from %s link to %s link",
-                                    _base_link.c_str(), _tip_link.c_str());
+                                              _base.c_str(), _tip.c_str());
 
     KDL::Tree tree;
-    if (not kdl_parser::treeFromUrdfModel(_robot_model, tree))
+    if (not kdl_parser::treeFromUrdfModel(_robot, tree))
     {
         ROS_FATAL("Failed to extract KDL tree from xml robot description");
     }
 
     KDL::Chain chain;
-    if (not tree.getChain(_base_link, _tip_link, chain))
+    if (not tree.getChain(_base, _tip, chain))
     {
-        ROS_FATAL("Couldn't find chain %s to %s",_base_link.c_str(),_tip_link.c_str());
+        ROS_FATAL("Couldn't find chain %s to %s",_base.c_str(),_tip.c_str());
     }
     *this = chain;
 
@@ -55,9 +54,10 @@ BaxterChain::BaxterChain(urdf::Model _robot_model,
 
     for (size_t i = 0; i < kdl_chain_segs.size(); ++i)
     {
-        joint = _robot_model.getJoint(kdl_chain_segs[i].getJoint().getName());
+        joint = _robot.getJoint(kdl_chain_segs[i].getJoint().getName());
 
-        if (joint->type != urdf::Joint::UNKNOWN && joint->type != urdf::Joint::FIXED)
+        if (joint->type != urdf::Joint::UNKNOWN &&
+            joint->type !=   urdf::Joint::FIXED)
         {
             joint_num++;
             float lower, upper;
@@ -67,8 +67,10 @@ BaxterChain::BaxterChain(urdf::Model _robot_model,
             {
                 if (joint->safety)
                 {
-                    lower = std::max(joint->limits->lower, joint->safety->soft_lower_limit);
-                    upper = std::min(joint->limits->upper, joint->safety->soft_upper_limit);
+                    lower = std::max(joint->limits->lower,
+                                     joint->safety->soft_lower_limit);
+                    upper = std::min(joint->limits->upper,
+                                     joint->safety->soft_upper_limit);
                 }
                 else
                 {
@@ -104,10 +106,9 @@ BaxterChain::BaxterChain(urdf::Model _robot_model,
     }
 }
 
-BaxterChain::BaxterChain(urdf::Model _robot_model,
-                         const string& _base_link, const string& _tip_link,
-                         std::vector<double> _q_0):
-                         BaxterChain(_robot_model, _base_link, _tip_link)
+BaxterChain::BaxterChain(urdf::Model _robot, const string& _base,
+                         const string& _tip, std::vector<double> _q_0):
+                         BaxterChain(_robot, _base, _tip)
 
 {
     // TODO : instead of assert, just
@@ -375,24 +376,6 @@ bool BaxterChain::GetJointPositions(std::vector<Eigen::Vector3d>& positions)
         }
     }
 
-    // for (size_t i = 0; i < positions.size(); ++i)
-    // {
-    //     ROS_INFO("joint %zu at x: %g y: %g z: %g", i, positions[i](0), positions[i](1), positions[i](2));
-    // }
-
-    // std::vector<Eigen::Vector3d> coll_points;
-    // std::vector<Eigen::Vector3d> norms;
-    // for (size_t i = 0; i < joint_pos.size() - 1; ++i)
-    // {
-    //     Eigen::Vector3d ab = joint_pos[i + 1] - joint_pos[i];
-    //     Eigen::Vector3d ap = point - joint_pos[i];
-    //     Eigen::Vector3d coll_pt = joint_pos[i] + ((ap).dot(ab)) / ((ab).dot(ab)) * ab;
-    //     coll_points.push_back(coll_pt);
-    //     norms.push_back(point - coll_pt);
-    //     ROS_INFO("coll point %zu at x:%f y:%f z:%f", i, coll_points[i](0), coll_points[i](1), coll_points[i](2));
-    //     ROS_INFO("norm %zu at x:%f y:%f z:%f", i, norms[i](0), norms[i](1), norms[i](2));
-    // }
-
     return true;
 }
 
@@ -416,7 +399,7 @@ geometry_msgs::Pose BaxterChain::getPose()
 
 Matrix4d BaxterChain::getH()
 {
-    return getH(q.size() - 1);
+    return getH(getNrOfJoints() - 1);
 }
 
 Matrix4d BaxterChain::getH(const size_t _i)
