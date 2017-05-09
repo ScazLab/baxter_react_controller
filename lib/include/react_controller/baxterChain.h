@@ -58,18 +58,6 @@ public:
                 std::vector<double>      _q_0);
 
     /**
-     * Initializes a chain from an URDF
-     *
-     * @param _robot_model [urdf::Model of the robot]
-     * @param _base_link   [base link string of robot chain]
-     * @param _tip_link    [tip link string of robot chain]
-     * @return true/false if success/failure
-     */
-    bool initChain(urdf::Model      _robot_model,
-                   const std::string& _base_link,
-                   const std::string&  _tip_link);
-
-    /**
      * Resets the chain
      *
      * @return true/false if success/failure
@@ -77,15 +65,15 @@ public:
     bool resetChain();
 
     /**
-     * Assignment operator
-     */
-    BaxterChain& operator = (const KDL::Chain&  _ch);
-    BaxterChain& operator = (const BaxterChain& _ch);
-
-    /**
      * Cast to KDL::Chain
      */
     operator KDL::Chain();
+
+    /**
+     * Assignment operator
+     */
+    BaxterChain& operator=(const KDL::Chain&  _ch);
+    BaxterChain& operator=(const BaxterChain& _ch);
 
     /**
      * Adds a new segment to the <strong>end</strong> of the chain.

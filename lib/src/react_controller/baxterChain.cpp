@@ -24,43 +24,10 @@ BaxterChain::BaxterChain(const KDL::Chain& in): BaxterChain()
 }
 
 BaxterChain::BaxterChain(urdf::Model _robot_model,
-                         const string& _base_link,
-                          const string& _tip_link):
+                         const string& _base_link, const string& _tip_link):
                          BaxterChain()
 {
-    initChain(_robot_model, _base_link, _tip_link);
-
-    for (size_t i = 0; i < getNrOfJoints(); ++i)
-    {
-        // This will initialize the joint in the
-        // middle of its operational range
-        q[i] = (lb[i]+ub[i])/2;
-    }
-}
-
-BaxterChain::BaxterChain(urdf::Model _robot_model,
-                         const string& _base_link,
-                          const string& _tip_link,
-                         std::vector<double> _q_0):
-                         BaxterChain()
-
-{
-    initChain(_robot_model, _base_link, _tip_link);
-
-    // TODO : instead of assert, just
-    // place a ROS_ERROR and fill q with defaults.
-    ROS_ASSERT(getNrOfJoints() == _q_0.size());
-
-    for (size_t i = 0; i < getNrOfJoints(); ++i)
-    {
-        q[i] = _q_0[i];
-    }
-}
-
-bool BaxterChain::initChain(urdf::Model _robot_model,
-                       const std::string& _base_link,
-                        const std::string& _tip_link)
-{
+    // Read joints and links from URDF
     ROS_INFO("Reading joints and links from URDF, from %s link to %s link",
                                     _base_link.c_str(), _tip_link.c_str());
 
@@ -77,6 +44,7 @@ bool BaxterChain::initChain(urdf::Model _robot_model,
     }
     *this = chain;
 
+    // Read upper and lower bounds
     std::vector<KDL::Segment> kdl_chain_segs = segments;
 
     boost::shared_ptr<const urdf::Joint> joint;
@@ -127,7 +95,29 @@ bool BaxterChain::initChain(urdf::Model _robot_model,
         }
     }
 
-    return true;
+    // Assign default values for q
+    for (size_t i = 0; i < getNrOfJoints(); ++i)
+    {
+        // This will initialize the joint in the
+        // middle of its operational range
+        q[i] = (lb[i]+ub[i])/2;
+    }
+}
+
+BaxterChain::BaxterChain(urdf::Model _robot_model,
+                         const string& _base_link, const string& _tip_link,
+                         std::vector<double> _q_0):
+                         BaxterChain(_robot_model, _base_link, _tip_link)
+
+{
+    // TODO : instead of assert, just
+    // place a ROS_ERROR and fill q with defaults.
+    ROS_ASSERT(getNrOfJoints() == _q_0.size());
+
+    for (size_t i = 0; i < getNrOfJoints(); ++i)
+    {
+        q[i] = _q_0[i];
+    }
 }
 
 bool BaxterChain::resetChain()
