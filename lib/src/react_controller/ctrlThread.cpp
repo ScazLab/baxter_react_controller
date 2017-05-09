@@ -63,11 +63,11 @@ CtrlThread::CtrlThread(const std::string& _name, const std::string& _limb, bool 
 void CtrlThread::initializeNLP()
 {
     app=new Ipopt::IpoptApplication;
-    app->Options()->SetNumericValue("tol", tol);
+    app->Options()->SetNumericValue(            "tol", tol   );
     app->Options()->SetNumericValue("constr_viol_tol", tol*10);
-    app->Options()->SetNumericValue("acceptable_tol", tol);
-    app->Options()->SetIntegerValue("acceptable_iter", 0);
-    app->Options()->SetStringValue ("mu_strategy","adaptive");
+    app->Options()->SetNumericValue( "acceptable_tol", tol*10);
+    app->Options()->SetIntegerValue("acceptable_iter",     10);
+    app->Options()->SetStringValue ( "mu_strategy","adaptive");
     if (is_debug == false) { app->Options()->SetStringValue ("linear_solver", "ma57"); }
     app->Options()->SetNumericValue("max_cpu_time", 0.95 * dT / 1000.0);
     // app->Options()->SetStringValue ("nlp_scaling_method","gradient-based");
