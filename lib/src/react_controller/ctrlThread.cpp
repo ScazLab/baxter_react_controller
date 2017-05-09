@@ -109,13 +109,15 @@ void CtrlThread::NLPOptionsFromParameterServer()
 
 bool CtrlThread::debugIPOPT()
 {
-    if (waitForJointAngles(2.0))   { chain->setAng(getJointStates()); }
+    Matrix4d    H_ee(chain->getH());
+    Matrix3d    R_ee= H_ee.block<3,3>(0,0);
+    Vector3d    p_ee= H_ee.col(3).block<3,1>(0,0);
+    Quaterniond o_ee(R_ee);
+    o_ee.normalize();
 
-    KDL::Frame frame;
-    chain->JntToCart(frame);
-
-    double ox, oy, oz, ow;
-    frame.M.GetQuaternion(ox, oy, oz, ow);
+    // internal_state = goToPoseNoCheck(p_ee[0], p_ee[1], p_ee[2] + 0.002,
+    //                                  o_ee.x(), o_ee.y(), o_ee.z(), o_ee.w());
+    // return internal_state;
 
     double    offs_x =     0;
     double    offs_y =     0;
@@ -123,11 +125,6 @@ bool CtrlThread::debugIPOPT()
     int      counter =     0;
     bool      result =  true;
     int   n_failures =     0;
-
-    // Quaterniond q(ow, ox, oy, oz);
-    // q.normalize();
-    // internal_state = goToPoseNoCheck(frame.p[0], frame.p[1], frame.p[2] + 0.002, q.x(), q.y(), q.z(), q.w());
-    // return internal_state;
 
     std::vector<double> increment{0.001, 0.004};
 
@@ -146,10 +143,10 @@ bool CtrlThread::debugIPOPT()
                     offs_y = j * increment[p];
                     offs_z = k * increment[p];
 
-                    result = goToPoseNoCheck(frame.p[0] + offs_x,
-                                             frame.p[1] + offs_y,
-                                             frame.p[2] + offs_z,
-                                             ox, oy, oz, ow);
+                    result = goToPoseNoCheck(p_ee[0] + offs_x,
+                                             p_ee[1] + offs_y,
+                                             p_ee[2] + offs_z,
+                                             o_ee.x(), o_ee.y(), o_ee.z(), o_ee.w());
                     q_dot.setZero(); // in simulation, we always start from 0 velocities
 
                     if (result == false)

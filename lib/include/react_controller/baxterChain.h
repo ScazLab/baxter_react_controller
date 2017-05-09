@@ -24,6 +24,16 @@ private:
     Eigen::VectorXd ub;    // upper bounds
 
     /**
+     * Takes an arm chain and returns the KDL::Frame of the end effector w.r.t
+     * the base of the arm.
+     *
+     * @param _H      KDL::Frame of end effector, populated by function
+     * @param _seg_nr segment to get frame for, default is end effector
+     * return         true/false if success/failure
+     */
+    bool JntToCart(KDL::Frame& _H, int _seg_nr=-1);
+
+    /**
      * TODO
      * @param    _J   [description]
      * @param _seg_nr segment to get frame for, default is end effector
@@ -122,16 +132,6 @@ public:
      * @return a constant reference to the nth segment
      */
     const KDL::Segment& getSegment(size_t nr)const;
-
-    /**
-     * Takes an arm chain and returns the KDL::Frame of the end effector w.r.t
-     * the base of the arm.
-     *
-     * @param _H      KDL::Frame of end effector, populated by function
-     * @param _seg_nr segment to get frame for, default is end effector
-     * return         true/false if success/failure
-     */
-    bool JntToCart(KDL::Frame& _H, int _seg_nr=-1);
 
     /**
      * Gets all collision points and normal vectors for each segment in the arm.
