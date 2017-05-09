@@ -65,7 +65,7 @@ void CtrlThread::initializeNLP()
     app=new Ipopt::IpoptApplication;
     app->Options()->SetNumericValue(            "tol", tol   );
     app->Options()->SetNumericValue("constr_viol_tol", tol*10);
-    app->Options()->SetNumericValue( "acceptable_tol", tol*10);
+    app->Options()->SetNumericValue( "acceptable_tol", tol   );
     app->Options()->SetIntegerValue("acceptable_iter",     10);
     app->Options()->SetStringValue ( "mu_strategy","adaptive");
     if (is_debug == false) { app->Options()->SetStringValue ("linear_solver", "ma57"); }
@@ -194,15 +194,13 @@ bool CtrlThread::goToPoseNoCheck(double px, double py, double pz,
 
     // ROS_INFO("sending joint position: %s", toString(des_poss).c_str());
 
-    if (exit_code != 0 && is_debug)        return false;
-    if (exit_code == 4 && is_debug)        return false;
-    if (exit_code != 0 && exit_code != -4) return false;
-    if (is_debug)                          return  true;
+    if (exit_code != 0 && exit_code != 4 && exit_code != -4) { return false; }
+    if (is_debug)                                            { return  true; }
 
     if (!isNoRobot())
     {
         // suppressCollisionAv();
-        if (goToJointConfNoCheck(des_poss))   return true;
+        if (goToJointConfNoCheck(des_poss))   { return true; }
     }
 
     return false;

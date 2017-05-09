@@ -327,16 +327,24 @@ void ControllerNLP::finalize_solution(Ipopt::SolverReturn status, Ipopt::Index n
     }
 
     // printf("\n");
-
+    if (status != Ipopt::SUCCESS)     { ROS_WARN("IPOPT Failed. Error code: %i", status); }
     switch(status)
     {
-        case Ipopt::SUCCESS             : break;
-        case Ipopt::CPUTIME_EXCEEDED    : ROS_WARN("Maximum CPU time exceeded.");  break;
-        case Ipopt::LOCAL_INFEASIBILITY : ROS_WARN("Algorithm converged to a point of local infeasibility. "
-                                                   "Problem may be infeasible.");  break;
-        case Ipopt::DIVERGING_ITERATES  : ROS_WARN("Iterates divering; problem might be unbounded."); break;
-        default                         : ROS_WARN("IPOPT Failed. Error code: %i", status);
+        case Ipopt::SUCCESS                  : break;
+        case Ipopt::CPUTIME_EXCEEDED         : ROS_WARN("Maximum CPU time exceeded."); break;
+        case Ipopt::LOCAL_INFEASIBILITY      : ROS_WARN("Algorithm converged to a point of local infeasibility. "
+                                                        "Problem may be infeasible."); break;
+        case Ipopt::DIVERGING_ITERATES       : ROS_WARN("Iterates divering; problem might be unbounded."); break;
+        case Ipopt::STOP_AT_ACCEPTABLE_POINT : ROS_WARN("Solved to acceptable level."); break;
+        default : break;
         // Error codes: https://www.coin-or.org/Ipopt/doxygen/classorg_1_1coinor_1_1Ipopt.html
+        //    see also: https://www.coin-or.org/Doxygen/CoinAll/_ip_alg_types_8hpp-source.html#l00022
+        // enum SolverReturn {
+        //     SUCCESS, MAXITER_EXCEEDED, CPUTIME_EXCEEDED, STOP_AT_TINY_STEP, STOP_AT_ACCEPTABLE_POINT,
+        //     LOCAL_INFEASIBILITY, USER_REQUESTED_STOP, FEASIBLE_POINT_FOUND, DIVERGING_ITERATES,
+        //     RESTORATION_FAILURE, ERROR_IN_STEP_COMPUTATION, INVALID_NUMBER_DETECTED,
+        //     TOO_FEW_DEGREES_OF_FREEDOM, INVALID_OPTION, OUT_OF_MEMORY, INTERNAL_ERROR, UNASSIGNED
+        // };
     }
 
     Eigen::VectorXd pos_err = (p_e-p_r) * 1000.0;
