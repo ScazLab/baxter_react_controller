@@ -142,6 +142,18 @@ bool BaxterChain::resetChain()
     return true;
 }
 
+BaxterChain::operator KDL::Chain()
+{
+    KDL::Chain res;
+
+    for (size_t i = 0; i < getNrOfSegments(); ++i)
+    {
+        res.addSegment(getSegment(i));
+    }
+
+    return res;
+}
+
 BaxterChain& BaxterChain::operator=(const KDL::Chain& _ch)
 {
     resetChain();
@@ -180,18 +192,6 @@ BaxterChain& BaxterChain::operator=(const BaxterChain& _ch)
     }
 
     return *this;
-}
-
-BaxterChain::operator KDL::Chain()
-{
-    KDL::Chain res;
-
-    for (size_t i = 0; i < getNrOfSegments(); ++i)
-    {
-        res.addSegment(getSegment(i));
-    }
-
-    return res;
 }
 
 void BaxterChain::addSegment(const KDL::Segment& segment)
