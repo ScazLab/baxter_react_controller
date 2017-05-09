@@ -178,6 +178,9 @@ if(CATKIN_ENABLE_TESTING)
   find_package(baxter_tools       REQUIRED)
   find_package(baxter_gazebo      REQUIRED)
 
+  catkin_add_gtest(test_utils test/test_utils.cpp)
+  target_link_libraries(test_utils react_controller)
+
   add_rostest_gtest(test_baxterchain test/test_baxterchain.test test/test_baxterchain.cpp)
   target_link_libraries(test_baxterchain react_controller ${catkin_LIBRARIES})
 

@@ -238,7 +238,7 @@ bool BaxterChain::setAng(sensor_msgs::JointState _q)
     return true;
 }
 
-bool BaxterChain::setAng(Eigen::VectorXd _q)
+bool BaxterChain::setAng(VectorXd _q)
 {
     if (_q.size() != int(getNrOfJoints()))     { return false; }
 
@@ -327,9 +327,9 @@ bool BaxterChain::JntToJac(KDL::Jacobian& _J, int _seg_nr)
     return true;
 }
 
-bool BaxterChain::GetJointPositions(std::vector<Eigen::Vector3d>& positions)
+bool BaxterChain::GetJointPositions(std::vector<Vector3d>& positions)
 {
-    Eigen::Vector3d point(0.40, -0.25, 0.45);
+    Vector3d point(0.40, -0.25, 0.45);
 
     size_t segmentNr=getNrOfSegments();
 
@@ -349,7 +349,7 @@ bool BaxterChain::GetJointPositions(std::vector<Eigen::Vector3d>& positions)
         {
             frame = frame*getSegment(i).pose(jnts(j));
             KDL::Vector   posKDL = frame.p;
-            Eigen::Vector3d posEig;
+            Vector3d posEig;
             tf::vectorKDLToEigen(posKDL, posEig);
             positions.push_back(posEig);
             ++j;
@@ -383,10 +383,10 @@ geometry_msgs::Pose BaxterChain::getPose()
 
 Matrix4d BaxterChain::getH()
 {
-    KDL::Frame H;
-    JntToCart(H);
+    KDL::Frame F;
+    JntToCart(F);
 
-    return KDLFrameToEigen(H);
+    return toMatrix4d(F);
 }
 
 Matrix4d BaxterChain::getH(const size_t _i)
@@ -394,7 +394,7 @@ Matrix4d BaxterChain::getH(const size_t _i)
     // if i > than num_joints
     ROS_ASSERT_MSG(_i < getNrOfJoints(), "_i %lu, num_joints %lu", _i, getNrOfJoints());
 
-    KDL::Frame H;
+    KDL::Frame F;
 
     size_t j=0, s=0;
     for (s=0; s<getNrOfSegments(); ++s)
@@ -406,9 +406,9 @@ Matrix4d BaxterChain::getH(const size_t _i)
         }
     }
 
-    JntToCart(H, s);
+    JntToCart(F, s);
 
-    return KDLFrameToEigen(H);
+    return toMatrix4d(F);
 }
 
 void BaxterChain::removeSegment()

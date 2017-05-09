@@ -21,29 +21,6 @@
 #define CTRL_DEG2RAD (M_PI/180.0)
 
 /**
- * [SVD description]
- * @param in [description]
- * @param U  [description]
- * @param S  [description]
- * @param V  [description]
- */
-void SVD(const Eigen::MatrixXd &in, Eigen::MatrixXd &U, Eigen::VectorXd &S, Eigen::MatrixXd &V);
-
-/**
- * [dcm2axis description]
- * @param  R [description]
- * @return   [description]
- */
-Eigen::VectorXd dcm2axis(const Eigen::MatrixXd &R);
-
-/**
- * [axis2dcm description]
- * @param  v [description]
- * @return   [description]
- */
-Eigen::MatrixXd axis2dcm(const Eigen::VectorXd &v);
-
-/**
  * [cross description]
  * @param  A    [description]
  * @param  colA [description]
@@ -60,6 +37,14 @@ Eigen::Vector3d cross(const Eigen::MatrixXd &A, int colA, const Eigen::MatrixXd 
  */
 Eigen::Matrix3d skew(const Eigen::Vector3d &w);
 
+/**
+ * Takes a KDL::Frame and returns a 4X4 pose Eigen::Matrix
+ *
+ * @param _f KDL::Frame to turn into a pose Eigen::Matrix
+ * return    Eigen 4X4 pose matrix
+*/
+Eigen::Matrix4d toMatrix4d(KDL::Frame _f);
+
 struct collisionPoint
 {
         // iCub::skinDynLib::SkinPart skin_part;
@@ -67,15 +52,6 @@ struct collisionPoint
         Eigen::VectorXd n; //direction of normal vector at that point - derived from taxel normals, pointing out of the skin
         double magnitude;  // ~ activation level from probabilistic representation in pps - likelihood of collision
 };
-
-/**
- * Takes a KDL::Frame and returns a 4X4 pose Eigen::Matrix
- *
- * @param _f: KDL::Frame to turn into a pose Eigen::Matrix
- *
- * return: Eigen 4X4 pose matrix
-*/
-Eigen::Matrix4d KDLFrameToEigen(KDL::Frame _f);
 
 /**
  * TODO documentation
