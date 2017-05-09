@@ -132,7 +132,9 @@ bool CtrlThread::debugIPOPT()
     bool      result =  true;
     int   n_failures =     0;
 
-    // internal_state = goToPoseNoCheck(frame.p[0], frame.p[1], frame.p[2] + 0.001, ox, oy, oz, ow);
+    // Quaterniond q(ow, ox, oy, oz);
+    // q.normalize();
+    // internal_state = goToPoseNoCheck(frame.p[0], frame.p[1], frame.p[2] + 0.002, q.x(), q.y(), q.z(), q.w());
     // return internal_state;
 
     std::vector<double> increment{0.001, 0.004};

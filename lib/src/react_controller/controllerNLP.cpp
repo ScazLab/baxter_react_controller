@@ -14,12 +14,12 @@ ControllerNLP::ControllerNLP(BaxterChain chain_, double dt_, bool ctrl_ori_) :
                              chain(chain_), dt(dt_), ctrl_ori(ctrl_ori_),
                              q_0(chain_.getNrOfJoints()), v_0(chain_.getNrOfJoints()),
                              J_0_xyz(3,chain_.getNrOfJoints()), J_0_ang(3,chain_.getNrOfJoints()),
-                             v_e(chain.getNrOfJoints()), q_lim(chain.getNrOfJoints(),2),
-                             v_lim(chain_.getNrOfJoints(),2), bounds(chain.getNrOfJoints(),2),
-                             qGuard(chain.getNrOfJoints()),
-                             qGuardMinExt(chain.getNrOfJoints()), qGuardMinInt(chain.getNrOfJoints()),
-                             qGuardMinCOG(chain.getNrOfJoints()), qGuardMaxExt(chain.getNrOfJoints()),
-                             qGuardMaxInt(chain.getNrOfJoints()), qGuardMaxCOG(chain.getNrOfJoints())
+                             v_e(chain_.getNrOfJoints()), q_lim(chain_.getNrOfJoints(),2),
+                             v_lim(chain_.getNrOfJoints(),2), bounds(chain_.getNrOfJoints(),2),
+                             qGuard(chain_.getNrOfJoints()),
+                             qGuardMinExt(chain_.getNrOfJoints()), qGuardMinInt(chain_.getNrOfJoints()),
+                             qGuardMinCOG(chain_.getNrOfJoints()), qGuardMaxExt(chain_.getNrOfJoints()),
+                             qGuardMaxInt(chain_.getNrOfJoints()), qGuardMaxCOG(chain_.getNrOfJoints())
 {
     v_0.setZero();
     v_e.setZero();
@@ -27,7 +27,7 @@ ControllerNLP::ControllerNLP(BaxterChain chain_, double dt_, bool ctrl_ori_) :
     R_e.setIdentity();
     R_r.setIdentity();
 
-    for (size_t r=0; r<chain.getNrOfJoints(); r++)
+    for (size_t r=0; r<chain_.getNrOfJoints(); r++)
     {
         /* angle bounds */
         q_lim(r,0)=chain.getMin(r);
@@ -216,14 +216,15 @@ void ControllerNLP::computeQuantities(const Ipopt::Number *x, const bool new_x)
             v_e[i]=x[i];
         }
 
-        // Now, let's compute the positional and orientational erros
-        Vector3d  ww = J_0_ang*v_e;
-        double theta =  ww.norm();
-        if (theta > 0.0) { ww /= theta; }
-        AngleAxisd aa_e(theta * dt, ww);
-        // cout << "aa_e: \t" << aa_e.axis().transpose() << " " << aa_e.angle() << endl;
+        // Now, let's compute the position and orientation errors
+        Vector3d  w = J_0_ang*v_e;          // rotational (angular) speed
+        double theta =   w.norm();
+        if (theta > 0.0) { w /= theta; }
 
-        R_e = aa_e.toRotationMatrix() * R_0;
+        AngleAxisd w_aa(theta * dt, w);     // angular speed in axis angle representation
+        // cout << "w_aa: \t" << w_aa.axis().transpose() << " " << w_aa.angle() << endl;
+
+        R_e = w_aa.toRotationMatrix() * R_0;
         // cout << "R_e: \n" << R_e << endl;
         p_e = p_0 + dt * (J_0_xyz * v_e);
 

@@ -10,26 +10,18 @@
 #include <robot_utils/utils.h>
 #include "react_controller/react_control_utils.h"
 
-// New rule:
-// 1 input parameters for functions are prefixed with a _ (e.g. _q_0),
-// 2 members of the class do not have a _ (e.g. q)
-//
-// New rule:
-// please put the bracket for a beginning of a function in a new line.
-// I know that is a matter of personal choices, but this is what I use
-// in my code and you would need to do it anyway when we'll integrate
-// with my code
-
-/****************************************************************/
-
-
-class BaxterChain : public KDL::Chain
+/**
+ * Class for encapsulating a KDL chain with its state
+ */
+class BaxterChain
 {
 private:
-    std::vector<double> q;    // vector of joint angles in the arm chain
-    KDL::JntArray lb, ub;     // lower bound, upper bound joint arrays
-    size_t nrOfJoints;
-    size_t nrOfSegments;
+    size_t nrOfJoints;     // number of joints
+    size_t nrOfSegments;   // number of segments
+
+    Eigen::VectorXd  q;    // vector of joint angles in the arm chain
+    Eigen::VectorXd lb;    // lower bounds
+    Eigen::VectorXd ub;    // upper bounds
 
 public:
 
@@ -40,27 +32,25 @@ public:
     BaxterChain(const KDL::Chain& in);
 
     /**
-     * Constructor for Baxter Chain. Takes a urdf robot model and base/tip link to
-     * initialize KDL::Chain. Automatically initializes q to average of lower and
-     * upper bounds.
+     * Takes a urdf robot model and base/tip link to initialize KDL::Chain.
+     * Automatically initializes q to average of lower and upper bounds.
      *
      * @param _robot_model [urdf::Model of the robot]
-     * @param _base_link [base link string of robot chain]
-     * @param _tip_link [tip link string of robot chain]
+     * @param _base_link   [base link string of robot chain]
+     * @param _tip_link    [tip link string of robot chain]
      */
     BaxterChain(urdf::Model      _robot_model,
                 const std::string& _base_link,
                 const std::string&  _tip_link);
 
-
     /**
-     * Constructor for Baxter Chain. Takes a urdf robot model and base/tip link to
-     * initialize KDL::Chain. Initializes q to values in _q_0.
+     * Takes a urdf robot model and base/tip link to initialize KDL::Chain.
+     * Initializes q to values in _q_0.
      *
      * @param _robot_model [urdf::Model of the robot]
-     * @param _base_link [base link string of robot chain]
-     * @param _tip_link [tip link string of robot chain]
-     * @param _q_0 [vector of initial joint angles]
+     * @param _base_link   [base link string of robot chain]
+     * @param _tip_link    [tip link string of robot chain]
+     * @param _q_0         [vector of initial joint angles]
      */
     BaxterChain(urdf::Model      _robot_model,
                 const std::string& _base_link,
@@ -68,20 +58,34 @@ public:
                 std::vector<double>      _q_0);
 
     /**
-     * TODO
-     * @param _robot_model [description]
-     * @param _base_link   [description]
-     * @param _tip_link    [description]
+     * Initializes a chain from an URDF
+     *
+     * @param _robot_model [urdf::Model of the robot]
+     * @param _base_link   [base link string of robot chain]
+     * @param _tip_link    [tip link string of robot chain]
+     * @return true/false if success/failure
      */
-    void initChain(urdf::Model      _robot_model,
+    bool initChain(urdf::Model      _robot_model,
                    const std::string& _base_link,
                    const std::string&  _tip_link);
 
     /**
+     * Resets the chain
+     *
+     * @return true/false if success/failure
+     */
+    bool resetChain();
+
+    /**
      * Assignment operator
      */
-    BaxterChain& operator = (const KDL::Chain& arg);
-    // BaxterChain& operator = (const BaxterChain& arg);
+    BaxterChain& operator = (const KDL::Chain&  _ch);
+    BaxterChain& operator = (const BaxterChain& _ch);
+
+    /**
+     * Cast to KDL::Chain
+     */
+    operator KDL::Chain();
 
     /**
      * Adds a new segment to the <strong>end</strong> of the chain.
@@ -165,8 +169,8 @@ public:
      *
      * return: array of joint angles in the form of Eigen::Vector
      */
-    Eigen::VectorXd     getAng();
-    double              getAng(const size_t _i) { return getAng()[_i]; };
+    Eigen::VectorXd getAng();
+    double          getAng(const size_t _i) { return getAng()[_i]; };
 
     /**
      * Functions to set the joint angles of the arm chain. Used
@@ -191,7 +195,6 @@ public:
      * return: pose matrix of end-effector joint
      */
     Eigen::Matrix4d getH();
-
 
     /**
      * Gets pose matrix of the i'th joint in the chain. The means it gets the

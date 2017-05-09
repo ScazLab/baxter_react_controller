@@ -81,7 +81,7 @@ TEST(BaxterChainTest, testCollisionPoints)
     EXPECT_EQ(coll_points[2].n[2],  0);
 }
 
-TEST(BaxterChainTest, testRemoveSegmentRightArm)
+TEST(BaxterChainTest, testRemoveSegment)
 {
     urdf::Model robot_model;
     string xml_string;
@@ -91,7 +91,7 @@ TEST(BaxterChainTest, testRemoveSegmentRightArm)
     _n.param<std::string>("urdf_xml",urdf_xml,"/robot_description");
     _n.searchParam(urdf_xml,full_urdf_xml);
 
-    EXPECT_TRUE(_n.getParam(full_urdf_xml, xml_string));
+    ASSERT_TRUE(_n.getParam(full_urdf_xml, xml_string));
 
     _n.param(full_urdf_xml,xml_string,std::string());
     robot_model.initString(xml_string);
