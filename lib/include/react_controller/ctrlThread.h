@@ -10,7 +10,6 @@ private:
     BaxterChain *chain;
 
     Ipopt::SmartPtr<Ipopt::IpoptApplication> app;
-
     Ipopt::SmartPtr<ControllerNLP> nlp;
 
     bool       is_debug;  // Flag to enable debug mode (without using the robot)
@@ -35,8 +34,10 @@ private:
     bool coll_av;       // collision avoidance mode
 
 public:
-    CtrlThread(const std::string& _name, const std::string& _limb, bool _no_robot, double _ctrl_freq,
-               bool _is_debug = false, double tol = 1e-3, double vMax = 60.0, bool _coll_av = false);
+    CtrlThread(const std::string& _name, const std::string& _limb,
+               bool _use_robot = true, double _ctrl_freq = THREAD_FREQ,
+               bool _is_debug = false, double tol = 1e-3,
+               double vMax = 60.0, bool _coll_av = false);
 
     /**
      * Initializes the IpoptApplication with default values for every time the solver

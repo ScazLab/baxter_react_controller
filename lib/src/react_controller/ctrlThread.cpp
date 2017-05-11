@@ -6,9 +6,9 @@ using namespace      sensor_msgs;
 using namespace baxter_core_msgs;
 using namespace            Eigen;
 
-CtrlThread::CtrlThread(const std::string& _name, const std::string& _limb, bool _no_robot, double _ctrl_freq,
+CtrlThread::CtrlThread(const std::string& _name, const std::string& _limb, bool _use_robot, double _ctrl_freq,
                        bool _is_debug, double _tol, double _vMax, bool _coll_av) :
-                       RobotInterface(_name, _limb, _no_robot, _ctrl_freq, true, false, true, true), chain(0),
+                       RobotInterface(_name, _limb, _use_robot, _ctrl_freq, true, false, true, true), chain(0),
                        is_debug(_is_debug), internal_state(true), nlp_ctrl_ori(false), nlp_derivative_test("none"),
                        nlp_print_level(0), dT(1000.0/_ctrl_freq), tol(_tol), vMax(_vMax), coll_av(_coll_av)
 {
@@ -50,8 +50,8 @@ CtrlThread::CtrlThread(const std::string& _name, const std::string& _limb, bool 
 
     if (waitForJointAngles(2.0))   { chain->setAng(getJointStates()); }
 
-    if (!isNoRobot())    { ROS_INFO("Curr pose: %s", toString(RobotInterface::getPose()).c_str()); }
-    else                 { ROS_INFO("Curr pose: %s", toString(         chain->getPose()).c_str()); }
+    if (isRobotUsed()) { ROS_INFO("Curr pose: %s", toString(RobotInterface::getPose()).c_str()); }
+    else               { ROS_INFO("Curr pose: %s", toString(         chain->getPose()).c_str()); }
 
     if (is_debug == true)
     {
@@ -197,7 +197,7 @@ bool CtrlThread::goToPoseNoCheck(double px, double py, double pz,
     if (exit_code != 0 && exit_code != 4 && exit_code != -4) { return false; }
     if (is_debug)                                            { return  true; }
 
-    if (!isNoRobot())
+    if (isRobotUsed())
     {
         // suppressCollisionAv();
         if (goToJointConfNoCheck(des_poss))   { return true; }
