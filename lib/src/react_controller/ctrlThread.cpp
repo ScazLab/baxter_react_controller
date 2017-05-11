@@ -49,14 +49,15 @@ CtrlThread::CtrlThread(const std::string& _name, const std::string& _limb, bool 
     initializeNLP();
 
     if (waitForJointAngles(2.0))   { chain->setAng(getJointStates()); }
+    else                           {              setUseRobot(false); }
 
     if (isRobotUsed()) { ROS_INFO("Curr pose: %s", toString(RobotInterface::getPose()).c_str()); }
     else               { ROS_INFO("Curr pose: %s", toString(         chain->getPose()).c_str()); }
 
     if (is_debug == true)
     {
-        if (debugIPOPT()) ROS_INFO("Success! IPOPT works.");
-        else              ROS_ERROR("IPOPT does not work!");
+        if (debugIPOPT()) { ROS_INFO("Success! IPOPT works."); }
+        else              { ROS_ERROR("IPOPT does not work!"); }
     }
 }
 
@@ -90,8 +91,8 @@ void CtrlThread::NLPOptionsFromParameterServer()
         ROS_INFO("[NLP]     Derivative Test: %s", nlp_derivative_test.c_str());
     }
 
-    if (nlp_ctrl_ori == true)     {     setCtrlType("pose"); }
-    else                          { setCtrlType("position"); }
+    if (nlp_ctrl_ori == true) {     setCtrlType("pose"); }
+    else                      { setCtrlType("position"); }
 
     app->Options()->SetStringValue ("derivative_test", nlp_derivative_test);
     app->Options()->SetIntegerValue(    "print_level",     nlp_print_level);
@@ -100,13 +101,23 @@ void CtrlThread::NLPOptionsFromParameterServer()
 
 bool CtrlThread::debugIPOPT()
 {
+    if (isRobotNotUsed())
+    {
+        VectorXd q(7);
+        if (getLimb() == "left") { q << -0.08, -1.0, -1.19, 1.94,  0.67, 1.03, -0.50; }
+        else                     { q <<  0.08, -1.0,  1.19, 1.94, -0.67, 1.03,  0.50; }
+
+        chain->setAng(q);
+        ROS_INFO("New  pose: %s", toString(chain->getPose()).c_str());
+    }
+
     Matrix4d    H_ee(chain->getH());
     Matrix3d    R_ee= H_ee.block<3,3>(0,0);
     Vector3d    p_ee= H_ee.col(3).block<3,1>(0,0);
     Quaterniond o_ee(R_ee);
     o_ee.normalize();
 
-    // internal_state = goToPoseNoCheck(p_ee[0], p_ee[1], p_ee[2] + 0.002,
+    // internal_state = goToPoseNoCheck(p_ee[0], p_ee[1], p_ee[2] + 0.02,
     //                                  o_ee.x(), o_ee.y(), o_ee.z(), o_ee.w());
     // return internal_state;
 
