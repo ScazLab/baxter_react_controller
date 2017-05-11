@@ -217,14 +217,14 @@ void ControllerNLP::computeQuantities(const Ipopt::Number *x, const bool new_x)
         }
 
         // Now, let's compute the position and orientation errors
-        Vector3d  w = J_0_ang*v_e;          // rotational (angular) speed
-        double theta =   w.norm();
-        if (theta > 0.0) { w /= theta; }
+        Vector3d  w_e = J_0_ang*v_e;          // rotational (angular) speed
+        double theta =   w_e.norm();
+        if (theta > 0.0) { w_e /= theta; }
 
-        AngleAxisd w_aa(theta * dt, w);     // angular speed in axis angle representation
-        // cout << "w_aa: \t" << w_aa.axis().transpose() << " " << w_aa.angle() << endl;
+        AngleAxisd w_e_aa(theta * dt, w_e);     // angular speed in axis angle representation
+        // cout << "w_e_aa: \t" << w_e_aa.axis().transpose() << " " << w_e_aa.angle() << endl;
 
-        R_e = w_aa.toRotationMatrix() * R_0;
+        R_e = w_e_aa.toRotationMatrix() * R_0;
         // cout << "R_e: \n" << R_e << endl;
         p_e = p_0 + dt * (J_0_xyz * v_e);
 
