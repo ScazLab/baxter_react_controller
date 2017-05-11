@@ -294,6 +294,25 @@ TEST(BaxterChainTest, testSegmentTypes)
     EXPECT_EQ(chainL.getSegment(11).getJoint().getType(),    KDL::Joint::None);
 }
 
+#include <kdl/chainjnttojacsolver.hpp>
+
+TEST(BaxterChainTest, testJacobians)
+{
+    BaxterChain chain(getChain("right_gripper"));
+
+    MatrixXd geoJac = chain.GeoJacobian();
+
+    std::shared_ptr<KDL::ChainJntToJacSolver> kdlSolver;
+    kdlSolver.reset(new KDL::ChainJntToJacSolver(KDL::Chain(chain)));
+
+    KDL::JntArray q(chain.getNrOfJoints());
+    q.data = chain.getAng();
+
+    KDL::Jacobian kdlJac(chain.getNrOfJoints());
+    EXPECT_FALSE(kdlSolver->JntToJac(q, kdlJac));
+    EXPECT_EQ(geoJac, kdlJac.data);
+}
+
 // Run all the tests that were declared with TEST()
 int main(int argc, char **argv)
 {

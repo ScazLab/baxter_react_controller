@@ -209,10 +209,7 @@ const KDL::Segment& BaxterChain::getSegment(size_t nr)const
 
 MatrixXd BaxterChain::GeoJacobian()
 {
-    KDL::Jacobian J;
-    JntToJac(J);
-
-    return J.data;
+    return JntToJac().data;
 }
 
 VectorXd BaxterChain::getAng()
@@ -274,14 +271,14 @@ bool BaxterChain::JntToCart(KDL::Frame& _H, int _seg_nr)
     return true;
 }
 
-bool BaxterChain::JntToJac(KDL::Jacobian& _J, int _seg_nr)
+KDL::Jacobian BaxterChain::JntToJac(int _seg_nr)
 {
     if (_seg_nr<0) { _seg_nr = int(getNrOfSegments()-1); }
 
-    _J.resize(getNrOfJoints());
+    KDL::Jacobian _J(getNrOfJoints());
     SetToZero(_J);
 
-    if (_seg_nr>=int(getNrOfSegments()))   { return false; }
+    if (_seg_nr>=int(getNrOfSegments()))   { return _J; }
 
     KDL::Frame T_tmp(KDL::Frame::Identity());
     KDL::Frame total(KDL::Frame::Identity());
@@ -320,7 +317,7 @@ bool BaxterChain::JntToJac(KDL::Jacobian& _J, int _seg_nr)
         T_tmp = total;
     }
 
-    return true;
+    return _J;
 }
 
 bool BaxterChain::GetJointPositions(vector<Vector3d>& positions)

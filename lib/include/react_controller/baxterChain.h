@@ -34,12 +34,12 @@ private:
     bool JntToCart(KDL::Frame& _H, int _seg_nr=-1);
 
     /**
-     * TODO
-     * @param    _J   [description]
+     * Computes the jacobian for the chain
+     *
      * @param _seg_nr segment to get frame for, default is end effector
-     * return         true/false if success/failure
+     * return         the jacobian
      */
-    bool JntToJac(KDL::Jacobian& _J, int _seg_nr=-1);
+    KDL::Jacobian JntToJac(int _seg_nr=-1);
 
 public:
 
