@@ -78,17 +78,17 @@ BaxterChain::BaxterChain(urdf::Model _robot, const string& _base,
 
             if (hasLimits)
             {
-                lb(joint_num-1) = lower;
-                ub(joint_num-1) = upper;
+                l(joint_num-1) = lower;
+                u(joint_num-1) = upper;
             }
             else
             {
-                lb(joint_num-1) = numeric_limits<float>::lowest();
-                ub(joint_num-1) = numeric_limits<float>::max();
+                l(joint_num-1) = numeric_limits<float>::lowest();
+                u(joint_num-1) = numeric_limits<float>::max();
             }
 
             ROS_DEBUG_STREAM("IK Using joint "<<joint->name<<" "<<
-                              lb(joint_num-1)<<" "<<ub(joint_num-1));
+                              l(joint_num-1)<<" "<<u(joint_num-1));
         }
     }
 
@@ -97,7 +97,7 @@ BaxterChain::BaxterChain(urdf::Model _robot, const string& _base,
     {
         // This will initialize the joint in the
         // middle of its operational range
-        q[i] = (lb[i]+ub[i])/2;
+        q[i] = (l[i]+u[i])/2;
     }
 }
 
@@ -122,8 +122,9 @@ bool BaxterChain::resetChain()
     nrOfSegments=0;
     segments.resize(0);
     q.resize(0);
-    lb.resize(0);
-    ub.resize(0);
+    l.resize(0);
+    u.resize(0);
+    v.resize(0);
 
     return true;
 }
@@ -150,9 +151,9 @@ BaxterChain& BaxterChain::operator=(const KDL::Chain& _ch)
 
     for (size_t i = 0; i < getNrOfJoints(); ++i)
     {
-        q[i]  = 0;
-        lb[i] = 0;
-        ub[i] = 0;
+        q[i] = 0;
+        l[i] = 0;
+        u[i] = 0;
     }
 
     return *this;
@@ -171,9 +172,9 @@ BaxterChain& BaxterChain::operator=(const BaxterChain& _ch)
 
         for (size_t i = 0; i < getNrOfJoints(); ++i)
         {
-            q[i]  = _ch.q[i];
-            lb[i] = _ch.lb[i];
-            ub[i] = _ch.ub[i];
+            q[i] = _ch.q[i];
+            l[i] = _ch.l[i];
+            u[i] = _ch.u[i];
         }
     }
 
@@ -188,9 +189,10 @@ void BaxterChain::addSegment(const KDL::Segment& segment)
     {
         nrOfJoints++;
 
-        lb.conservativeResize(getNrOfJoints());
-        ub.conservativeResize(getNrOfJoints());
-         q.conservativeResize(getNrOfJoints());
+        l.conservativeResize(getNrOfJoints());
+        u.conservativeResize(getNrOfJoints());
+        q.conservativeResize(getNrOfJoints());
+        v.conservativeResize(getNrOfJoints());
     }
 }
 
@@ -212,23 +214,20 @@ MatrixXd BaxterChain::GeoJacobian()
     return JntToJac().data;
 }
 
-VectorXd BaxterChain::getAng()
-{
-    return q;
-}
-
 bool BaxterChain::setAng(sensor_msgs::JointState _q)
 {
     if (_q.position.size() != getNrOfJoints()) { return false; }
+    if (_q.velocity.size() != getNrOfJoints()) { return false; }
 
-    VectorXd angles(getNrOfJoints());
+    VectorXd new_q(getNrOfJoints()), new_v(getNrOfJoints());
+
     for (size_t i = 0; i < getNrOfJoints(); ++i)
     {
-        angles[i] = _q.position[i];
+        new_q[i] = _q.position[i];
+        new_v[i] = _q.velocity[i];
     }
 
-    setAng(angles);
-    return true;
+    return setAng(new_q) && setVel(new_v);
 }
 
 bool BaxterChain::setAng(VectorXd _q)
@@ -239,11 +238,11 @@ bool BaxterChain::setAng(VectorXd _q)
     return true;
 }
 
-bool BaxterChain::setAng(vector<double> _q)
+bool BaxterChain::setVel(VectorXd _v)
 {
-    if (_q.size() != getNrOfJoints())          { return false; }
+    if (_v.size() != int(getNrOfJoints()))     { return false; }
 
-    q = Map<VectorXd>(_q.data(), _q.size());
+    v = _v;
     return true;
 }
 
@@ -409,9 +408,10 @@ void BaxterChain::removeSegment()
     if(segments.back().getJoint().getType()!=KDL::Joint::None)
     {
         --nrOfJoints;
-        lb.conservativeResize(getNrOfJoints());
-        ub.conservativeResize(getNrOfJoints());
+        l.conservativeResize(getNrOfJoints());
+        u.conservativeResize(getNrOfJoints());
         q.conservativeResize(getNrOfJoints());
+        v.conservativeResize(getNrOfJoints());
     }
     segments.pop_back();
     --nrOfSegments;
@@ -439,12 +439,12 @@ void BaxterChain::removeJoint()
 
 double BaxterChain::getMax(const size_t _i)
 {
-    return ub[_i];
+    return u[_i];
 }
 
 double BaxterChain::getMin(const size_t _i)
 {
-    return lb[_i];
+    return l[_i];
 }
 
 BaxterChain::~BaxterChain()

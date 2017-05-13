@@ -1,5 +1,3 @@
-#include <iostream>
-
 #include <math.h>
 #include <ros/ros.h>
 
@@ -95,8 +93,6 @@ void ControllerNLP::computeBounds()
 /****************************************************************/
 void ControllerNLP::set_x_r(const Eigen::Vector3d &_p_r, const Eigen::Quaterniond &_o_r)
 {
-    ROS_ASSERT(p_r.size() == _p_r.size());
-
     p_r = _p_r;
     o_r = _o_r;
     R_r =  o_r.toRotationMatrix();
@@ -134,23 +130,27 @@ void ControllerNLP::set_v_0(const VectorXd &_v_0)
 /****************************************************************/
 void ControllerNLP::init()
 {
-    q_0= chain.getAng();
+    q_0 = chain.getAng();
+    // v_0 = chain.getVel();
+
+    // ROS_INFO_STREAM("q_0: [" << q_0.transpose() << "]");
+    // ROS_INFO_STREAM("v_0: [" << v_0.transpose() << "]");
 
     Matrix4d H_0= chain.getH();
     R_0= H_0.block<3,3>(0,0);
     p_0= H_0.col(3).block<3,1>(0,0);
 
-    // cout << "H_0: \n" << H_0 << endl;
-    // cout << "R_0: \n" << R_0 << endl;
-    // cout << "p_0: \t" << p_0.transpose() << endl;
+    // ROS_INFO_STREAM("H_0: \n" << H_0);
+    // ROS_INFO_STREAM("R_0: \n" << R_0);
+    // ROS_INFO_STREAM("p_0: \t" << p_0.transpose());
 
     MatrixXd J_0=chain.GeoJacobian();
     J_0_xyz=J_0.block(0,0,3,chain.getNrOfJoints());
     J_0_ang=J_0.block(3,0,3,chain.getNrOfJoints());
 
-    // cout << "J_0:    \n" << J_0     << endl;
-    // cout << "J_0_xyz:\n" << J_0_xyz << endl;
-    // cout << "J_0_ang:\n" << J_0_ang << endl;
+    // ROS_INFO_STREAM("J_0:    \n" << J_0    );
+    // ROS_INFO_STREAM("J_0_xyz:\n" << J_0_xyz);
+    // ROS_INFO_STREAM("J_0_ang:\n" << J_0_ang);
 
     computeBounds();
 }
@@ -222,10 +222,10 @@ void ControllerNLP::computeQuantities(const Ipopt::Number *x, const bool new_x)
         if (theta > 0.0) { w_e /= theta; }
 
         AngleAxisd w_e_aa(theta * dt, w_e);     // angular speed in axis angle representation
-        // cout << "w_e_aa: \t" << w_e_aa.axis().transpose() << " " << w_e_aa.angle() << endl;
+        // ROS_INFO_STREAM("w_e_aa: \t" << w_e_aa.axis().transpose() << " " << w_e_aa.angle());
 
         R_e = w_e_aa.toRotationMatrix() * R_0;
-        // cout << "R_e: \n" << R_e << endl;
+        // ROS_INFO_STREAM("R_e: \n" << R_e);
         p_e = p_0 + dt * (J_0_xyz * v_e);
 
         err_xyz = p_r-p_e;
@@ -233,8 +233,8 @@ void ControllerNLP::computeQuantities(const Ipopt::Number *x, const bool new_x)
         AngleAxisd aa_err((R_r)*(R_e.transpose()));
         err_ang = aa_err.axis() * sin(aa_err.angle());
 
-        // cout << " aa_err: " << aa_err.axis().transpose() << " " << aa_err.angle() << endl;
-        // cout << "err_ang: " << err_ang.transpose() << endl;
+        // ROS_INFO_STREAM(" aa_err: " << aa_err.axis().transpose() << " " << aa_err.angle());
+        // ROS_INFO_STREAM("err_ang: " << err_ang.transpose());
 
         MatrixXd L=-0.5*(skew_nr*skew(R_e.col(0))+
                          skew_sr*skew(R_e.col(1))+
@@ -355,8 +355,8 @@ void ControllerNLP::finalize_solution(Ipopt::SolverReturn status, Ipopt::Index n
     {
         Quaterniond o_e(R_e);
 
-        // cout << "o_r: " << o_r.vec().transpose() << " " << o_r.w() << endl;
-        // cout << "o_e: " << o_e.vec().transpose() << " " << o_e.w() << endl;
+        // ROS_INFO_STREAM("o_r: " << o_r.vec().transpose() << " " << o_r.w());
+        // ROS_INFO_STREAM("o_e: " << o_e.vec().transpose() << " " << o_e.w());
         ROS_INFO("  ori err [quaternion dot product]: %g err_ang %g", o_e.dot(o_r), err_ang.squaredNorm());
     }
 

@@ -16,12 +16,13 @@
 class BaxterChain
 {
 private:
-    size_t nrOfJoints;     // number of joints
-    size_t nrOfSegments;   // number of segments
+    size_t nrOfJoints;    // number of joints
+    size_t nrOfSegments;  // number of segments
 
-    Eigen::VectorXd  q;    // vector of joint angles in the arm chain
-    Eigen::VectorXd lb;    // lower bounds
-    Eigen::VectorXd ub;    // upper bounds
+    Eigen::VectorXd q;    // vector of joint angles in the arm chain
+    Eigen::VectorXd l;    // vector of lower bounds for the joints
+    Eigen::VectorXd u;    // vector of upper bounds for the joints
+    Eigen::VectorXd v;    // vector of joint velocities of the arm chain
 
     /**
      * Takes an arm chain and returns the KDL::Frame of the end effector w.r.t
@@ -149,22 +150,43 @@ public:
     Eigen::MatrixXd GeoJacobian();
 
     /**
-     * Function to get array of joint angles for the chain
+     * Gets the joint angles in the arm chain
      *
-     * return: array of joint angles in the form of Eigen::Vector
+     * @return array of joint angles as an Eigen::VectorXd
      */
-    Eigen::VectorXd getAng();
-    double          getAng(const size_t _i) { return getAng()[_i]; };
+    Eigen::VectorXd getAng() { return q; };
 
     /**
-     * Functions to set the joint angles of the arm chain. Used
-     * to update arm chain throughout control process.
+     * Gets the configuration of i-th joint
      *
-     * @param _q [array of angles]
+     * @param _i joint to return the configuration of
+     * @return   the joint configuration
      */
-    bool     setAng(std::vector<double>     _q);
+    double getAng(const size_t _i) { return getAng()[_i]; };
+
+    /**
+     * Gets the joint velocities in the arm chain
+     *
+     * @return array of joint velocities as an Eigen::VectorXd
+     */
+    Eigen::VectorXd getVel()    { return v; };
+
+    /**
+     * Functions to set the joint angles of the arm chain.
+     *
+     * @param _q  vector of joint positions (in rad)
+     * @return    true/false if success/failure
+     */
     bool     setAng(Eigen::VectorXd         _q);
-    bool     setAng(sensor_msgs::JointState _q);
+    bool     setAng(sensor_msgs::JointState _j);
+
+    /**
+     * Functions to set the joint velocities of the arm chain.
+     *
+     * @param _v  vector of joint velocities
+     * @return    true/false if success/failure
+     */
+    bool     setVel(Eigen::VectorXd         _v);
 
     /**
      * Function that returns the current pose as a geometry_msgs::Pose
@@ -176,7 +198,7 @@ public:
     /**
      * Gets pose matrix of chain end effector.
      *
-     * return: pose matrix of end-effector joint
+     * @return pose matrix of end-effector joint
      */
     Eigen::Matrix4d getH();
 
@@ -189,7 +211,7 @@ public:
      *
      * @param _i [index of joint in chain]
      *
-     * return: pose matrix of _i'th joint
+     * @return pose matrix of _i'th joint
      */
     Eigen::Matrix4d getH(const size_t _i);
 
@@ -212,7 +234,7 @@ public:
      *
      * @param _i [number of the joint to get max/min limit]
      *
-     * return: value of joint limit
+     * @return value of joint limit
      */
     double getMax(const size_t _i);
     double getMin(const size_t _i);
