@@ -221,7 +221,7 @@ void ControllerNLP::computeQuantities(const Ipopt::Number *x, const bool new_x)
         double theta =   w_e.norm();
         if (theta > 0.0) { w_e /= theta; }
 
-        AngleAxisd w_e_aa(theta * dt, w_e);     // angular speed in axis angle representation
+        AngleAxisd w_e_aa(theta * dt, w_e);     // angular increment in axis angle representation
         // ROS_INFO_STREAM("w_e_aa: \t" << w_e_aa.axis().transpose() << " " << w_e_aa.angle());
 
         R_e = w_e_aa.toRotationMatrix() * R_0;
