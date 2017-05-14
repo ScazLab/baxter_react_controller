@@ -142,7 +142,6 @@ TEST(BaxterChainTest, testClass)
 
     EXPECT_TRUE(chain.setAng(q_0));
     EXPECT_FALSE(chain.setAng(    Eigen::VectorXd(chain.getNrOfJoints()+1)));
-    EXPECT_FALSE(chain.setAng(std::vector<double>(chain.getNrOfJoints()+1)));
     EXPECT_EQ(q_0, chain.getAng());
 }
 
