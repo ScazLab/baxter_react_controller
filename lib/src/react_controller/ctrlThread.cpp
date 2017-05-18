@@ -1,14 +1,16 @@
-#include <react_controller/ctrlThread.h>
+#include "react_controller/ctrlThread.h"
+#include <iostream>
 
 using namespace              std;
 using namespace      sensor_msgs;
 using namespace baxter_core_msgs;
 using namespace            Eigen;
 
-CtrlThread::CtrlThread(const std::string& _name, const std::string& _limb, bool _no_robot, double _ctrl_freq,
-                       bool _is_debug, double _tol, double _vMax) :
-                       RobotInterface(_name, _limb, _no_robot, _ctrl_freq, true, false, true, true), chain(0),
-                       is_debug(_is_debug), internal_state(true), dT(1000.0/_ctrl_freq), tol(_tol), vMax(_vMax)
+CtrlThread::CtrlThread(const std::string& _name, const std::string& _limb, bool _use_robot, double _ctrl_freq,
+                       bool _is_debug, double _tol, double _vMax, bool _coll_av) :
+                       RobotInterface(_name, _limb, _use_robot, _ctrl_freq, true, false, true, true), chain(0),
+                       is_debug(_is_debug), internal_state(true), nlp_ctrl_ori(false), nlp_derivative_test("none"),
+                       nlp_print_level(0), dT(1000.0/_ctrl_freq), tol(_tol), vMax(_vMax), coll_av(_coll_av)
 {
     urdf::Model robot_model;
     std::string xml_string;
@@ -32,101 +34,92 @@ CtrlThread::CtrlThread(const std::string& _name, const std::string& _limb, bool 
 
     chain = new BaxterChain(robot_model, base_link, tip_link);
 
-    x_0.resize(3); x_0.setZero();
-    x_t.resize(3); x_t.setZero();
-    x_n.resize(3); x_n.setZero();
-    x_d.resize(3); x_d.setZero();
-
-    o_n.resize(3); o_n.setZero();
+    x_n.setZero();
 
     q_dot.resize(chain->getNrOfJoints());
     q_dot.setZero();
 
-    vLimAdapted.resize(chain->getNrOfJoints(), 2);
+    vLim.resize(chain->getNrOfJoints(), 2);
     for (size_t r = 0, DoFs = chain->getNrOfJoints(); r < DoFs; ++r)
     {
-        vLimAdapted(r, 0) = -vMax;
-        vLimAdapted(r, 1) =  vMax;
+        vLim(r, 0) = -vMax;
+        vLim(r, 1) =  vMax;
     }
 
-    initializeApp(false);
+    initializeNLP();
+
+    if (waitForJointAngles(2.0))   { chain->setAng(getJointStates()); }
+    else                           {              setUseRobot(false); }
+
+    if (isRobotUsed()) { ROS_INFO("Curr pose: %s", toString(RobotInterface::getPose()).c_str()); }
+    else               { ROS_INFO("Curr pose: %s", toString(         chain->getPose()).c_str()); }
 
     if (is_debug == true)
     {
-        if (debugIPOPT()) ROS_INFO("Success! IPOPT works.");
-        else              ROS_ERROR("IPOPT does not work!");
-    }
-
-    std::vector<double> positions_init;
-
-    if (!isNoRobot())
-    {
-        waitForJointAngles();
-        chain->setAng(getJointStates());
-
-        for (size_t i = 0; i < chain->getNrOfJoints(); ++i)
-        {
-            positions_init.push_back(chain->getAng(i));
-        }
-
-        ROS_INFO("Current Pose: %s", toString(getPose()).c_str());
-    }
-
-    chain->GetCollisionPoints();
-
-    if (is_debug == true)
-    {
-        if (chain)
-        {
-            delete chain;
-            chain = 0;
-        }
+        if (debugIPOPT()) { ROS_INFO("Success! IPOPT works."); }
+        else              { ROS_ERROR("IPOPT does not work!"); }
     }
 }
 
-void CtrlThread::initializeApp(bool _verbosity)
+void CtrlThread::initializeNLP()
 {
     app=new Ipopt::IpoptApplication;
-    app->Options()->SetNumericValue("tol", tol/10);
-    app->Options()->SetNumericValue("constr_viol_tol", tol);
-    app->Options()->SetNumericValue("acceptable_tol", tol/10);
-    app->Options()->SetIntegerValue("acceptable_iter",0);
-    app->Options()->SetStringValue ("mu_strategy","adaptive");
+    app->Options()->SetNumericValue(            "tol", tol   );
+    app->Options()->SetNumericValue("constr_viol_tol", tol*10);
+    app->Options()->SetNumericValue( "acceptable_tol", tol   );
+    app->Options()->SetIntegerValue("acceptable_iter",     10);
+    app->Options()->SetStringValue ( "mu_strategy","adaptive");
     if (is_debug == false) { app->Options()->SetStringValue ("linear_solver", "ma57"); }
-    app->Options()->SetNumericValue("max_cpu_time", 0.95 * dT);
+    app->Options()->SetNumericValue("max_cpu_time", 0.95 * dT / 1000.0);
     // app->Options()->SetStringValue ("nlp_scaling_method","gradient-based");
     app->Options()->SetStringValue ("hessian_approximation","limited-memory");
-    // app->Options()->SetStringValue ("derivative_test",verbosity?"first-order":"none");
-    app->Options()->SetStringValue ("derivative_test","none");
-    app->Options()->SetIntegerValue("print_level",(_verbosity && !is_debug)?4:0);
+}
+
+void CtrlThread::NLPOptionsFromParameterServer()
+{
+    bool derivative_test = false;
+    _n.param<bool>("ctrl_ori", nlp_ctrl_ori, false);
+    _n.param<bool>("derivative_test", derivative_test, false);
+    _n.param<int> ("print_level", nlp_print_level, 0);
+
+    nlp_derivative_test = derivative_test?"first-order":"none";
+
+    if (nlp_print_level > 0)
+    {
+        ROS_INFO("[NLP]         Print Level: %i", nlp_print_level);
+        ROS_INFO("[NLP] Orientation Control: %s", nlp_ctrl_ori?"on":"off");
+        ROS_INFO("[NLP]     Derivative Test: %s", nlp_derivative_test.c_str());
+    }
+
+    if (nlp_ctrl_ori == true) {     setCtrlType("pose"); }
+    else                      { setCtrlType("position"); }
+
+    app->Options()->SetStringValue ("derivative_test", nlp_derivative_test);
+    app->Options()->SetIntegerValue(    "print_level",     nlp_print_level);
     app->Initialize();
 }
 
 bool CtrlThread::debugIPOPT()
 {
-    if (!isNoRobot())
+    if (isRobotNotUsed())
     {
-        if (!waitForJointAngles())
-        {
-            return false;
-        }
+        VectorXd q(7);
+        if (getLimb() == "left") { q << -0.08, -1.0, -1.19, 1.94,  0.67, 1.03, -0.50; }
+        else                     { q <<  0.08, -1.0,  1.19, 1.94, -0.67, 1.03,  0.50; }
 
-        chain->setAng(getJointStates());
+        chain->setAng(q);
+        ROS_INFO("New  pose: %s", toString(chain->getPose()).c_str());
     }
 
-    KDL::JntArray jnts(chain->getNrOfJoints());
-    VectorXd angles = chain->getAng();
+    Matrix4d    H_ee(chain->getH());
+    Matrix3d    R_ee= H_ee.block<3,3>(0,0);
+    Vector3d    p_ee= H_ee.col(3).block<3,1>(0,0);
+    Quaterniond o_ee(R_ee);
+    o_ee.normalize();
 
-    for (size_t i = 0, _i = chain->getNrOfJoints(); i < _i; ++i)
-    {
-        jnts(i) = angles[i];
-    }
-
-    KDL::Frame frame;
-    chain->JntToCart(jnts,frame);
-
-    double ox, oy, oz, ow;
-    frame.M.GetQuaternion(ox, oy, oz, ow);
+    // internal_state = goToPoseNoCheck(p_ee[0], p_ee[1], p_ee[2] + 0.02,
+    //                                  o_ee.x(), o_ee.y(), o_ee.z(), o_ee.w());
+    // return internal_state;
 
     double    offs_x =     0;
     double    offs_y =     0;
@@ -152,10 +145,10 @@ bool CtrlThread::debugIPOPT()
                     offs_y = j * increment[p];
                     offs_z = k * increment[p];
 
-                    result = goToPoseNoCheck(frame.p[0] + offs_x,
-                                             frame.p[1] + offs_y,
-                                             frame.p[2] + offs_z,
-                                             ox, oy, oz, ow);
+                    result = goToPoseNoCheck(p_ee[0] + offs_x,
+                                             p_ee[1] + offs_y,
+                                             p_ee[2] + offs_z,
+                                             o_ee.x(), o_ee.y(), o_ee.z(), o_ee.w());
                     q_dot.setZero(); // in simulation, we always start from 0 velocities
 
                     if (result == false)
@@ -191,72 +184,65 @@ bool CtrlThread::debugIPOPT()
 bool CtrlThread::goToPoseNoCheck(double px, double py, double pz,
                                  double ox, double oy, double oz, double ow)
 {
-    x_n[0] = px;
-    x_n[1] = py;
-    x_n[2] = pz;
+    x_n = Vector3d(px, py, pz);
+    o_n = Quaterniond(ow, ox, oy, oz);
 
-    tf::Quaternion q(ox, oy, oz, ow);
-    tf::Matrix3x3 m(q);
-    double roll, pitch, yaw;
-    m.getRPY(roll, pitch, yaw);
-    o_n[0] = roll;
-    o_n[1] = pitch;
-    o_n[2] = yaw;
-
-    if (!isNoRobot())
-    {
-        if (!waitForJointAngles())
-        {
-            return false;
-        }
-
-        chain->setAng(getJointStates());
-    }
-
-    int exit_code = -1;
+    if ((not is_debug) && waitForJointAngles(2.0))   { chain->setAng(getJointStates()); }
 
     // ROS_INFO("actual joint  pos: %s", toString(std::vector<double>(_q.position.data(),
     //                                             _q.position.data() + _q.position.size())).c_str());
+    nlp = new ControllerNLP(*chain);
 
+    int exit_code = -1;
     Eigen::VectorXd est_vels = solveIK(exit_code);
+    q_dot = est_vels;
 
     std::vector<double> des_poss(chain->getNrOfJoints());
-
-    for (size_t i = 0, _i = chain->getNrOfJoints(); i < _i; ++i)
+    for (size_t i = 0; i < chain->getNrOfJoints(); ++i)
     {
         des_poss[i] = chain->getAng(i) + (dT * est_vels[i]);
     }
 
-    // q_dot = est_vels;
+    // ROS_INFO("sending joint position: %s", toString(des_poss).c_str());
 
-    ROS_INFO("sending joint position: %s", toString(des_poss).c_str());
+    if (exit_code != 0 && exit_code != 4 && exit_code != -4) { return false; }
+    if (is_debug)                                            { return  true; }
 
-    if (exit_code != 0 && is_debug)        return false;
-    if (exit_code == 4 && is_debug)        return false;
-    if (exit_code != 0 && exit_code != -4) return false;
-    if (is_debug)                          return  true;
+    if (isRobotUsed())
+    {
+        // suppressCollisionAv();
+        if (goToJointConfNoCheck(des_poss))   { return true; }
+    }
 
-    // suppressCollisionAv();
-    if (!goToJointConfNoCheck(des_poss)) return false;
-
-    return true;
-
+    return false;
 }
 
 VectorXd CtrlThread::solveIK(int &_exit_code)
 {
-    size_t DoFs = chain->getNrOfJoints();
-    VectorXd res(DoFs); res.setZero();
+    NLPOptionsFromParameterServer();
 
-    VectorXd xr(6);
-    xr.block<3, 1>(0, 0) = x_n;
-    xr.block<3, 1>(3, 0) = o_n;
+    if (coll_av)
+    {
+        std::vector<Eigen::Vector3d> positions;
+        chain->GetJointPositions(positions);
 
-    Ipopt::SmartPtr<ControllerNLP> nlp = new ControllerNLP(*chain);
-    nlp->set_ctrl_ori(false);
+        Eigen::Vector3d point(0.63, -0.17, 0.0);
+        std::vector<collisionPoint> collisionPoints;
+        computeCollisionPoints(positions, point, collisionPoints);
+        AvoidanceHandlerAbstract *avhdl;
+        avhdl = new AvoidanceHandlerTactile(*chain, collisionPoints, false);
+        vLimCollision = avhdl->getVLIM(vLim);
+        cout << vLimCollision << endl;
+        nlp->set_v_lim(vLimCollision);
+    }
+    else
+    {
+        nlp->set_v_lim(vLim);
+    }
+
+    nlp->set_ctrl_ori(nlp_ctrl_ori);
     nlp->set_dt(dT);
-    nlp->set_v_lim(vLimAdapted);
-    nlp->set_xr(xr);
+    nlp->set_x_r(x_n, o_n);
     nlp->set_v_0(q_dot);
     nlp->init();
 

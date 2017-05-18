@@ -1,7 +1,8 @@
 #include <robot_utils/utils.h>
 #include <robot_interface/robot_interface.h>
-#include <react_controller/controllerNLP.h>
-#include <tf/transform_datatypes.h>
+
+#include "react_controller/controllerNLP.h"
+#include "react_controller/avoidance.h"
 
 class CtrlThread : public RobotInterface
 {
@@ -9,40 +10,45 @@ private:
     BaxterChain *chain;
 
     Ipopt::SmartPtr<Ipopt::IpoptApplication> app;
+    Ipopt::SmartPtr<ControllerNLP> nlp;
 
-    bool is_debug;        // Flag to enable debug mode (without using the robot)
-
+    bool       is_debug;  // Flag to enable debug mode (without using the robot)
     bool internal_state;  // Flag to know the internal state. True if OK.
 
-    Eigen::VectorXd x_0;  // Initial end-effector position
-    Eigen::VectorXd x_t;  // Current end-effector position
-    Eigen::VectorXd x_n;  // Desired next end-effector position
-    Eigen::VectorXd x_d;  // Vector that stores the new target
+    // IPOPT params
+    bool               nlp_ctrl_ori;  // Flag to know if to control the orientation or not
+    std::string nlp_derivative_test;  // String to enable the derivative test
+    int             nlp_print_level;  // Print level of the IPOPT app
 
-    Eigen::VectorXd o_0;  // Initial end-effector orientation
-    Eigen::VectorXd o_t;  // Current end-effector orientation
-    Eigen::VectorXd o_n;  // Desired next end-effector orientation
-    Eigen::VectorXd o_d;  // Vector that stores the new orientation
+    Eigen::Vector3d    x_n;  // Desired next end-effector position
+    Eigen::Quaterniond o_n;  // Desired next end-effector orientation
 
-    Eigen::VectorXd q_dot; // vector of initial joint angles in arm chain
+    Eigen::VectorXd q_dot;   // Vector of initial joint velocities in arm chain
 
-    Eigen::MatrixXd vLimAdapted; // matrix of maximum joint velocities per joint
+    Eigen::MatrixXd          vLim; // matrix of maximum joint velocities per joint
+    Eigen::MatrixXd vLimCollision; // matrix of maximum joint velocities per joint
 
-    double dT;          // time constraint for IpOpt solver time per optimization
-    double tol;         // tolerance for constraint violations
-    double vMax;        // maximum velocity of joints
+    double    dT;       // time constraint for IpOpt solver time per optimization
+    double   tol;       // tolerance for constraint violations
+    double  vMax;       // maximum velocity of joints
+    bool coll_av;       // collision avoidance mode
 
 public:
-    CtrlThread(const std::string& _name, const std::string& _limb, bool _no_robot, double _ctrl_freq,
-               bool _is_debug = false, double tol = 1e-7, double vMax = 60.0);
+    CtrlThread(const std::string& _name, const std::string& _limb,
+               bool _use_robot = true, double _ctrl_freq = THREAD_FREQ,
+               bool _is_debug = false, double tol = 1e-3,
+               double vMax = 60.0, bool _coll_av = false);
 
     /**
      * Initializes the IpoptApplication with default values for every time the solver
      * is called.
-     *
-     * @param _verbosity verbosity flag
      */
-    void initializeApp(bool _verbosity);
+    void initializeNLP();
+
+    /**
+     * Reads some NLP options from the parameter server and initializes the app
+     */
+    void NLPOptionsFromParameterServer();
 
     /**
      * Overridden version of the robot_interface function. Takes position and

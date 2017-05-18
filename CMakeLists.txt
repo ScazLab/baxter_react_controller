@@ -175,12 +175,20 @@ target_link_libraries(baxter_react_controller               react_controller
 if(CATKIN_ENABLE_TESTING)
   find_package(rostest            REQUIRED)
   find_package(baxter_description REQUIRED)
+  find_package(baxter_tools       REQUIRED)
+  find_package(baxter_gazebo      REQUIRED)
 
-  catkin_add_gtest(test_baxterchain test/test_baxterchain.cpp)
-  target_link_libraries(test_baxterchain react_controller)
+  catkin_add_gtest(test_utils test/test_utils.cpp)
+  target_link_libraries(test_utils react_controller)
 
-  add_rostest_gtest(test_ipopt test/test_ipopt.launch test/test_ipopt.cpp)
+  add_rostest_gtest(test_baxterchain test/test_baxterchain.test test/test_baxterchain.cpp)
+  target_link_libraries(test_baxterchain react_controller ${catkin_LIBRARIES})
+
+  add_rostest_gtest(test_ipopt test/test_ipopt.test test/test_ipopt.cpp)
   target_link_libraries(test_ipopt  react_controller ${catkin_LIBRARIES})
+
+  # add_rostest_gtest(test_react_controller test/test_react_controller.test test/test_react_controller.cpp)
+  # target_link_libraries(test_react_controller  react_controller ${catkin_LIBRARIES})
 endif()
 
 ## Add folders to be run by python nosetests

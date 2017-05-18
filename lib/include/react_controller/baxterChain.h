@@ -1,3 +1,6 @@
+#ifndef __BAXTERCHAIN_H__
+#define __BAXTERCHAIN_H__
+
 #include <kdl/chain.hpp>
 #include <kdl/frames.hpp>
 #include <kdl/jacobian.hpp>
@@ -5,171 +8,238 @@
 #include <urdf/model.h>
 #include <sensor_msgs/JointState.h>
 #include <robot_utils/utils.h>
-
-// Things to remember:
-//  1 allList == quickList
-//  2 N == DOF
-//
-//  3 HN == Identity matrix (for now) -> every time there is something
-//                                       multiplied by HN, just discard it
-//  3 H0 == Identity matrix (for now) -> every time there is something
-//                                       multiplied by HN, just discard it
-//
-// New rule:
-// 1 input parameters for functions are prefixed with a _ (e.g. _q_0),
-// 2 members of the class do not have a _ (e.g. q)
-//
-// New rule:
-// please put the bracket for a beginning of a function in a new line.
-// I know that is a matter of personal choices, but this is what I use
-// in my code and you would need to do it anyway when we'll integrate
-// with my code
+#include "react_controller/react_control_utils.h"
 
 /**
- * Takes a KDL::Frame and returns a 4X4 pose Eigen::Matrix
- *
- * @param _f: KDL::Frame to turn into a pose Eigen::Matrix
- *
- * return: Eigen 4X4 pose matrix
-*/
-Eigen::Matrix4d KDLFrameToEigen(KDL::Frame _f);
-
-/**
- * TODO documentation
- * @param  joints      [description]
- * @param  coll_coords [description]
- * @param  coll_points [description]
- * @param  norms       [description]
- * @return             true/false if success/failure
+ * Class for encapsulating a KDL chain with its state
  */
-bool computeCollisionPoint(const std::vector<Eigen::Vector3d>&      joints,
-                           const             Eigen::Vector3d & coll_coords,
-                                 std::vector<Eigen::Vector3d>& coll_points,
-                                 std::vector<Eigen::Vector3d>&       norms);
-
-/****************************************************************/
-class BaxterChain : public KDL::Chain
+class BaxterChain
 {
 private:
+    size_t nrOfJoints;    // number of joints
+    size_t nrOfSegments;  // number of segments
 
-    std::vector<double> q;    // vector of joint angles in the arm chain
-    KDL::JntArray lb, ub;     // lower bound, upper bound joint arrays
-
-public:
+    Eigen::VectorXd q;    // vector of joint angles in the arm chain
+    Eigen::VectorXd l;    // vector of lower bounds for the joints
+    Eigen::VectorXd u;    // vector of upper bounds for the joints
+    Eigen::VectorXd v;    // vector of joint velocities of the arm chain
 
     /**
      * Takes an arm chain and returns the KDL::Frame of the end effector w.r.t
      * the base of the arm.
      *
-     * @param _q_in:      array of joint angles
-     * @param _p_out:     KDL::Frame of end effector, populated by function
-     * @param _segmentNr: segment to get frame for, default is end effector
-     *
-     * return:     true if successful, false if error
+     * @param _H      KDL::Frame of end effector, populated by function
+     * @param _seg_nr segment to get frame for, default is end effector
+     * return         true/false if success/failure
      */
-    bool JntToCart(const KDL::JntArray& _q_in, KDL::Frame& _p_out, int seg_nr=-1);
+    bool JntToCart(KDL::Frame& _H, int _seg_nr=-1);
+
+    /**
+     * Computes the jacobian for the chain
+     *
+     * @param _seg_nr segment to get frame for, default is end effector
+     * return         the jacobian
+     */
+    KDL::Jacobian JntToJac(int _seg_nr=-1);
+
+public:
+
+    std::vector<KDL::Segment> segments;
+
+    /** CONSTRUCTORS **/
+    BaxterChain();
+    BaxterChain(const KDL::Chain& in);
+
+    /**
+     * Takes a urdf robot model and base/tip link to initialize KDL::Chain.
+     * Automatically initializes q to average of lower and upper bounds.
+     *
+     * @param _robot  [urdf::Model of the robot]
+     * @param _base   [base link string of robot chain]
+     * @param _tip    [tip link string of robot chain]
+     */
+    BaxterChain(urdf::Model        _robot,
+                const std::string&  _base,
+                const std::string&   _tip);
+
+    /**
+     * Takes a urdf robot model and base/tip link to initialize KDL::Chain.
+     * Initializes q to values in _q_0.
+     *
+     * @param _robot  [urdf::Model of the robot]
+     * @param _base   [base link string of robot chain]
+     * @param _tip    [tip link string of robot chain]
+     * @param _q_0    [vector of initial joint angles]
+     */
+    BaxterChain(urdf::Model        _robot,
+                const std::string&  _base,
+                const std::string&   _tip,
+                std::vector<double> _q_0);
+
+    /**
+     * Resets the chain
+     *
+     * @return true/false if success/failure
+     */
+    bool resetChain();
+
+    /**
+     * Cast to KDL::Chain
+     */
+    operator KDL::Chain();
+
+    /**
+     * Assignment operator
+     */
+    BaxterChain& operator=(const KDL::Chain&  _ch);
+    BaxterChain& operator=(const BaxterChain& _ch);
+
+    /**
+     * Adds a new segment to the <strong>end</strong> of the chain.
+     *
+     * @param segment The segment to add
+     */
+    void addSegment(const KDL::Segment& segment);
+
+    /**
+     * Adds a complete chain to the <strong>end</strong> of the chain
+     * The added chain is copied.
+     *
+     * @param chain The chain to add
+     */
+    void addChain(const KDL::Chain& chain);
+
+    /**
+     * Request the total number of joints in the chain.\n
+     * <strong> Important:</strong> It is not the
+     * same as the total number of segments since a segment does not
+     * need to have a joint. This function is important when
+     * creating a KDL::JntArray to use with this chain.
+     * @return total nr of joints
+     */
+    size_t getNrOfJoints()const {return nrOfJoints;};
+
+    /**
+     * Request the total number of segments in the chain.
+     * @return total number of segments
+     */
+    size_t getNrOfSegments()const {return nrOfSegments;};
+
+    /**
+     * Request the nth segment of the chain. There is no boundary
+     * checking.
+     *
+     * @param nr the nr of the segment starting from 0
+     * @return a constant reference to the nth segment
+     */
+    const KDL::Segment& getSegment(size_t nr)const;
 
     /**
      * Gets all collision points and normal vectors for each segment in the arm.
      *
-     * @return true if successful, false if error
+     * @return true/false if success/failure
      */
-    bool GetCollisionPoints();
-
-    /**
-     * TODO
-     * @param  q_in   [description]
-     * @param  jac    [description]
-     * @param  seg_nr [description]
-     * @return        [description]
-     */
-    bool JntToJac(const KDL::JntArray& q_in, KDL::Jacobian& jac, int seg_nr=-1);
-
-    /**
-     * Constructor for Baxter Chain. Takes a urdf robot model and base/tip link to
-     * intialize KDL::Chain. Automatically initializes q to average of lower and
-     * upper bounds.
-     *
-     * @param _robot_model [urdf::Model of the robot]
-     * @param _base_link [base link string of robot chain]
-     * @param _tip_link [tip link string of robot chain]
-     */
-    BaxterChain(urdf::Model      _robot_model,
-                const std::string& _base_link,
-                const std::string&  _tip_link);
-
-
-    /**
-     * Constructor for Baxter Chain. Takes a urdf robot model and base/tip link to
-     * intialize KDL::Chain. Initializes q to values in _q_0.
-     *
-     * @param _robot_model [urdf::Model of the robot]
-     * @param _base_link [base link string of robot chain]
-     * @param _tip_link [tip link string of robot chain]
-     * @param _q_0 [vector of initial joint angles]
-     */
-    BaxterChain(urdf::Model      _robot_model,
-                const std::string& _base_link,
-                const std::string&  _tip_link,
-                std::vector<double>      _q_0);
-
-    /**
-     * TODO
-     * @param _robot_model [description]
-     * @param _base_link   [description]
-     * @param _tip_link    [description]
-     */
-    void initChain(urdf::Model      _robot_model,
-                   const std::string& _base_link,
-                   const std::string&  _tip_link);
+    bool GetJointPositions(std::vector<Eigen::Vector3d>& positions);
 
     /**
      * Function to return the geometric Jacobian of the _i'th segment
      * in the chain, or the end effector if no parameter given.
      *
-     * @param _i [index of segment to return]
-     *
-     * @return geometric Jacobian in he form of an Eigen Matrix
+     * @return geometric Jacobian in the form of an Eigen Matrix
      */
     Eigen::MatrixXd GeoJacobian();
-    Eigen::MatrixXd GeoJacobian(const unsigned int _i);
 
     /**
-     * Function to get array of joint angles for the chain
+     * Gets the joint angles in the arm chain
      *
-     * return: array of joint angles in the form of Eigen::Vector
+     * @return array of joint angles as an Eigen::VectorXd
      */
-    Eigen::VectorXd     getAng();
-    double              getAng(const unsigned int _i) { return getAng()[_i]; };
+    Eigen::VectorXd getAng() { return q; };
 
     /**
-     * Functions to set the joint angles of the arm chain. Used
-     * to update arm chain throughout control process.
+     * Gets the configuration of i-th joint
      *
-     * @param _q [array of angles]
+     * @param _i joint to return the configuration of
+     * @return   the joint configuration
      */
-    bool     setAng(std::vector<double>     _q);
+    double getAng(const size_t _i) { return getAng()[_i]; };
+
+    /**
+     * Gets the joint velocities in the arm chain
+     *
+     * @return array of joint velocities as an Eigen::VectorXd
+     */
+    Eigen::VectorXd getVel()    { return v; };
+
+    /**
+     * Functions to set the joint angles of the arm chain.
+     *
+     * @param _q  vector of joint positions (in rad)
+     * @return    true/false if success/failure
+     */
     bool     setAng(Eigen::VectorXd         _q);
-    bool     setAng(sensor_msgs::JointState _q);
+    bool     setAng(sensor_msgs::JointState _j);
 
     /**
-     * Functions to get pose matrix of a joint in the chain. If called
-     * without a parameter, gets pose matrix of end effector.
+     * Functions to set the joint velocities of the arm chain.
      *
-     * return: pose matrix of _i'th (or end effector) joint
+     * @param _v  vector of joint velocities
+     * @return    true/false if success/failure
      */
-    Eigen::MatrixXd getH();
-    Eigen::MatrixXd getH(const unsigned int _i);
+    bool     setVel(Eigen::VectorXd         _v);
+
+    /**
+     * Function that returns the current pose as a geometry_msgs::Pose
+     *
+     * @return the current pose as a geometry_msgs::Pose
+     */
+    geometry_msgs::Pose getPose();
+
+    /**
+     * Gets pose matrix of chain end effector.
+     *
+     * @return pose matrix of end-effector joint
+     */
+    Eigen::Matrix4d getH();
+
+    /**
+     * Gets pose matrix of the i'th joint in the chain. The means it gets the
+     * transformation matrix of the last segment before the next joint. For example,
+     * if the first segment is a joint, the second is not a joint, and the third is a joint,
+     * getH(0) will return the transformation matrix as if the second segment were the
+     * end effector of the chain.
+     *
+     * @param _i [index of joint in chain]
+     *
+     * @return pose matrix of _i'th joint
+     */
+    Eigen::Matrix4d getH(const size_t _i);
+
+    /**
+     * Removes a segment from the chain. The segment may or may not include a joint.
+     * Decrements nrOfSegments and if there is a joint also being removed, decrements
+     * nrOfJoints and pops a value off of q.
+     */
+    void removeSegment();
+
+    /**
+     * Removes a joint from the chain. The joint may not be the last segment in the chain,
+     * so the function removes segments until it removes a segment that also includes a joint.
+     * Decrements nrOfSegments and nrOfJoints appropriately.
+     */
+    void removeJoint();
 
     /**
      * Functions to get joint angle limits for the _i'th joint
      *
      * @param _i [number of the joint to get max/min limit]
      *
-     * return: value of joint limit
+     * @return value of joint limit
      */
-    double getMax(const unsigned int _i);
-    double getMin(const unsigned int _i);
+    double getMax(const size_t _i);
+    double getMin(const size_t _i);
 
     ~BaxterChain();
 };
+
+#endif

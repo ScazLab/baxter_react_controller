@@ -10,46 +10,47 @@
 #include <urdf/model.h>
 #include <math.h>
 
-#include <react_controller/baxterChain.h>
-
-#define CTRL_RAD2DEG (180.0 / M_PI)
-#define CTRL_DEG2RAD (M_PI/180.0)
+#include "react_controller/baxterChain.h"
 
 /****************************************************************/
 class ControllerNLP : public Ipopt::TNLP
 {
 private:
-
+    // Chain to solve the IK against
     BaxterChain chain;
 
+    // Period of the control thread
     double dt;
 
+    // Flag to know if to control the orientation or not
     bool ctrl_ori;
 
-    Eigen::VectorXd x_0;
-    Eigen::VectorXd q_0;
-    Eigen::VectorXd v_0;
+    Eigen::Vector3d     p_0;  // Initial 3D position
+    Eigen::VectorXd     q_0;  // Initial ND joint configuration
+    Eigen::VectorXd     v_0;  // Initial ND joint velocities
+    Eigen::Matrix3d     R_0;  // Initial 3x3 rotation matrix
+    Eigen::MatrixXd J_0_xyz;  // Initial Jacobian (positional component)
+    Eigen::MatrixXd J_0_ang;  // Initial Jacobian (orientation component)
 
-    Eigen::VectorXd xr;
-    Eigen::VectorXd pr;
-    Eigen::MatrixXd Hr;
+    Eigen::Vector3d      p_r; // Reference 3D  position
+    Eigen::Quaterniond   o_r; // Reference quaternion orientation
+    Eigen::Matrix3d      R_r; // Reference 4x4 transform matrix
+    Eigen::MatrixXd  skew_nr; // Skew-symmetric matrix of the first  column of R_r
+    Eigen::MatrixXd  skew_sr; // Skew-symmetric matrix of the second column of R_r
+    Eigen::MatrixXd  skew_ar; // Skew-symmetric matrix of the third  column of R_r
 
-    Eigen::VectorXd pe;
-    Eigen::MatrixXd skew_nr;
-    Eigen::MatrixXd skew_sr;
-    Eigen::MatrixXd skew_ar;
-    Eigen::MatrixXd q_lim;
-    Eigen::MatrixXd v_lim;
-    Eigen::VectorXd v;
-    Eigen::MatrixXd H_0;
-    Eigen::MatrixXd R_0;
-    Eigen::MatrixXd He;
-    Eigen::MatrixXd J0_xyz;
-    Eigen::MatrixXd J0_ang;
-    Eigen::MatrixXd Derr_ang;
-    Eigen::VectorXd err_xyz;
-    Eigen::VectorXd err_ang;
-    Eigen::MatrixXd bounds;
+    Eigen::VectorXd v_e;      // Estimated joint velocities
+    Eigen::Vector3d p_e;      // Estimated 3D position
+    Eigen::Matrix3d R_e;      // Estimated 3x3 rotation matrix
+
+    Eigen::Vector3d  err_xyz; // Positional error
+    Eigen::Vector3d  err_ang; // Orientation error
+    Eigen::MatrixXd Derr_ang; // Derivative of the orientation error
+
+    Eigen::MatrixX2d q_lim;
+    Eigen::MatrixX2d v_lim;
+
+    Eigen::MatrixX2d bounds;
 
     Eigen::VectorXd qGuard;
     Eigen::VectorXd qGuardMinExt;
@@ -62,8 +63,6 @@ private:
     /****************************************************************/
     void computeGuard();
     void computeBounds();
-    Eigen::MatrixXd v2m(const Eigen::VectorXd &x);
-    Eigen::MatrixXd skew(const Eigen::VectorXd &w);
 
 public:
     ControllerNLP(BaxterChain chain_, double dt_ = 0.01, bool ctrl_ori_ = false);
@@ -75,13 +74,13 @@ public:
     bool eval_f(Ipopt::Index n, const Ipopt::Number *x, bool new_x, Ipopt::Number &obj_value);
     bool eval_grad_f(Ipopt::Index n, const Ipopt::Number* x, bool new_x, Ipopt::Number *grad_f);
     bool eval_g(Ipopt::Index n, const Ipopt::Number *x, bool new_x,Ipopt::Index m, Ipopt::Number *g);
-    bool eval_jac_g(Ipopt::Index n, const Ipopt::Number *x, bool new_x, Ipopt::Index m, Ipopt::Index nele_jac, Ipopt::Index *iRow,
-                    Ipopt::Index *jCol, Ipopt::Number *values);
+    bool eval_jac_g(Ipopt::Index n, const Ipopt::Number *x, bool new_x, Ipopt::Index m, Ipopt::Index nele_jac,
+                    Ipopt::Index *iRow, Ipopt::Index *jCol, Ipopt::Number *values);
     void finalize_solution(Ipopt::SolverReturn status, Ipopt::Index n, const Ipopt::Number *x, const Ipopt::Number *z_L,
                            const Ipopt::Number *z_U, Ipopt::Index m, const Ipopt::Number *g, const Ipopt::Number *lambda,
                            Ipopt::Number obj_value, const Ipopt::IpoptData *ip_data, Ipopt::IpoptCalculatedQuantities *ip_cq);
 
-    void set_xr(const Eigen::VectorXd &_xr);
+    void set_x_r(const Eigen::Vector3d &_p_r, const Eigen::Quaterniond &_o_r);
     void set_v_lim(const Eigen::MatrixXd &_v_lim);
     void set_ctrl_ori(const bool _ctrl_ori);
     void set_dt(const double _dt);
