@@ -17,8 +17,8 @@
 
 #include <ros/ros.h>
 
-#define CTRL_RAD2DEG (180.0 / M_PI)
-#define CTRL_DEG2RAD (M_PI/180.0)
+#define RAD2DEG (180.0 /  M_PI)
+#define DEG2RAD ( M_PI / 180.0)
 
 /**
  * [cross description]
@@ -44,6 +44,17 @@ Eigen::Matrix3d skew(const Eigen::Vector3d &w);
  * return    Eigen 4X4 pose matrix
 */
 Eigen::Matrix4d toMatrix4d(KDL::Frame _f);
+
+/**
+ * Computes the angular error between two rotation matrices.
+ * Angular error computation is taken from the following book:
+ * Robotics, Modelling, Planning and Control, Siciliano & Sciavicco, page 139.
+ *
+ * @param  _a The first rotation matrix (ie the reference)
+ * @param  _b The second rotation matrix
+ * @return    the angular error
+ */
+Eigen::Vector3d angularError(const Eigen::Matrix3d& _a, const Eigen::Matrix3d& _b);
 
 struct collisionPoint
 {

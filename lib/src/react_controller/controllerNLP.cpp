@@ -105,7 +105,7 @@ void ControllerNLP::set_x_r(const Eigen::Vector3d &_p_r, const Eigen::Quaternion
 /****************************************************************/
 void ControllerNLP::set_v_lim(const MatrixXd &_v_lim)
 {
-    v_lim=CTRL_DEG2RAD*_v_lim;
+    v_lim = DEG2RAD*_v_lim;
 }
 
 /****************************************************************/
@@ -138,7 +138,7 @@ void ControllerNLP::init()
 
     Matrix4d H_0= chain.getH();
     R_0= H_0.block<3,3>(0,0);
-    p_0= H_0.col(3).block<3,1>(0,0);
+    p_0= H_0.block<3,1>(0,3);
 
     // ROS_INFO_STREAM("H_0: \n" << H_0);
     // ROS_INFO_STREAM("R_0: \n" << R_0);
@@ -229,9 +229,7 @@ void ControllerNLP::computeQuantities(const Ipopt::Number *x, const bool new_x)
         p_e = p_0 + dt * (J_0_xyz * v_e);
 
         err_xyz = p_r-p_e;
-
-        AngleAxisd aa_err((R_r)*(R_e.transpose()));
-        err_ang = aa_err.axis() * sin(aa_err.angle());
+        err_ang = angularError(R_r, R_e);
 
         // ROS_INFO_STREAM(" aa_err: " << aa_err.axis().transpose() << " " << aa_err.angle());
         // ROS_INFO_STREAM("err_ang: " << err_ang.transpose());

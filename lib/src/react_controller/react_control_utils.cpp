@@ -37,6 +37,13 @@ Matrix4d toMatrix4d(KDL::Frame _f)
     return result;
 }
 
+Vector3d angularError(const Matrix3d& _a, const Matrix3d& _b)
+{
+    AngleAxisd angErr((_a)*(_b.transpose()));
+
+    return angErr.axis() * angErr.angle();
+}
+
 bool computeCollisionPoints(const std::vector<Vector3d>&      joints,
                             const             Vector3d & coll_coords,
                             std::vector<collisionPoint>&    collisionPoints)
