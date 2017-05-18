@@ -49,8 +49,24 @@ TEST(UtilsTest, toMatrix4d)
                            << endl << endl << "Eigen:\n" << eigen << endl;
 }
 
-void testAngularErrors(Matrix3d _a, Matrix3d _b, Vector3d _exp)
+Matrix3d rotateMat(const Matrix3d& _ori_mat, double _rot_x, double _rot_y, double _rot_z)
 {
+    Matrix3d new_mat;
+    new_mat = AngleAxisd(_rot_x*DEG2RAD, Vector3d::UnitX())
+            * AngleAxisd(_rot_y*DEG2RAD, Vector3d::UnitY())
+            * AngleAxisd(_rot_z*DEG2RAD, Vector3d::UnitZ()) * _ori_mat;
+
+    EXPECT_TRUE(new_mat.isUnitary()) << "new_mat:\n" << new_mat << endl;
+    return new_mat;
+}
+
+void testAngularErrors(Matrix3d _a, double _rot_x, double _rot_y, double _rot_z)
+{
+    Matrix3d  _b =       rotateMat(_a, _rot_x, _rot_y, _rot_z);
+    Vector3d err = DEG2RAD*Vector3d(-_rot_x, -_rot_y, -_rot_z);
+
+    cout << "Evaluating [" << _rot_x << ", " << _rot_y << ", " << _rot_z << "]\n";
+
     Vector3d _a_b = angularError(_a, _b);
     Vector3d _b_a = angularError(_b, _a);
 
@@ -60,30 +76,12 @@ void testAngularErrors(Matrix3d _a, Matrix3d _b, Vector3d _exp)
                "Angular Error: [_a, _b][deg]: " << RAD2DEG * _a_b.transpose() <<
                "               [_b, _a][deg]: " << RAD2DEG * _b_a.transpose() << endl;
 
-    ASSERT_NEAR((+1.0 * _exp).squaredNorm(), _a_b.squaredNorm(), 1e-6) <<
-                 "[_a, _b] expected [deg]: " << (RAD2DEG *  _exp).transpose() <<
-                           " actual [deg]: " << (RAD2DEG *  _a_b).transpose() << endl;
-    ASSERT_NEAR((-1.0 * _exp).squaredNorm(), _b_a.squaredNorm(), 1e-6) <<
-                 "[_b, _a] expected [deg]: " << (RAD2DEG * -_exp).transpose() <<
-                           " actual [deg]: " << (RAD2DEG *  _b_a).transpose() << endl;
-}
-
-void evaluateAngularErrorsFromMat(Matrix3d _ori_mat, double _rot_x, double _rot_y, double _rot_z)
-{
-    // Let's test angular errors
-    Matrix3d new_mat;
-    Vector3d exp_err;
-
-    cout << "Evaluating [" << _rot_x << ", " << _rot_y << ", " << _rot_z << "]\n";
-
-    exp_err = DEG2RAD*Vector3d(-_rot_x, -_rot_y, -_rot_z);
-    new_mat = AngleAxisd(_rot_x*DEG2RAD, Vector3d::UnitX())
-            * AngleAxisd(_rot_y*DEG2RAD, Vector3d::UnitY())
-            * AngleAxisd(_rot_z*DEG2RAD, Vector3d::UnitZ()) * _ori_mat;
-
-    EXPECT_TRUE(new_mat.isUnitary()) << "new_mat:\n" << new_mat << endl;
-
-    testAngularErrors(_ori_mat, new_mat, exp_err);
+    ASSERT_NEAR((+1.0 * err).squaredNorm(), _a_b.squaredNorm(), 1e-6) <<
+                 "[_a, _b] expected [deg]: " << (RAD2DEG *  err).transpose() <<
+                           " actual [deg]: " << (RAD2DEG * _a_b).transpose() << endl;
+    ASSERT_NEAR((-1.0 * err).squaredNorm(), _b_a.squaredNorm(), 1e-6) <<
+                 "[_b, _a] expected [deg]: " << (RAD2DEG * -err).transpose() <<
+                           " actual [deg]: " << (RAD2DEG * _b_a).transpose() << endl;
 }
 
 TEST(UtilsTest, angleAxisErrAng)
@@ -110,17 +108,17 @@ TEST(UtilsTest, angleAxisErrAng)
     Matrix3d R1;
     Vector3d R0R1_exp;
 
-    // 45° rotation about x axis
-    evaluateAngularErrorsFromMat(R0,  45.0,   0.0,   0.0);
+    //  45° rotation about x axis
+    testAngularErrors(R0,  45.0,   0.0,   0.0);
 
     // -90° rotation about y axis
-    evaluateAngularErrorsFromMat(R0,   0.0, -90.0,   0.0);
+    testAngularErrors(R0,   0.0, -90.0,   0.0);
+
+    // 120° rotation about z axis
+    testAngularErrors(R0,   0.0,   0.0, 120.0);
 
     // 180° rotation about all axes
-    evaluateAngularErrorsFromMat(R0,   0.0,   0.0, 120.0);
-
-    // 180° rotation about all axes
-    // evaluateAngularErrorsFromMat(R0, 180.0, 180.0, 180.0);
+    // testAngularErrors(R0, 180.0, 180.0, 180.0);
 }
 
 // Run all the tests that were declared with TEST()
