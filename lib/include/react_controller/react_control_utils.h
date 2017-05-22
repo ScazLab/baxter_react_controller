@@ -56,24 +56,27 @@ Eigen::Matrix4d toMatrix4d(KDL::Frame _f);
  */
 Eigen::Vector3d angularError(const Eigen::Matrix3d& _a, const Eigen::Matrix3d& _b);
 
+/**
+ * TODO documentation
+ */
 struct collisionPoint
 {
-        // iCub::skinDynLib::SkinPart skin_part;
-        Eigen::VectorXd x; //position (x,y,z) in the FoR of the respective skin part
-        Eigen::VectorXd n; //direction of normal vector at that point - derived from taxel normals, pointing out of the skin
-        double magnitude;  // ~ activation level from probabilistic representation in pps - likelihood of collision
+    Eigen::Vector3d x; // position (x,y,z)
+    Eigen::Vector3d n; // direction of normal vector at that point
+    double          m; // activation level (magnitude)
 };
 
 /**
  * TODO documentation
+ *
  * @param  joints      [description]
  * @param  coll_coords [description]
  * @param  coll_points [description]
- * @param  norms       [description]
+ *
  * @return             true/false if success/failure
  */
-bool computeCollisionPoints(const std::vector<Eigen::Vector3d>&      joints,
-                            const             Eigen::Vector3d & coll_coords,
-                            std::vector<collisionPoint>&   _collisionPoints);
+bool computeCollisionPoints(const std::vector<Eigen::Vector3d>&      _joints,
+                            const             Eigen::Vector3d & _coll_coords,
+                            std::vector<collisionPoint>&        _coll_points);
 
 #endif

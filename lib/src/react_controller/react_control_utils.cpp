@@ -44,27 +44,29 @@ Vector3d angularError(const Matrix3d& _a, const Matrix3d& _b)
     return angErr.axis() * angErr.angle();
 }
 
-bool computeCollisionPoints(const std::vector<Vector3d>&      joints,
-                            const             Vector3d & coll_coords,
-                            std::vector<collisionPoint>&    collisionPoints)
+bool computeCollisionPoints(const std::vector<Vector3d>&      _joints,
+                            const             Vector3d & _coll_coords,
+                            std::vector<collisionPoint>& _coll_points)
 {
-    collisionPoints.clear();
+    _coll_points.clear();
 
-    for (size_t i = 0; i < joints.size() - 1; ++i)
+    for (size_t i = 0; i < _joints.size() - 1; ++i)
     {
-        Vector3d ab = joints[i + 1] - joints[i];
-        Vector3d ap = coll_coords - joints[i];
-        Vector3d coll_pt = joints[i] + ((ap).dot(ab)) / ((ab).dot(ab)) * ab;
-        collisionPoint c;
-        c.x = coll_pt;
-        c.magnitude = (coll_coords - coll_pt).norm();
-        c.n = (coll_coords - coll_pt) / c.magnitude;
-        collisionPoints.push_back(c);
+        Vector3d ab = _joints[i + 1] - _joints[i];
+        Vector3d ap = _coll_coords - _joints[i];
+        Vector3d coll_pt = _joints[i] + ((ap).dot(ab)) / ((ab).dot(ab)) * ab;
+
+        collisionPoint cp;
+        cp.x = coll_pt;
+        cp.m = (_coll_coords - coll_pt).norm();
+        cp.n = (_coll_coords - coll_pt) / cp.m;
+
+        _coll_points.push_back(cp);
 
         // ROS_INFO("coll point %zu at x: %g y: %g z: %g", i,
-        //           collisionPoints[i].x(0), collisionPoints[i].x(1), collisionPoints[i].x(2));
+        //           _coll_points[i].x(0), _coll_points[i].x(1), _coll_points[i].x(2));
         // ROS_INFO("      norm %zu at x: %g y: %g z: %g", i,
-        //           collisionPoints[i].n(0), collisionPoints[i].n(1), collisionPoints[i].n(2));
+        //           _coll_points[i].n(0), _coll_points[i].n(1), _coll_points[i].n(2));
     }
     // printf("\n");
 

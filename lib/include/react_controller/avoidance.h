@@ -22,7 +22,9 @@
 class AvoidanceHandlerAbstract
 {
 public:
-    AvoidanceHandlerAbstract(const BaxterChain &_chain, const std::vector<collisionPoint> &_collisionPoints, const unsigned int _verbosity=0);
+    AvoidanceHandlerAbstract(const BaxterChain &_chain,
+                             const std::vector<collisionPoint> &_collisionPoints,
+                             const unsigned int _verbosity=0);
 
     std::string getType() const;
 
@@ -42,9 +44,18 @@ public:
     const std::vector<collisionPoint> &collisionPoints;
     unsigned int verbosity;
     std::deque<BaxterChain> ctrlPointChains;
-    // yarp::os::Property parameters;
 
-    bool computeFoR(const Eigen::VectorXd &pos, const Eigen::VectorXd &norm, Eigen::Matrix4d &FoR);
+    /**
+     * Creates a full transform as given by a DCM matrix at the pos and norm w.r.t. the original frame,
+     * from the pos and norm (one axis set arbitrarily)
+     * @param  pos  [description]
+     * @param  norm [description]
+     * @param  FoR  [description]
+     * @return      [description]
+     */
+    bool computeFoR(const Eigen::VectorXd &pos,
+                    const Eigen::VectorXd &norm,
+                          Eigen::Matrix4d &FoR);
 
     /**
     * Prints a message according to the verbosity level:
@@ -55,21 +66,19 @@ public:
 
 };
 
-
-
 /****************************************************************/
 class AvoidanceHandlerTactile : public virtual AvoidanceHandlerAbstract
 {
 
 public:
-    AvoidanceHandlerTactile(const BaxterChain &_chain,const std::vector<collisionPoint> &_collisionPoints,const unsigned int _verbosity=0);
-    // void setParameters(const yarp::os::Property &parameters);
+    AvoidanceHandlerTactile(const BaxterChain &_chain,
+                            const std::vector<collisionPoint> &_collisionPoints,
+                            const unsigned int _verbosity=0);
+
     Eigen::MatrixXd getVLIM(const Eigen::MatrixXd &v_lim);
 
 protected:
     double avoidingSpeed;
-
-
 };
 
 
