@@ -44,6 +44,11 @@ Vector3d angularError(const Matrix3d& _a, const Matrix3d& _b)
     return angErr.axis() * angErr.angle();
 }
 
+Vector3d angularError(const Quaterniond& _a, const Quaterniond& _b)
+{
+    return _b.w()*_a.vec() - _a.w()*_b.vec() -skew(_a.vec())*_b.vec();
+}
+
 bool computeCollisionPoints(const std::vector<Vector3d>&      _joints,
                             const             Vector3d & _coll_coords,
                             std::vector<collisionPoint>& _coll_points)
