@@ -106,13 +106,13 @@ TEST(UtilsTest, angleAxisErrAng)
 
     // Let's test angular errors
     Matrix3d R1;
-    Vector3d R0R1_exp;
 
     // testAngularErrors only works for rotations about a single axis, and lower than 180°
     testAngularErrors(R0,  45.0,   0.0,   0.0);         //  45° rotation about x axis
     testAngularErrors(R0,   0.0, -90.0,   0.0);         // -90° rotation about y axis
     testAngularErrors(R0,   0.0,   0.0, 120.0);         // 120° rotation about z axis
 
+    // The following rotations don't work for a number reasons
     // // 180° rotation about z axis
     // testAngularErrors(R0,   0.0,   0.0, 180.0);
 
