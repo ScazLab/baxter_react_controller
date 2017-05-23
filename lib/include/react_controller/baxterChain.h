@@ -25,19 +25,18 @@ private:
     Eigen::VectorXd v;    // vector of joint velocities of the arm chain
 
     /**
-     * Takes an arm chain and returns the KDL::Frame of the end effector w.r.t
+     * Takes an arm chain and returns the KDL::Frame of the end effector w.r.t.
      * the base of the arm.
      *
-     * @param _H      KDL::Frame of end effector, populated by function
      * @param _seg_nr segment to get frame for, default is end effector
-     * return         true/false if success/failure
+     * return         the KDL::Frame of the end effector
      */
-    bool JntToCart(KDL::Frame& _H, int _seg_nr=-1);
+    KDL::Frame JntToCart(int _seg_nr=-1);
 
     /**
      * Computes the jacobian for the chain
      *
-     * @param _seg_nr segment to get frame for, default is end effector
+     * @param _seg_nr segment to get jacobian for, default is end effector
      * return         the jacobian
      */
     KDL::Jacobian JntToJac(int _seg_nr=-1);
