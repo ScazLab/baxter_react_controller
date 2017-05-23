@@ -105,22 +105,15 @@ TEST(UtilsTest, angleAxisErrAng)
     EXPECT_EQ(AA0A.toRotationMatrix(), AA0B.toRotationMatrix());
 
     // Let's test angular errors
-    Matrix3d R1;
-
     // testAngularErrors only works for rotations about a single axis, and lower than 180°
     testAngularErrors(R0,  45.0,   0.0,   0.0);         //  45° rotation about x axis
     testAngularErrors(R0,   0.0, -90.0,   0.0);         // -90° rotation about y axis
     testAngularErrors(R0,   0.0,   0.0, 120.0);         // 120° rotation about z axis
 
     // The following rotations don't work for a number reasons
-    // // 180° rotation about z axis
-    // testAngularErrors(R0,   0.0,   0.0, 180.0);
-
-    // // 181° rotation about z axis
-    // testAngularErrors(R0,   0.0,   0.0, 181.0);
-
-    // 180° rotation about all axes
-    // testAngularErrors(R0, 180.0, 180.0, 180.0);
+    // testAngularErrors(R0,   0.0,   0.0, 180.0);      // 180° rotation about z axis
+    // testAngularErrors(R0,   0.0,   0.0, 181.0);      // 181° rotation about z axis
+    // testAngularErrors(R0, 180.0, 180.0, 180.0);      // 180° rotation about all axes
 }
 
 // Run all the tests that were declared with TEST()
