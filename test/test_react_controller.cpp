@@ -4,6 +4,7 @@
 #include <baxter_collaboration_msgs/ArmState.h>
 #include <baxter_core_msgs/AssemblyState.h>
 #include <robot_utils/utils.h>
+
 #include "react_controller/baxterChain.h"
 
 #include   <memory>
@@ -38,7 +39,7 @@ private:
         _wp.clear();
         XmlRpc::XmlRpcValue    waypoints;
 
-        if(!_nh.getParam("/"+_nh.getNamespace()+"/waypoints/" + limb, waypoints))
+        if(not _nh.getParam("/"+_nh.getNamespace()+"/waypoints/" + limb, waypoints))
         {
             ROS_INFO("No objects' database found in the parameter server. "
                      "Looked up param is %s", ("/"+_nh.getNamespace()+"/waypoints").c_str());
@@ -84,9 +85,9 @@ private:
     };
 
 public:
-    reactControllerTester(std::string _limb) : nh("test_react_controller"), limb(_limb),
-                                               as_state_ptr(new baxter_collaboration_msgs::ArmState),
-                                               gz_state_ptr(nullptr)
+    explicit reactControllerTester(std::string _limb) : nh("test_react_controller"),
+                 limb(_limb), as_state_ptr(new baxter_collaboration_msgs::ArmState),
+                                                              gz_state_ptr(nullptr)
     {
         EXPECT_TRUE(importWayPoints(nh, _wp));
 
@@ -94,7 +95,7 @@ public:
               "/baxter_react_controller/" + limb + "/go_to_pose", SUBSCRIBER_BUFFER, true);
 
         as_sub = nh.subscribe("/baxter_react_controller/" + limb + "/state", SUBSCRIBER_BUFFER,
-                                                  &reactControllerTester::armStateCb, this);
+                                                     &reactControllerTester::armStateCb, this);
 
         gz_sub = nh.subscribe("/robot/state", SUBSCRIBER_BUFFER,
                               &reactControllerTester::robotStateCb, this);
@@ -176,7 +177,8 @@ public:
 
             if ((ros::Time::now()-_init).toSec() > _wait_time)
             {
-                ROS_WARN("No reactController state %s in %gs!", std::string(_as).c_str(), _wait_time);
+                ROS_WARN("No reactController state %s in %gs!",
+                         std::string(_as).c_str(), _wait_time);
                 return false;
             }
 
