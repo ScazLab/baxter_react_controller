@@ -34,10 +34,10 @@ private:
     bool coll_av;       // collision avoidance mode
 
 public:
-    CtrlThread(const std::string& _name, const std::string& _limb,
-               bool _use_robot = true, double _ctrl_freq = THREAD_FREQ,
-               bool _is_debug = false, double tol = 1e-3,
-               double vMax = 60.0, bool _coll_av = false);
+    CtrlThread(const std::string& _name, const std::string&        _limb,
+                bool _use_robot =  true, double _ctrl_freq = THREAD_FREQ,
+                bool  _is_debug = false, double       _tol =        1e-3,
+                double    _vMax = 120.0, bool     _coll_av =      false);
 
     /**
      * Initializes the IpoptApplication with default values for every time the solver
