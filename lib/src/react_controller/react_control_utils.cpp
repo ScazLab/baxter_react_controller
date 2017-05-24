@@ -29,7 +29,7 @@ Matrix4d toMatrix4d(KDL::Frame _f)
     Matrix4d result(Matrix4d::Identity());
 
     Vector3d p(VectorXd::Map(&_f.p.data[0], 3   ));
-    Matrix3d r(MatrixXd::Map(&_f.M.data[0], 3, 3));
+    Matrix3d r(MatrixXd::Map(&_f.M.data[0], 3, 3).transpose());
 
     result.block<3,3>(0,0) = r;
     result.block<3,1>(0,3) = p;
