@@ -151,6 +151,7 @@ TEST(BaxterChainTest, testRemoveSegment)
     BaxterChain chainL(getChain( "left_gripper"));
 
     // Right chain tests
+    Matrix4d H6 = chainR.getH(6);
     Matrix4d H5 = chainR.getH(5);
     Matrix4d H4 = chainR.getH(4);
     Matrix4d H3 = chainR.getH(3);
@@ -166,51 +167,46 @@ TEST(BaxterChainTest, testRemoveSegment)
     EXPECT_EQ(chainR.getNrOfJoints(),      6);
     EXPECT_EQ(chainR.getNrOfSegments(),    8);
     EXPECT_EQ(chainR.GeoJacobian().cols(), 6);
-    EXPECT_EQ(H5, chainR.getH());
-    // cout << "getH (): " << chainR.getH( ) << endl;
-    // cout << "     H5: " <<             H5 << endl;
+    EXPECT_EQ(H6, chainR.getH()) << "getH (): " << chainR.getH( ) << endl
+                                 << "     H6: " <<             H6 << endl;
 
     chainR.removeJoint();
     EXPECT_EQ(chainR.getNrOfJoints(),      5);
     EXPECT_EQ(chainR.getNrOfSegments(),    7);
     EXPECT_EQ(chainR.GeoJacobian().cols(), 5);
-    EXPECT_EQ(H4, chainR.getH());
-    // cout << "getH (): " << chainR.getH( ) << endl;
-    // cout << "     H4: " <<             H4 << endl;
+    EXPECT_EQ(H5, chainR.getH()) << "getH (): " << chainR.getH( ) << endl
+                                 << "     H5: " <<             H5 << endl;
 
     chainR.removeJoint();
     EXPECT_EQ(chainR.getNrOfJoints(),      4);
     EXPECT_EQ(chainR.getNrOfSegments(),    6);
     EXPECT_EQ(chainR.GeoJacobian().cols(), 4);
-    EXPECT_EQ(H3, chainR.getH());
-    // cout << "getH (): " << chainR.getH( ) << endl;
-    // cout << "     H3: " <<             H3 << endl;
+    EXPECT_EQ(H4, chainR.getH()) << "getH (): " << chainR.getH( ) << endl
+                                 << "     H4: " <<             H4 << endl;
 
     chainR.removeJoint();
     EXPECT_EQ(chainR.getNrOfJoints(),      3);
     EXPECT_EQ(chainR.getNrOfSegments(),    5);
     EXPECT_EQ(chainR.GeoJacobian().cols(), 3);
-    EXPECT_EQ(H2, chainR.getH());
-    // cout << "getH (): " << chainR.getH( ) << endl;
-    // cout << "     H2: " <<             H2 << endl;
+    EXPECT_EQ(H3, chainR.getH()) << "getH (): " << chainR.getH( ) << endl
+                                 << "     H3: " <<             H3 << endl;
 
     chainR.removeJoint();
     EXPECT_EQ(chainR.getNrOfJoints(),      2);
     EXPECT_EQ(chainR.getNrOfSegments(),    4);
     EXPECT_EQ(chainR.GeoJacobian().cols(), 2);
-    EXPECT_EQ(H1, chainR.getH());
-    // cout << "getH (): " << chainR.getH( ) << endl;
-    // cout << "     H1: " <<             H1 << endl;
+    EXPECT_EQ(H2, chainR.getH()) << "getH (): " << chainR.getH( ) << endl
+                                 << "     H2: " <<             H2 << endl;
 
     chainR.removeJoint();
     EXPECT_EQ(chainR.getNrOfJoints(),      1);
     EXPECT_EQ(chainR.getNrOfSegments(),    3);
     EXPECT_EQ(chainR.GeoJacobian().cols(), 1);
-    EXPECT_EQ(H0, chainR.getH());
-    // cout << "getH (): " << chainR.getH( ) << endl;
-    // cout << "     H0: " <<             H0 << endl;
+    EXPECT_EQ(H1, chainR.getH()) << "getH (): " << chainR.getH( ) << endl
+                                 << "     H1: " <<             H1 << endl;
 
     // Left chain tests
+    H6 = chainL.getH(6);
     H5 = chainL.getH(5);
     H4 = chainL.getH(4);
     H3 = chainL.getH(3);
@@ -226,37 +222,43 @@ TEST(BaxterChainTest, testRemoveSegment)
     EXPECT_EQ(chainL.getNrOfJoints(),      6);
     EXPECT_EQ(chainL.getNrOfSegments(),    8);
     EXPECT_EQ(chainL.GeoJacobian().cols(), 6);
-    EXPECT_EQ(H5, chainL.getH());
+    EXPECT_EQ(H6, chainL.getH()) << "getH (): " << chainL.getH( ) << endl
+                                 << "     H6: " <<             H6 << endl;
 
     chainL.removeJoint();
     EXPECT_EQ(chainL.getNrOfJoints(),      5);
     EXPECT_EQ(chainL.getNrOfSegments(),    7);
     EXPECT_EQ(chainL.GeoJacobian().cols(), 5);
-    EXPECT_EQ(H4, chainL.getH());
+    EXPECT_EQ(H5, chainL.getH()) << "getH (): " << chainL.getH( ) << endl
+                                 << "     H5: " <<             H5 << endl;
 
     chainL.removeJoint();
     EXPECT_EQ(chainL.getNrOfJoints(),      4);
     EXPECT_EQ(chainL.getNrOfSegments(),    6);
     EXPECT_EQ(chainL.GeoJacobian().cols(), 4);
-    EXPECT_EQ(H3, chainL.getH());
+    EXPECT_EQ(H4, chainL.getH()) << "getH (): " << chainL.getH( ) << endl
+                                 << "     H4: " <<             H4 << endl;
 
     chainL.removeJoint();
     EXPECT_EQ(chainL.getNrOfJoints(),      3);
     EXPECT_EQ(chainL.getNrOfSegments(),    5);
     EXPECT_EQ(chainL.GeoJacobian().cols(), 3);
-    EXPECT_EQ(H2, chainL.getH());
+    EXPECT_EQ(H3, chainL.getH()) << "getH (): " << chainL.getH( ) << endl
+                                 << "     H3: " <<             H3 << endl;
 
     chainL.removeJoint();
     EXPECT_EQ(chainL.getNrOfJoints(),      2);
     EXPECT_EQ(chainL.getNrOfSegments(),    4);
     EXPECT_EQ(chainL.GeoJacobian().cols(), 2);
-    EXPECT_EQ(H1, chainL.getH());
+    EXPECT_EQ(H2, chainL.getH()) << "getH (): " << chainL.getH( ) << endl
+                                 << "     H2: " <<             H2 << endl;
 
     chainL.removeJoint();
     EXPECT_EQ(chainL.getNrOfJoints(),      1);
     EXPECT_EQ(chainL.getNrOfSegments(),    3);
     EXPECT_EQ(chainL.GeoJacobian().cols(), 1);
-    EXPECT_EQ(H0, chainL.getH());
+    EXPECT_EQ(H1, chainL.getH()) << "getH (): " << chainL.getH( ) << endl
+                                 << "     H1: " <<             H1 << endl;
 }
 
 TEST(BaxterChainTest, testSegmentTypes)
@@ -265,8 +267,8 @@ TEST(BaxterChainTest, testSegmentTypes)
     BaxterChain chainL(getChain( "left_gripper"));
 
     // Right chain tests
-    EXPECT_EQ(chainR.getSegment( 0).getJoint().getType(),    KDL::Joint::None);
-    EXPECT_EQ(chainR.getSegment( 1).getJoint().getType(),    KDL::Joint::None);
+    EXPECT_EQ(chainR.getSegment( 0).getJoint().getType(), KDL::Joint::None   );
+    EXPECT_EQ(chainR.getSegment( 1).getJoint().getType(), KDL::Joint::None   );
     EXPECT_EQ(chainR.getSegment( 2).getJoint().getType(), KDL::Joint::RotAxis);
     EXPECT_EQ(chainR.getSegment( 3).getJoint().getType(), KDL::Joint::RotAxis);
     EXPECT_EQ(chainR.getSegment( 4).getJoint().getType(), KDL::Joint::RotAxis);
@@ -274,13 +276,13 @@ TEST(BaxterChainTest, testSegmentTypes)
     EXPECT_EQ(chainR.getSegment( 6).getJoint().getType(), KDL::Joint::RotAxis);
     EXPECT_EQ(chainR.getSegment( 7).getJoint().getType(), KDL::Joint::RotAxis);
     EXPECT_EQ(chainR.getSegment( 8).getJoint().getType(), KDL::Joint::RotAxis);
-    EXPECT_EQ(chainR.getSegment( 9).getJoint().getType(),    KDL::Joint::None);
-    EXPECT_EQ(chainR.getSegment(10).getJoint().getType(),    KDL::Joint::None);
-    EXPECT_EQ(chainR.getSegment(11).getJoint().getType(),    KDL::Joint::None);
+    EXPECT_EQ(chainR.getSegment( 9).getJoint().getType(), KDL::Joint::None   );
+    EXPECT_EQ(chainR.getSegment(10).getJoint().getType(), KDL::Joint::None   );
+    EXPECT_EQ(chainR.getSegment(11).getJoint().getType(), KDL::Joint::None   );
 
     // Left chain tests
-    EXPECT_EQ(chainL.getSegment( 0).getJoint().getType(),    KDL::Joint::None);
-    EXPECT_EQ(chainL.getSegment( 1).getJoint().getType(),    KDL::Joint::None);
+    EXPECT_EQ(chainL.getSegment( 0).getJoint().getType(), KDL::Joint::None   );
+    EXPECT_EQ(chainL.getSegment( 1).getJoint().getType(), KDL::Joint::None   );
     EXPECT_EQ(chainL.getSegment( 2).getJoint().getType(), KDL::Joint::RotAxis);
     EXPECT_EQ(chainL.getSegment( 3).getJoint().getType(), KDL::Joint::RotAxis);
     EXPECT_EQ(chainL.getSegment( 4).getJoint().getType(), KDL::Joint::RotAxis);
@@ -288,9 +290,9 @@ TEST(BaxterChainTest, testSegmentTypes)
     EXPECT_EQ(chainL.getSegment( 6).getJoint().getType(), KDL::Joint::RotAxis);
     EXPECT_EQ(chainL.getSegment( 7).getJoint().getType(), KDL::Joint::RotAxis);
     EXPECT_EQ(chainL.getSegment( 8).getJoint().getType(), KDL::Joint::RotAxis);
-    EXPECT_EQ(chainL.getSegment( 9).getJoint().getType(),    KDL::Joint::None);
-    EXPECT_EQ(chainL.getSegment(10).getJoint().getType(),    KDL::Joint::None);
-    EXPECT_EQ(chainL.getSegment(11).getJoint().getType(),    KDL::Joint::None);
+    EXPECT_EQ(chainL.getSegment( 9).getJoint().getType(), KDL::Joint::None   );
+    EXPECT_EQ(chainL.getSegment(10).getJoint().getType(), KDL::Joint::None   );
+    EXPECT_EQ(chainL.getSegment(11).getJoint().getType(), KDL::Joint::None   );
 }
 
 #include <kdl/chainjnttojacsolver.hpp>
@@ -299,17 +301,46 @@ TEST(BaxterChainTest, testJacobians)
 {
     BaxterChain chain(getChain("right_gripper"));
 
-    MatrixXd geoJac = chain.GeoJacobian();
-
-    std::shared_ptr<KDL::ChainJntToJacSolver> kdlSolver;
-    kdlSolver.reset(new KDL::ChainJntToJacSolver(KDL::Chain(chain)));
+    std::shared_ptr<KDL::ChainJntToJacSolver> kdl_solver;
+    kdl_solver.reset(new KDL::ChainJntToJacSolver(KDL::Chain(chain)));
 
     KDL::JntArray q(chain.getNrOfJoints());
     q.data = chain.getAng();
 
     KDL::Jacobian kdlJac(chain.getNrOfJoints());
-    EXPECT_FALSE(kdlSolver->JntToJac(q, kdlJac));
-    EXPECT_EQ(geoJac, kdlJac.data);
+    EXPECT_FALSE(kdl_solver->JntToJac(q, kdlJac)); // False means that it works
+
+    EXPECT_EQ(chain.GeoJacobian(), kdlJac.data);
+}
+
+#include <kdl/chainfksolverpos_recursive.hpp>
+#include <kdl/frames_io.hpp>
+
+TEST(BaxterChainTest, testFWDKin)
+{
+    BaxterChain chain(getChain("right_gripper"));
+
+    std::shared_ptr<KDL::ChainFkSolverPos_recursive> kdl_solver;
+    kdl_solver.reset(new KDL::ChainFkSolverPos_recursive(KDL::Chain(chain)));
+
+    KDL::JntArray q(chain.getNrOfJoints());
+    q.data = chain.getAng();
+
+    KDL::Frame kdl_frame;
+    EXPECT_FALSE(kdl_solver->JntToCart(q, kdl_frame)); // False means that it works
+    EXPECT_EQ(toMatrix4d(chain.JntToCart()), toMatrix4d(kdl_frame)) << "Expected:\n" <<
+              toMatrix4d(chain.JntToCart()) << "\nObtained:\n" <<  toMatrix4d(kdl_frame) << endl;
+    EXPECT_EQ(chain.JntToCart(), kdl_frame) << "Expected:\n" <<
+              chain.JntToCart() << "\nObtained:\n" <<  kdl_frame << endl;
+
+    for (size_t i = 0; i <= chain.getNrOfSegments(); ++i)
+    {
+        EXPECT_FALSE(kdl_solver->JntToCart(q, kdl_frame, i)) << "[" << i << "]\n"; // False means that it works
+        EXPECT_EQ(toMatrix4d(chain.JntToCart(i)), toMatrix4d(kdl_frame)) << "[" << i << "] Expected:\n" <<
+                  toMatrix4d(chain.JntToCart(i)) << "\nObtained:\n" <<  toMatrix4d(kdl_frame) << endl;
+        EXPECT_EQ(chain.JntToCart(i), kdl_frame) << "[" << i << "] Expected:\n" <<
+                  chain.JntToCart(i) << "\nObtained:\n" <<  kdl_frame << endl;
+    }
 }
 
 // Run all the tests that were declared with TEST()
