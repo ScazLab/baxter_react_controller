@@ -21,8 +21,8 @@ private:
     ros::Subscriber as_sub;  // Subscriber for the arm   state
     ros::Subscriber gz_sub;  // Subscriber for the robot state
 
-    std::shared_ptr<baxter_collaboration_msgs::ArmState> as_state_ptr;
-    std::shared_ptr<baxter_core_msgs::AssemblyState>     gz_state_ptr;
+    std::unique_ptr<baxter_collaboration_msgs::ArmState> as_state_ptr;
+    std::unique_ptr<baxter_core_msgs::AssemblyState>     gz_state_ptr;
 
     std::vector<geometry_msgs::Pose> _wp;
 
