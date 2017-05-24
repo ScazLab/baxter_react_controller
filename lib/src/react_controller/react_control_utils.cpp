@@ -29,7 +29,7 @@ Matrix4d toMatrix4d(KDL::Frame _f)
     Matrix4d result(Matrix4d::Identity());
 
     Vector3d p(VectorXd::Map(&_f.p.data[0], 3   ));
-    Matrix3d r(MatrixXd::Map(&_f.M.data[0], 3, 3));
+    Matrix3d r(MatrixXd::Map(&_f.M.data[0], 3, 3).transpose());
 
     result.block<3,3>(0,0) = r;
     result.block<3,1>(0,3) = p;
@@ -42,6 +42,11 @@ Vector3d angularError(const Matrix3d& _a, const Matrix3d& _b)
     AngleAxisd angErr((_a)*(_b.transpose()));
 
     return angErr.axis() * angErr.angle();
+}
+
+Vector3d angularError(const Quaterniond& _a, const Quaterniond& _b)
+{
+    return _b.w()*_a.vec() - _a.w()*_b.vec() -skew(_a.vec())*_b.vec();
 }
 
 bool computeCollisionPoints(const std::vector<Vector3d>&      _joints,

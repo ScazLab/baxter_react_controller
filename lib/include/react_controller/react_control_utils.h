@@ -48,13 +48,24 @@ Eigen::Matrix4d toMatrix4d(KDL::Frame _f);
 /**
  * Computes the angular error between two rotation matrices.
  * Angular error computation is taken from the following book:
- * Robotics, Modelling, Planning and Control, Siciliano & Sciavicco, page 139.
+ * Robotics, Modelling, Planning and Control, Siciliano & Sciavicco, page 111.
  *
- * @param  _a The first rotation matrix (ie the reference)
+ * @param  _a The  first rotation matrix (ie the reference)
  * @param  _b The second rotation matrix
  * @return    the angular error
  */
 Eigen::Vector3d angularError(const Eigen::Matrix3d& _a, const Eigen::Matrix3d& _b);
+
+/**
+ * Computes the angular error between two unit quaternions.
+ * Angular error computation is taken from the following book:
+ * Robotics, Modelling, Planning and Control, Siciliano & Sciavicco, page 111.
+ *
+ * @param  _a The  first quaternion (ie the reference)
+ * @param  _b The second quaternion
+ * @return    the angular error
+ */
+Eigen::Vector3d angularError(const Eigen::Quaterniond& _a, const Eigen::Quaterniond& _b);
 
 /**
  * TODO documentation

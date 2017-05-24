@@ -217,19 +217,22 @@ void ControllerNLP::computeQuantities(const Ipopt::Number *x, const bool new_x)
         }
 
         // Now, let's compute the position and orientation errors
+        // See https://math.stackexchange.com/questions/773902/integrating-body-angular-velocity/2176586#217658
         Vector3d  w_e = J_0_ang*v_e;          // rotational (angular) speed
         double theta =   w_e.norm();
         if (theta > 0.0) { w_e /= theta; }
 
-        AngleAxisd w_e_aa(theta * dt, w_e);     // angular increment in axis angle representation
+        AngleAxisd w_e_aa(theta * dt, w_e);   // angular increment in axis angle representation
         // ROS_INFO_STREAM("w_e_aa: \t" << w_e_aa.axis().transpose() << " " << w_e_aa.angle());
 
         R_e = w_e_aa.toRotationMatrix() * R_0;
         // ROS_INFO_STREAM("R_e: \n" << R_e);
+        Quaterniond o_e(R_e);
         p_e = p_0 + dt * (J_0_xyz * v_e);
 
         err_xyz = p_r-p_e;
         err_ang = angularError(R_r, R_e);
+        // err_ang = angularError(o_r, o_e);
 
         // ROS_INFO_STREAM(" aa_err: " << aa_err.axis().transpose() << " " << aa_err.angle());
         // ROS_INFO_STREAM("err_ang: " << err_ang.transpose());
@@ -345,25 +348,34 @@ void ControllerNLP::finalize_solution(Ipopt::SolverReturn status, Ipopt::Index n
         // };
     }
 
+    // ROS_INFO_STREAM("init pos [p_0]: " << p_0.transpose());
+    // ROS_INFO_STREAM("ref  pos [p_r]: " << p_r.transpose());
+    // ROS_INFO_STREAM("est  pos [p_e]: " << p_e.transpose());
+    // Eigen::VectorXd pos_0rr = (p_0-p_r) * 1000.0;
+    // ROS_INFO_STREAM("  pos 0rr [mm]: " << pos_0rr.transpose() <<
+    //            "\tsquared norm [mm]: " << pos_0rr.squaredNorm());
+
     Eigen::VectorXd pos_err = (p_e-p_r) * 1000.0;
-    ROS_INFO("  pos err [mm]: %s\tsquared norm [mm]: %g", toString(std::vector<double>(pos_err.data(),
-                                    pos_err.data() + pos_err.size())).c_str(), pos_err.squaredNorm());
+    ROS_INFO_STREAM("  pos err [mm]: " << pos_err.transpose() <<
+               "\tsquared norm [mm]: " << pos_err.squaredNorm());
 
     if (ctrl_ori)
     {
         Quaterniond o_e(R_e);
+        // Quaterniond o_0(R_0);
 
-        // ROS_INFO_STREAM("o_r: " << o_r.vec().transpose() << " " << o_r.w());
-        // ROS_INFO_STREAM("o_e: " << o_e.vec().transpose() << " " << o_e.w());
-        ROS_INFO("  ori err [quaternion dot product]: %g err_ang %g", o_e.dot(o_r), err_ang.squaredNorm());
+        // ROS_INFO_STREAM("init ori [o_0]: " << o_0.vec().transpose() << " " << o_0.w());
+        // ROS_INFO_STREAM("ref  ori [o_r]: " << o_r.vec().transpose() << " " << o_r.w());
+        // ROS_INFO_STREAM("est  ori [o_e]: " << o_e.vec().transpose() << " " << o_e.w());
+        // ROS_INFO("ori 0rr [rad?]: %g\t0rr_ang %g",
+        //           o_0.dot(o_r), angularError(o_r, o_0).squaredNorm());
+        ROS_INFO("ori err [rad?]: %g\terr_ang %g",
+                  o_e.dot(o_r),                err_ang.squaredNorm());
+
+        // ROS_INFO_STREAM("R_0: \n" << R_0);
+        // ROS_INFO_STREAM("o_0: \n" << o_0.toRotationMatrix());
+        // ROS_INFO_STREAM("o_r: \n" << o_r.toRotationMatrix());
     }
-
-    // ROS_INFO("  initial  position: %s", toString(std::vector<double>(p_0.data(),
-    //                                           p_0.data() + p_0.size())).c_str());
-    // ROS_INFO("  desired  position: %s", toString(std::vector<double>(p_r.data(),
-    //                                           p_r.data() + p_r.size())).c_str());
-    // ROS_INFO("  computed position: %s", toString(std::vector<double>(p_e.data(),
-    //                                           p_e.data() + p_e.size())).c_str());
 
     // VectorXd j(chain.getNrOfJoints());
 
@@ -372,14 +384,10 @@ void ControllerNLP::finalize_solution(Ipopt::SolverReturn status, Ipopt::Index n
     //     j(i) = q_0[i] + (dt * v_e[i]);
     // }
 
-    // ROS_INFO("initial  joint vels: %s", toString(std::vector<double>(v_0.data(),
-    //                                          v_0.data() + v_0.size())).c_str());
-    // ROS_INFO("initial joint state: %s", toString(std::vector<double>(q_0.data(),
-    //                                          q_0.data() + q_0.size())).c_str());
-    // ROS_INFO("computed joint vels: %s", toString(std::vector<double>(v_e.data(),
-    //                                          v_e.data() + v_e.size())).c_str());
-    // ROS_INFO("computed next state: %s", toString(std::vector<double>(j.data(),
-    //                                            j.data() + j.size())).c_str());
+    // ROS_INFO_STREAM("initial  joint vels: " << v_0);
+    // ROS_INFO_STREAM("initial joint state: " << q_0);
+    // ROS_INFO_STREAM("computed joint vels: " << v_e);
+    // ROS_INFO_STREAM("computed next state: " <<   j);
 }
 
 ControllerNLP::~ControllerNLP()
