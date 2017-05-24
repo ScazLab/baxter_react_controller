@@ -13,20 +13,20 @@ CtrlThread::CtrlThread(const std::string& _name, const std::string& _limb, bool 
                        nlp_print_level(0), dT(1000.0/_ctrl_freq), tol(_tol), vMax(_vMax), coll_av(_coll_av)
 {
     urdf::Model robot_model;
-    std::string xml_string;
+    std::string  xml_string;
 
     std::string urdf_xml,full_urdf_xml;
-    _n.param<std::string>("urdf_xml",urdf_xml,"/robot_description");
-    _n.searchParam(urdf_xml,full_urdf_xml);
+    nh.param<std::string>("urdf_xml",urdf_xml,"/robot_description");
+    nh.searchParam(urdf_xml,full_urdf_xml);
 
     ROS_DEBUG("Reading xml file from parameter server");
-    if (!_n.getParam(full_urdf_xml, xml_string))
+    if (!nh.getParam(full_urdf_xml, xml_string))
     {
         ROS_FATAL("Could not load the xml from parameter server: %s", urdf_xml.c_str());
         return;
     }
 
-    _n.param(full_urdf_xml,xml_string,std::string());
+    nh.param(full_urdf_xml,xml_string,std::string());
     robot_model.initString(xml_string);
 
     string base_link = "base";
@@ -78,9 +78,9 @@ void CtrlThread::initializeNLP()
 void CtrlThread::NLPOptionsFromParameterServer()
 {
     bool derivative_test = false;
-    _n.param<bool>("ctrl_ori", nlp_ctrl_ori, false);
-    _n.param<bool>("derivative_test", derivative_test, false);
-    _n.param<int> ("print_level", nlp_print_level, 0);
+    nh.param<bool>("ctrl_ori", nlp_ctrl_ori, false);
+    nh.param<bool>("derivative_test", derivative_test, false);
+    nh.param<int> ("print_level", nlp_print_level, 0);
 
     nlp_derivative_test = derivative_test?"first-order":"none";
 
