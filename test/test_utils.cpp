@@ -18,35 +18,33 @@ TEST(UtilsTest, toMatrix4d)
     eigen(0,3) =  0.1;
     frame.p[0] =  0.1;
     EXPECT_EQ(eigen, toMatrix4d(frame)) << "Frame:\n" << toMatrix4d(frame)
-                           << endl << endl << "Eigen:\n" << eigen << endl;
+                        << endl << endl << "Eigen:\n" <<    eigen << endl;
 
     eigen(1,3) = 0.01;
     frame.p[1] = 0.01;
     EXPECT_EQ(eigen, toMatrix4d(frame)) << "Frame:\n" << toMatrix4d(frame)
-                           << endl << endl << "Eigen:\n" << eigen << endl;
+                        << endl << endl << "Eigen:\n" <<    eigen << endl;
 
     eigen(2,3) =  100;
     frame.p[2] =  100;
     EXPECT_EQ(eigen, toMatrix4d(frame)) << "Frame:\n" << toMatrix4d(frame)
-                           << endl << endl << "Eigen:\n" << eigen << endl;
+                        << endl << endl << "Eigen:\n" <<    eigen << endl;
 
     // Test some rotations
     frame.M  = KDL::Rotation(0,1,0, 1,0,0, 0,0,-1 );
     eigen.block<3,3>(0,0) << 0,1,0, 1,0,0, 0,0,-1;
     EXPECT_EQ(eigen, toMatrix4d(frame)) << "Frame:\n" << toMatrix4d(frame)
-                           << endl << endl << "Eigen:\n" << eigen << endl;
+                        << endl << endl << "Eigen:\n" <<    eigen << endl;
 
     frame.M  = KDL::Rotation(-1,0,0, 0,0,1, 0,1,0 );
     eigen.block<3,3>(0,0) << -1,0,0, 0,0,1, 0,1,0;
     EXPECT_EQ(eigen, toMatrix4d(frame)) << "Frame:\n" << toMatrix4d(frame)
-                           << endl << endl << "Eigen:\n" << eigen << endl;
+                        << endl << endl << "Eigen:\n" <<    eigen << endl;
 
-    // KDL rotation expects the three axis of rotations (ie the three columns)
-    // Eigen instead expects the matrix to be assigned row by row
-    frame.M  = KDL::Rotation(0,0,1, -1,0,0, 0,1,0 );
+    frame.M  = KDL::Rotation(0,-1,0, 0,0,1, 1,0,0 );
     eigen.block<3,3>(0,0) << 0,-1,0, 0,0,1, 1,0,0;
     EXPECT_EQ(eigen, toMatrix4d(frame)) << "Frame:\n" << toMatrix4d(frame)
-                           << endl << endl << "Eigen:\n" << eigen << endl;
+                        << endl << endl << "Eigen:\n" <<    eigen << endl;
 }
 
 Matrix3d rotateMat(const Matrix3d& _ori_mat, double _rot_x, double _rot_y, double _rot_z)
