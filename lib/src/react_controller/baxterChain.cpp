@@ -49,7 +49,8 @@ BaxterChain::BaxterChain(urdf::Model _robot, const string& _base,
 
     for (size_t i = 0; i < segments.size(); ++i)
     {
-        // ROS_INFO("Segment %lu, name %s", i, segments[i].getJointgetName().c_str());
+        // ROS_INFO("Segment %lu, name %s,\tJoint name %s", i, segments[i].getName().c_str(),
+        //                                         segments[i].getJoint().getName().c_str());
         joint = _robot.getJoint(segments[i].getJoint().getName());
 
         if (joint->type != urdf::Joint::UNKNOWN &&
@@ -249,14 +250,14 @@ bool BaxterChain::setVel(VectorXd _v)
 
 KDL::Frame BaxterChain::JntToCart(int _seg_nr)
 {
-    if (_seg_nr<0) { _seg_nr = int(getNrOfSegments()-1); }
+    if (_seg_nr<0) { _seg_nr = int(getNrOfSegments()); }
 
     KDL::Frame H = KDL::Frame::Identity();
 
-    if (_seg_nr>=int(getNrOfSegments()))   { return H; }
+    if (_seg_nr>int(getNrOfSegments()))    { return H; }
 
     int j=0;
-    for (size_t i=0; i<=size_t(_seg_nr); ++i)
+    for (size_t i=0; i < size_t(_seg_nr); ++i)
     {
         if (getSegment(i).getJoint().getType()!=KDL::Joint::None)
         {
@@ -274,12 +275,12 @@ KDL::Frame BaxterChain::JntToCart(int _seg_nr)
 
 KDL::Jacobian BaxterChain::JntToJac(int _seg_nr)
 {
-    if (_seg_nr<0) { _seg_nr = int(getNrOfSegments()-1); }
+    if (_seg_nr<0) { _seg_nr = int(getNrOfSegments()); }
 
-    KDL::Jacobian _J(getNrOfJoints());
-    SetToZero(_J);
+    KDL::Jacobian J(getNrOfJoints());
+    SetToZero(J);
 
-    if (_seg_nr>=int(getNrOfSegments()))   { return _J; }
+    if (_seg_nr>int(getNrOfSegments()))    { return J; }
 
     KDL::Frame T_tmp(KDL::Frame::Identity());
     KDL::Frame total(KDL::Frame::Identity());
@@ -289,7 +290,7 @@ KDL::Jacobian BaxterChain::JntToJac(int _seg_nr)
 
     int j=0, k=0;
 
-    for (size_t i=0; i<=size_t(_seg_nr); ++i)
+    for (size_t i=0; i<size_t(_seg_nr); ++i)
     {
         //Calculate new Frame_base_ee
         if (getSegment(i).getJoint().getType()!=KDL::Joint::None)
@@ -305,20 +306,20 @@ KDL::Jacobian BaxterChain::JntToJac(int _seg_nr)
         }
 
         //Changing Refpoint of all columns to new ee
-        changeRefPoint(_J, total.p-T_tmp.p, _J);
+        changeRefPoint(J, total.p-T_tmp.p, J);
 
         //Only increase jointnr if the segment has a joint
         if (getSegment(i).getJoint().getType()!=KDL::Joint::None)
         {
             //Only put the twist inside if it is not locked
-            _J.setColumn(k++,t_tmp);
+            J.setColumn(k++,t_tmp);
             ++j;
         }
 
         T_tmp = total;
     }
 
-    return _J;
+    return J;
 }
 
 bool BaxterChain::GetJointPositions(vector<Vector3d>& positions)

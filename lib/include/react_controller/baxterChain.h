@@ -1,6 +1,8 @@
 #ifndef __BAXTERCHAIN_H__
 #define __BAXTERCHAIN_H__
 
+#include "gtest/gtest_prod.h"
+
 #include <kdl/chain.hpp>
 #include <kdl/frames.hpp>
 #include <kdl/jacobian.hpp>
@@ -40,6 +42,11 @@ private:
      * return         the jacobian
      */
     KDL::Jacobian JntToJac(int _seg_nr=-1);
+
+    /**
+     * Let's add a number of friend tests to test the private methods of this class (without ROS).
+     */
+    FRIEND_TEST(BaxterChainTest, testFWDKin);
 
 public:
 
