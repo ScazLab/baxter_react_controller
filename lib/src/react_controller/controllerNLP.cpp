@@ -188,7 +188,8 @@ bool ControllerNLP::get_bounds_info(Ipopt::Index n, Ipopt::Number *x_l, Ipopt::N
     }
 
     // reaching in position
-    g_l[0]=g_u[0]=0.0;
+    g_l[0]=-1e-11;
+    g_u[0]=+1e-11;
 
     return true;
 }
