@@ -199,8 +199,9 @@ public:
         for (size_t i = 0; i < _wp.size(); ++i)
         {
             baxter_collaboration_msgs::GoToPose msg;
-            msg.type      = "pose";
-            msg.ctrl_mode =      1;
+            msg.type       =  "pose";
+            msg.ctrl_mode  =       1;
+            msg.check_mode = "loose"; // Either strict or loose
 
             msg.position    = _wp[i].position;
             msg.orientation = _wp[i].orientation;
