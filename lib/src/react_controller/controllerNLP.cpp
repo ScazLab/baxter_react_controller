@@ -145,8 +145,8 @@ void ControllerNLP::init()
     // ROS_INFO_STREAM("p_0: \t" << p_0.transpose());
 
     MatrixXd J_0 = chain.GeoJacobian();
-    J_0_xyz = J_0.block(0,0,3,chain.getNrOfJoints());
-    J_0_ang = J_0.block(3,0,3,chain.getNrOfJoints());
+    J_0_xyz = J_0.block<3,chain.getNrOfJoints()>(0,0);
+    J_0_ang = J_0.block<3,chain.getNrOfJoints()>(3,0);
 
     // ROS_INFO_STREAM("J_0:    \n" << J_0    );
     // ROS_INFO_STREAM("J_0_xyz:\n" << J_0_xyz);
