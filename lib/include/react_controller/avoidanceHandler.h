@@ -2,30 +2,20 @@
 #define __AVOIDANCEHANDLER_H__
 
 #include <vector>
-#include <deque>
 
 #include <stdarg.h>
-#include <string>
-
-#include <algorithm>
 
 #include "react_controller/baxterChain.h"
 
 /****************************************************************/
-class AvoidanceHandlerAbstract
+class AvoidanceHandler
 {
 private:
     BaxterChain chain;
 
-protected:
-    std::vector<collisionPoint> collPoints;
-    std::string type;
-
-    std::deque<BaxterChain>     ctrlPointChains;
-
     /**
-     * Creates a full transform as given by a DCM matrix at the pos and norm w.r.t. the original frame,
-     * from the pos and norm (one axis set arbitrarily)
+     * Creates a full transform as given by a DCM matrix at the pos and norm w.r.t.
+     * the original frame, from the pos and norm (one axis set arbitrarily)
      * @param  pos  [description]
      * @param  norm [description]
      * @param  FoR  [description]
@@ -35,8 +25,14 @@ protected:
                     const Eigen::VectorXd &norm,
                           Eigen::Matrix4d &FoR);
 
+protected:
+    std::vector<collisionPoint> collPoints;
+    std::string type;
+
+    std::vector<BaxterChain>    ctrlPointChains;
+
 public:
-    AvoidanceHandlerAbstract(const BaxterChain &_chain,
+    AvoidanceHandler(const BaxterChain &_chain,
                              const std::vector<collisionPoint> &_collPoints,
                              const std::string _type = "none");
 
@@ -44,13 +40,13 @@ public:
 
     // std::deque<Eigen::VectorXd> getCtrlPointsPosition();
 
-    virtual Eigen::MatrixXd getVLIM(const Eigen::MatrixXd &v_lim);
+    virtual Eigen::MatrixXd getV_LIM(const Eigen::MatrixXd &v_lim);
 
-    ~AvoidanceHandlerAbstract();
+    ~AvoidanceHandler();
 };
 
 /****************************************************************/
-class AvoidanceHandlerTactile : public virtual AvoidanceHandlerAbstract
+class AvoidanceHandlerTactile : public virtual AvoidanceHandler
 {
 private:
     double avoidingSpeed;
@@ -61,7 +57,7 @@ public:
 
     ~AvoidanceHandlerTactile();
 
-    Eigen::MatrixXd getVLIM(const Eigen::MatrixXd &v_lim);
+    Eigen::MatrixXd getV_LIM(const Eigen::MatrixXd &v_lim);
 };
 
 
