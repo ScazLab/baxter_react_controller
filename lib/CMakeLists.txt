@@ -1,4 +1,4 @@
-e# Copyright: (C) 2016 Social Robotics Lab - Yale University
+# Copyright: (C) 2016 Social Robotics Lab - Yale University
 # Author: Alessandro Roncone
 # CopyPolicy: Released under the terms of the GNU GPL v3.0.
 
