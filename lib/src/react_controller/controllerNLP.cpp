@@ -124,7 +124,7 @@ void ControllerNLP::set_dt(const double _dt)
 /****************************************************************/
 void ControllerNLP::set_v_0(const VectorXd &_v_0)
 {
-    v_0=_v_0;
+    v_0 = _v_0;
 }
 
 /****************************************************************/
@@ -136,17 +136,17 @@ void ControllerNLP::init()
     // ROS_INFO_STREAM("q_0: [" << q_0.transpose() << "]");
     // ROS_INFO_STREAM("v_0: [" << v_0.transpose() << "]");
 
-    Matrix4d H_0= chain.getH();
-    R_0= H_0.block<3,3>(0,0);
-    p_0= H_0.block<3,1>(0,3);
+    Matrix4d H_0 = chain.getH();
+    R_0 = H_0.block<3,3>(0,0);
+    p_0 = H_0.block<3,1>(0,3);
 
     // ROS_INFO_STREAM("H_0: \n" << H_0);
     // ROS_INFO_STREAM("R_0: \n" << R_0);
     // ROS_INFO_STREAM("p_0: \t" << p_0.transpose());
 
-    MatrixXd J_0=chain.GeoJacobian();
-    J_0_xyz=J_0.block(0,0,3,chain.getNrOfJoints());
-    J_0_ang=J_0.block(3,0,3,chain.getNrOfJoints());
+    MatrixXd J_0 = chain.GeoJacobian();
+    J_0_xyz = J_0.block(0,0,3,chain.getNrOfJoints());
+    J_0_ang = J_0.block(3,0,3,chain.getNrOfJoints());
 
     // ROS_INFO_STREAM("J_0:    \n" << J_0    );
     // ROS_INFO_STREAM("J_0_xyz:\n" << J_0_xyz);
