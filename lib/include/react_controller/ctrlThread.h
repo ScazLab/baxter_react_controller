@@ -2,7 +2,7 @@
 #include <robot_interface/robot_interface.h>
 
 #include "react_controller/controllerNLP.h"
-#include "react_controller/avoidance.h"
+#include "react_controller/avoidanceHandler.h"
 
 class CtrlThread : public RobotInterface
 {

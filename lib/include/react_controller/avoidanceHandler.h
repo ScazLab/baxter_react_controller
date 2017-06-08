@@ -11,39 +11,17 @@
 
 #include "react_controller/baxterChain.h"
 
-// #include <yarp/sig/all.h>
-// #include <yarp/math/Math.h>
-// #include <yarp/os/Property.h>
-
-// #include <iCub/iKin/iKinFwd.h>
-// #include <iCub/skinDynLib/common.h>
-
 /****************************************************************/
 class AvoidanceHandlerAbstract
 {
-public:
-    AvoidanceHandlerAbstract(const BaxterChain &_chain,
-                             const std::vector<collisionPoint> &_collisionPoints,
-                             const unsigned int _verbosity=0);
-
-    std::string getType() const;
-
-    // virtual yarp::os::Property getParameters() const;
-
-    // virtual void setParameters(const yarp::os::Property &parameters);
-
-    // std::deque<Eigen::VectorXd> getCtrlPointsPosition();
-
-    virtual Eigen::MatrixXd getVLIM(const Eigen::MatrixXd &v_lim);
-
-    virtual ~AvoidanceHandlerAbstract();
-
- protected:
-    std::string type;
+private:
     BaxterChain chain;
-    const std::vector<collisionPoint> &collisionPoints;
-    unsigned int verbosity;
-    std::deque<BaxterChain> ctrlPointChains;
+
+protected:
+    std::vector<collisionPoint> collPoints;
+    std::string type;
+
+    std::deque<BaxterChain>     ctrlPointChains;
 
     /**
      * Creates a full transform as given by a DCM matrix at the pos and norm w.r.t. the original frame,
@@ -57,28 +35,33 @@ public:
                     const Eigen::VectorXd &norm,
                           Eigen::Matrix4d &FoR);
 
-    /**
-    * Prints a message according to the verbosity level:
-    * @param l is the level of verbosity: if verbosity >= l, something is printed
-    * @param f is the text. Please use c standard (like printf)
-    */
-    int printMessage(const unsigned int l, const char *f, ...) const;
+public:
+    AvoidanceHandlerAbstract(const BaxterChain &_chain,
+                             const std::vector<collisionPoint> &_collPoints,
+                             const std::string _type = "none");
 
+    std::string getType() { return type; };
+
+    // std::deque<Eigen::VectorXd> getCtrlPointsPosition();
+
+    virtual Eigen::MatrixXd getVLIM(const Eigen::MatrixXd &v_lim);
+
+    ~AvoidanceHandlerAbstract();
 };
 
 /****************************************************************/
 class AvoidanceHandlerTactile : public virtual AvoidanceHandlerAbstract
 {
+private:
+    double avoidingSpeed;
 
 public:
     AvoidanceHandlerTactile(const BaxterChain &_chain,
-                            const std::vector<collisionPoint> &_collisionPoints,
-                            const unsigned int _verbosity=0);
+                            const std::vector<collisionPoint> &_collPoints);
+
+    ~AvoidanceHandlerTactile();
 
     Eigen::MatrixXd getVLIM(const Eigen::MatrixXd &v_lim);
-
-protected:
-    double avoidingSpeed;
 };
 
 
