@@ -1,4 +1,4 @@
-# Copyright: (C) 2016 Social Robotics Lab - Yale University
+e# Copyright: (C) 2016 Social Robotics Lab - Yale University
 # Author: Alessandro Roncone
 # CopyPolicy: Released under the terms of the GNU GPL v3.0.
 
@@ -20,12 +20,12 @@ add_library(react_controller include/react_controller/controllerNLP.h
                              include/react_controller/ctrlThread.h
                              include/react_controller/react_control_utils.h
                              include/react_controller/baxterChain.h
-                             include/react_controller/avoidance.h
+                             include/react_controller/avoidanceHandler.h
                              src/react_controller/controllerNLP.cpp
                              src/react_controller/ctrlThread.cpp
                              src/react_controller/react_control_utils.cpp
                              src/react_controller/baxterChain.cpp
-                             src/react_controller/avoidance.cpp)
+                             src/react_controller/avoidanceHandler.cpp)
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
