@@ -113,7 +113,7 @@ bool CtrlThread::debugIPOPT()
 
     Matrix4d    H_ee(chain->getH());
     Matrix3d    R_ee= H_ee.block<3,3>(0,0);
-    Vector3d    p_ee= H_ee.col(3).block<3,1>(0,0);
+    Vector3d    p_ee= H_ee.block<3,1>(0,3);
     Quaterniond o_ee(R_ee);
     o_ee.normalize();
 
