@@ -26,14 +26,15 @@ private:
                           Eigen::Matrix4d &FoR);
 
 protected:
-    std::vector<collisionPoint> collPoints;
+    std::vector<Eigen::Vector3d> obstacles;
     std::string type;
 
     std::vector<BaxterChain>    ctrlPointChains;
+    std::vector<collisionPoint> collPoints;
 
 public:
     AvoidanceHandler(const BaxterChain &_chain,
-                             const std::vector<collisionPoint> &_collPoints,
+                             const std::vector<Eigen::Vector3d> &_obstacles,
                              const std::string _type = "none");
 
     std::string getType() { return type; };
@@ -53,7 +54,7 @@ private:
 
 public:
     AvoidanceHandlerTactile(const BaxterChain &_chain,
-                            const std::vector<collisionPoint> &_collPoints);
+                            const std::vector<Eigen::Vector3d> &_obstacles);
 
     ~AvoidanceHandlerTactile();
 

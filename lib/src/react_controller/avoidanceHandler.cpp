@@ -3,45 +3,47 @@
 using namespace std;
 
 AvoidanceHandler::AvoidanceHandler(const BaxterChain &_chain,
-                                   const vector<collisionPoint> &_collPoints,
+                                   const vector<Eigen::Vector3d> &_obstacles,
                                    const string _type) :
-                                   chain(_chain), collPoints(_collPoints), type(_type)
+                                   chain(_chain), obstacles(_obstacles), type(_type)
 {
-    if (not collPoints.empty())
+    if (not obstacles.empty())
     {
-        BaxterChain customChain = chain;
+        collPoints.empty();
+        ctrlPointChains.empty();
+        BaxterChain customChain;
 
-        for (size_t i = 0; i < chain.getNrOfJoints() - 1; ++i)
+        while (customChain.getNrOfJoints() < 2)
         {
-            customChain.removeJoint();
+            customChain.addSegment(chain.getSegment(customChain.getNrOfSegments()));
         }
 
-        for (size_t i = 0; i < customChain.getNrOfJoints() - 1; ++i)
+        while (customChain.getNrOfJoints() <= _chain.getNrOfJoints())
         {
-            size_t num_segs = customChain.getNrOfSegments();
-            customChain.addSegment(chain.getSegment(num_segs++));
-
-            while (chain.getSegment(num_segs).getJoint().getType() == KDL::Joint::None)
+            for(size_t i = 0; i < obstacles.size(); ++i)
             {
-                customChain.addSegment(chain.getSegment(num_segs++));
+                collisionPoint coll_pt;
+                // get collision point
+                chain.computeCollisionPoint(obstacles[i], coll_pt);
+                collPoints.push_back(coll_pt);
+                // create new chain
+                Eigen::Matrix4d HN(Eigen::Matrix4d::Identity());
+                computeFoR(obstacles[i], coll_pt.n, HN);
+                KDL::Segment s = KDL::Segment(KDL::Joint(KDL::Joint::None), toKDLFrame(HN));
+                BaxterChain nextChain = customChain;
+                nextChain.addSegment(s);
+                ctrlPointChains.push_back(nextChain);
             }
 
-            // Instantiates a new chain, copying from the old (full) one
-            BaxterChain nextChain = customChain;
-            Eigen::Matrix4d HN(Eigen::Matrix4d::Identity());
-            computeFoR(collPoints[i].x, collPoints[i].n, HN);
+            while (chain.getSegment(customChain.getNrOfSegments()).getJoint().getType() == KDL::Joint::None)
+            {
+                customChain.addSegment(chain.getSegment(customChain.getNrOfSegments()));
+            }
 
-            KDL::Vector x, y, z, pos;
-            tf::vectorEigenToKDL(HN.block<3,1>(0,0), x);
-            tf::vectorEigenToKDL(HN.block<3,1>(0,1), y);
-            tf::vectorEigenToKDL(HN.block<3,1>(0,2), z);
-            tf::vectorEigenToKDL(HN.block<3,1>(0,3), pos);
-            KDL::Rotation rot = KDL::Rotation(x, y, z);
-            KDL::Segment s = KDL::Segment(KDL::Joint(KDL::Joint::None), KDL::Frame(rot, pos));
-            nextChain.addSegment(s);
-            ctrlPointChains.push_back(nextChain);
+            customChain.addSegment(chain.getSegment(customChain.getNrOfSegments()));
         }
     }
+    // ROS_ASSERT that checks if the number of chains in ctrlPointChains is nx(nJoints -1)
 }
 
 // deque<Eigen::VectorXd> AvoidanceHandler::getCtrlPointsPosition()
@@ -104,8 +106,8 @@ AvoidanceHandler::~AvoidanceHandler()
 /****************************************************************/
 /****************************************************************/
 AvoidanceHandlerTactile::AvoidanceHandlerTactile(const BaxterChain &_chain,
-                                                 const vector<collisionPoint> &_collPoints) :
-                                                 AvoidanceHandler(_chain, _collPoints, "tactile"),
+                                                 const vector<Eigen::Vector3d> &_obstacles) :
+                                                 AvoidanceHandler(_chain, _obstacles, "tactile"),
                                                  avoidingSpeed(50.0)
 {
 

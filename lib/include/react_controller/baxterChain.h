@@ -245,6 +245,16 @@ public:
     double getMax(const size_t _i);
     double getMin(const size_t _i);
 
+    /**
+     * Computes a collision point given the coordinates of the obstacle.
+     *
+     * @param  _coll_coords 3D coordinates of the obstacles in the world reference frame
+     * @param  _coll_point  collision point that is filled by reference
+     * @return              true on success, false otherwise
+     */
+    bool computeCollisionPoint(const Eigen::Vector3d& _coll_coords,
+                               collisionPoint&  _coll_point);
+
     ~BaxterChain();
 };
 
