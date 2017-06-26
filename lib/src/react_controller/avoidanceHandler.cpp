@@ -1,6 +1,7 @@
 #include "react_controller/avoidanceHandler.h"
 
-using namespace std;
+using namespace   std;
+using namespace Eigen;
 
 AvoidanceHandler::AvoidanceHandler(const BaxterChain &_chain,
                                    const vector<Eigen::Vector3d> &_obstacles,
@@ -9,6 +10,7 @@ AvoidanceHandler::AvoidanceHandler(const BaxterChain &_chain,
 {
     if (not obstacles.empty())
     {
+
         collPoints.empty();
         ctrlPointChains.empty();
         BaxterChain customChain;
@@ -54,7 +56,7 @@ AvoidanceHandler::AvoidanceHandler(const BaxterChain &_chain,
                 BaxterChain chainToAdd = customChain;
                 chainToAdd.addSegment(s);
                 ctrlPointChains.push_back(chainToAdd);
-                ROS_INFO("adding chain with %zu joints and %zu segments", chainToAdd.getNrOfJoints(), chainToAdd.getNrOfSegments());
+                // ROS_INFO("adding chain with %zu joints and %zu segments", chainToAdd.getNrOfJoints(), chainToAdd.getNrOfSegments());
             }
         }
     }

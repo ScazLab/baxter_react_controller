@@ -341,11 +341,11 @@ bool BaxterChain::GetJointPositions(vector<Vector3d>& positions)
     {
         if (getSegment(i).getJoint().getType()!=KDL::Joint::None)
         {
-            frame = frame*getSegment(i).pose(jnts(j));
             KDL::Vector   posKDL = frame.p;
             Vector3d posEig;
             tf::vectorKDLToEigen(posKDL, posEig);
             positions.push_back(posEig);
+            frame = frame*getSegment(i).pose(jnts(j));
             ++j;
         }
         else
@@ -392,7 +392,7 @@ Matrix4d BaxterChain::getH(const size_t _i)
     {
         if (getSegment(s).getJoint().getType()!=KDL::Joint::None)
         {
-            if (j == _i) { break; }
+            if (j == _i + 1) { break; }
             ++j;
         }
     }
@@ -444,8 +444,8 @@ double BaxterChain::getMin(const size_t _i)
     return l[_i];
 }
 
-bool BaxterChain::computeCollisionPoint(const             Vector3d&  _coll_coords,
-                                        collisionPoint&  _coll_point)
+bool BaxterChain::computeCollisionPoint(const Vector3d& _coll_coords,
+                                        collisionPoint& _coll_point )
 {
     int num_jnts = getNrOfJoints();
 
@@ -460,7 +460,7 @@ bool BaxterChain::computeCollisionPoint(const             Vector3d&  _coll_coord
     tmp.block<3,1>(0,0) = coll_pt_wfor;
 
     changeFoR(coll_pt_wfor, getH(), _coll_point.x);
-    _coll_point.m = (_coll_coords - coll_pt_wfor).norm();
+    _coll_point.m = 1 / (_coll_coords - coll_pt_wfor).norm();
     _coll_point.n = (_coll_coords - coll_pt_wfor) / _coll_point.m;
 
     // ROS_INFO("coll point %zu at x: %g y: %g z: %g", i,
