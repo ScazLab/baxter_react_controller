@@ -103,6 +103,11 @@ TEST(UtilsTest, changeFoR)
 
     EXPECT_EQ(new_point, Vector3d(-3, -4, 1));
 
+    // Test rotation and translation
+    transform.block<3,1>(0,3) = Vector3d(1, 2, 0);
+    changeFoR(original_point, transform, new_point);
+    EXPECT_EQ(new_point, Vector3d(-2, -2, 1));
+
 }
 
 Matrix3d rotateMat(const Matrix3d& _ori_mat, double _rot_x, double _rot_y, double _rot_z)

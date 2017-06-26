@@ -223,15 +223,12 @@ VectorXd CtrlThread::solveIK(int &_exit_code)
 
     if (coll_av)
     {
-        // std::vector<Eigen::Vector3d> positions;
-        // chain->GetJointPositions(positions);
-
-        // Eigen::Vector3d point(0.63, -0.17, 0.0);
-        // std::vector<collisionPoint> collisionPoints;
-        // computeCollisionPoints(positions, point, collisionPoints);
-        // AvoidanceHandler *avhdl;
-        // avhdl = new AvoidanceHandlerTactile(*chain, collisionPoints);
-        // vLimCollision = avhdl->getV_LIM(vLim);
+        Eigen::Vector3d point(0.63, -0.17, 0.0);
+        std::vector<Eigen::Vector3d> obstacles;
+        obstacles.push_back(point);
+        AvoidanceHandler *avhdl;
+        avhdl = new AvoidanceHandlerTactile(*chain, obstacles);
+        vLimCollision = avhdl->getV_LIM(vLim);
         // cout << vLimCollision << endl;
         // nlp->set_v_lim(vLimCollision);
     }

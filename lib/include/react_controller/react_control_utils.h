@@ -100,4 +100,6 @@ bool changeFoR(const Eigen::Vector3d orig, const Eigen::Matrix4d transform, Eige
  */
 KDL::Frame toKDLFrame(Eigen::Matrix4d mat);
 
+Eigen::VectorXd stdToEigen(std::vector<double> vec);
+
 #endif

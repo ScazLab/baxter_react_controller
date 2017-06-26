@@ -324,7 +324,6 @@ KDL::Jacobian BaxterChain::JntToJac(int _seg_nr)
 
 bool BaxterChain::GetJointPositions(vector<Vector3d>& positions)
 {
-    Vector3d point(0.40, -0.25, 0.45);
 
     size_t segmentNr=getNrOfSegments();
 

@@ -12,35 +12,50 @@ AvoidanceHandler::AvoidanceHandler(const BaxterChain &_chain,
         collPoints.empty();
         ctrlPointChains.empty();
         BaxterChain customChain;
+        BaxterChain testChain;
+        std::vector<double> angles;
 
-        while (customChain.getNrOfJoints() < 2)
+        while (customChain.getNrOfJoints() == 0)
         {
             customChain.addSegment(chain.getSegment(customChain.getNrOfSegments()));
         }
+        angles.push_back(chain.getAng(0));
+        customChain.setAng(stdToEigen(angles));
 
-        while (customChain.getNrOfJoints() <= _chain.getNrOfJoints())
+        // customChain.computeCollisionPoint(obstacles[i], coll_pt);
+        // collPoints.push_back(coll_pt);
+        // Eigen::Matrix4d HN(Eigen::Matrix4d::Identity());
+        // computeFoR(obstacles[i], coll_pt.n, HN);
+        // KDL::Segment s = KDL::Segment(KDL::Joint(KDL::Joint::None), toKDLFrame(HN));
+        // BaxterChain chainToAdd = customChain;
+        // chainToAdd.addSegment(s);
+        // ctrlPointChains.push_back(chainToAdd);
+        // ROS_INFO("adding chain with %zu joints and %zu segments", chainToAdd.getNrOfJoints(), chainToAdd.getNrOfSegments());
+
+        while (customChain.getNrOfSegments() < _chain.getNrOfSegments())
         {
+            angles.push_back(chain.getAng(customChain.getNrOfJoints()));
+            customChain.addSegment(chain.getSegment(customChain.getNrOfSegments()));
+            customChain.setAng(stdToEigen(angles));
+            while (chain.getSegment(customChain.getNrOfSegments()).getJoint().getType() == KDL::Joint::None)
+            {
+                customChain.addSegment(chain.getSegment(customChain.getNrOfSegments()));
+            }
             for(size_t i = 0; i < obstacles.size(); ++i)
             {
                 collisionPoint coll_pt;
                 // get collision point
-                chain.computeCollisionPoint(obstacles[i], coll_pt);
+                customChain.computeCollisionPoint(obstacles[i], coll_pt);
                 collPoints.push_back(coll_pt);
                 // create new chain
                 Eigen::Matrix4d HN(Eigen::Matrix4d::Identity());
                 computeFoR(obstacles[i], coll_pt.n, HN);
                 KDL::Segment s = KDL::Segment(KDL::Joint(KDL::Joint::None), toKDLFrame(HN));
-                BaxterChain nextChain = customChain;
-                nextChain.addSegment(s);
-                ctrlPointChains.push_back(nextChain);
+                BaxterChain chainToAdd = customChain;
+                chainToAdd.addSegment(s);
+                ctrlPointChains.push_back(chainToAdd);
+                ROS_INFO("adding chain with %zu joints and %zu segments", chainToAdd.getNrOfJoints(), chainToAdd.getNrOfSegments());
             }
-
-            while (chain.getSegment(customChain.getNrOfSegments()).getJoint().getType() == KDL::Joint::None)
-            {
-                customChain.addSegment(chain.getSegment(customChain.getNrOfSegments()));
-            }
-
-            customChain.addSegment(chain.getSegment(customChain.getNrOfSegments()));
         }
     }
     // ROS_ASSERT that checks if the number of chains in ctrlPointChains is nx(nJoints -1)

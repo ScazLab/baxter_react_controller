@@ -96,3 +96,13 @@ KDL::Frame toKDLFrame(Eigen::Matrix4d mat)
     tf::vectorEigenToKDL(mat.block<3,1>(0,3), pos);
     return KDL::Frame(rot, pos);
 }
+
+Eigen::VectorXd stdToEigen(std::vector<double> vec)
+{
+    Eigen::VectorXd eigen_vec(vec.size());
+    for (size_t i = 0; i < vec.size(); ++i)
+    {
+        eigen_vec(i) = vec[i];
+    }
+    return eigen_vec;
+}
