@@ -220,7 +220,6 @@ bool CtrlThread::goToPoseNoCheck(double px, double py, double pz,
 VectorXd CtrlThread::solveIK(int &_exit_code)
 {
     NLPOptionsFromParameterServer();
-
     if (coll_av)
     {
         Eigen::Vector3d point(0.63, -0.17, 0.0);
@@ -229,14 +228,15 @@ VectorXd CtrlThread::solveIK(int &_exit_code)
         AvoidanceHandler *avhdl;
         avhdl = new AvoidanceHandlerTactile(*chain, obstacles);
         vLimCollision = avhdl->getV_LIM(vLim);
-        // cout << vLim << endl;
-        // cout << vLimCollision << endl;
+        cout << vLimCollision << endl;
         // nlp->set_v_lim(vLimCollision);
     }
     else
     {
         nlp->set_v_lim(vLim);
     }
+
+    // cout << vLim << endl;
 
     nlp->set_ctrl_ori(nlp_ctrl_ori);
     nlp->set_dt(dT);

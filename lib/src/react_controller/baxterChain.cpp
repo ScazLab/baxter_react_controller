@@ -452,15 +452,14 @@ bool BaxterChain::computeCollisionPoint(const Vector3d& _coll_coords,
     std::vector<Vector3d> positions;
     GetJointPositions(positions);
 
-    // project point onto last segment
-    Vector3d ab = positions[num_jnts - 1] - positions[num_jnts - 2];
-    Vector3d ap = _coll_coords - positions[num_jnts - 2];
-    Vector3d coll_pt_wfor = positions[num_jnts - 2] + ((ap).dot(ab)) / ((ab).dot(ab)) * ab;
+    Vector3d pos_ee = getH().block<3,1>(0,3);
+    Vector3d coll_pt_wfor = projectOntoSegment(positions[num_jnts - 1], pos_ee, _coll_coords);
+
     Vector4d tmp(0, 0, 0, 1);
     tmp.block<3,1>(0,0) = coll_pt_wfor;
 
     changeFoR(coll_pt_wfor, getH(), _coll_point.x);
-    _coll_point.m = 1 / (_coll_coords - coll_pt_wfor).norm();
+    _coll_point.m = (_coll_coords - coll_pt_wfor).norm();
     _coll_point.n = (_coll_coords - coll_pt_wfor) / _coll_point.m;
 
     // ROS_INFO("coll point %zu at x: %g y: %g z: %g", i,

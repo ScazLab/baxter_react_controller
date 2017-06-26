@@ -102,4 +102,6 @@ KDL::Frame toKDLFrame(Eigen::Matrix4d mat);
 
 Eigen::VectorXd stdToEigen(std::vector<double> vec);
 
+Eigen::Vector3d projectOntoSegment(Eigen::Vector3d base, Eigen::Vector3d tip, Eigen::Vector3d point);
+
 #endif

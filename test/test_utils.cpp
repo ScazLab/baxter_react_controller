@@ -177,6 +177,39 @@ TEST(UtilsTest, angleAxisErrAng)
     // testAngularErrors(R0, 180.0, 180.0, 180.0);      // 180° rotation about all axes
 }
 
+TEST(UtilsTest, testProjectOntoSegment)
+{
+    Vector3d base(0, 0, 0);
+    Vector3d tip(1, 0, 0);
+
+
+    Vector3d obstacle(0.5, 1, 0);
+    Vector3d expect(0.5, 0, 0);
+    Vector3d projection = projectOntoSegment(base, tip, obstacle);
+    EXPECT_EQ(expect, projection);
+
+
+    obstacle(0) = 0.75;
+    expect(0) = 0.75;
+    projection = projectOntoSegment(base, tip, obstacle);
+    EXPECT_EQ(expect, projection);
+
+    obstacle(0) = 1.5;
+    expect(0) = 1.5;
+    projection = projectOntoSegment(base, tip, obstacle);
+    EXPECT_EQ(expect, projection);
+
+    obstacle(1) = -1;
+    projection = projectOntoSegment(base, tip, obstacle);
+    EXPECT_EQ(expect, projection);
+
+    tip(1) = 1;
+    obstacle(0) = 1;
+    expect(0) = 0;
+    projection = projectOntoSegment(base, tip, obstacle);
+    EXPECT_EQ(expect, projection);
+}
+
 // Run all the tests that were declared with TEST()
 int main(int argc, char **argv)
 {

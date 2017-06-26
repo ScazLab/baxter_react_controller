@@ -106,3 +106,10 @@ Eigen::VectorXd stdToEigen(std::vector<double> vec)
     }
     return eigen_vec;
 }
+
+Eigen::Vector3d projectOntoSegment(Eigen::Vector3d base, Eigen::Vector3d tip, Eigen::Vector3d point)
+{
+    Eigen::Vector3d ab = tip - base;
+    Eigen::Vector3d ap = point - base;
+    return base + ((ap).dot(ab)) / ((ab).dot(ab)) * ab;
+}
