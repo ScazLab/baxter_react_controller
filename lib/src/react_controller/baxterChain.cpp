@@ -444,23 +444,44 @@ double BaxterChain::getMin(const size_t _i)
     return l[_i];
 }
 
-bool BaxterChain::computeCollisionPoint(const Vector3d& _coll_coords,
-                                        collisionPoint& _coll_point )
+bool BaxterChain::computeCollisionPoint(const Eigen::Vector3d& _obstacle_wrf,
+                                        collisionPoint&      _coll_point_erf)
 {
     int num_jnts = getNrOfJoints();
 
     std::vector<Vector3d> positions;
     GetJointPositions(positions);
 
+    // Project the point onto the last segment of the chain
     Vector3d pos_ee = getH().block<3,1>(0,3);
-    Vector3d coll_pt_wfor = projectOntoSegment(positions[num_jnts - 1], pos_ee, _coll_coords);
+    Vector3d coll_pt_wrf = projectOntoSegment(positions[num_jnts - 1], pos_ee, _obstacle_wrf);
 
+    // Convert the collision point from the wrf to end-effector reference frame
     Vector4d tmp(0, 0, 0, 1);
-    tmp.block<3,1>(0,0) = coll_pt_wfor;
+    tmp.block<3,1>(0,0) = coll_pt_wrf;
 
-    changeFoR(coll_pt_wfor, getH(), _coll_point.x);
-    _coll_point.m = (_coll_coords - coll_pt_wfor).norm();
-    _coll_point.n = (_coll_coords - coll_pt_wfor) / _coll_point.m;
+    changeFoR(coll_pt_wrf, getH(), _coll_point_erf.x);
+
+    Vector3d obstacle_erf;
+    changeFoR(_obstacle_wrf, getH(), obstacle_erf);
+
+    // Compute the norm vector in the end-effector reference frame
+    _coll_point_erf.n  = ( obstacle_erf - _coll_point_erf.x);
+
+    double dist = _coll_point_erf.n.norm();
+    _coll_point_erf.n /= dist;
+
+    double thres = 0.5;
+    // Compute the magnitude
+    if (dist > thres)
+    {
+        _coll_point_erf.m = 0.0;
+    }
+    else
+    {
+        _coll_point_erf.m = (thres - dist) / thres;
+    }
+
 
     // ROS_INFO("coll point %zu at x: %g y: %g z: %g", i,
     //           _coll_points[i].x(0), _coll_points[i].x(1), _coll_points[i].x(2));

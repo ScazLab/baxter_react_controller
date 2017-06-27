@@ -6,9 +6,9 @@ using namespace Eigen;
 AvoidanceHandler::AvoidanceHandler(const BaxterChain &_chain,
                                    const vector<Eigen::Vector3d> &_obstacles,
                                    const string _type) :
-                                   chain(_chain), obstacles(_obstacles), type(_type)
+                                   chain(_chain), type(_type)
 {
-    if (not obstacles.empty())
+    if (not _obstacles.empty())
     {
 
         collPoints.empty();
@@ -24,10 +24,10 @@ AvoidanceHandler::AvoidanceHandler(const BaxterChain &_chain,
         angles.push_back(chain.getAng(0));
         customChain.setAng(stdToEigen(angles));
 
-        // customChain.computeCollisionPoint(obstacles[i], coll_pt);
+        // customChain.computeCollisionPoint(_obstacles[i], coll_pt);
         // collPoints.push_back(coll_pt);
         // Eigen::Matrix4d HN(Eigen::Matrix4d::Identity());
-        // computeFoR(obstacles[i], coll_pt.n, HN);
+        // computeFoR(_obstacles[i], coll_pt.n, HN);
         // KDL::Segment s = KDL::Segment(KDL::Joint(KDL::Joint::None), toKDLFrame(HN));
         // BaxterChain chainToAdd = customChain;
         // chainToAdd.addSegment(s);
@@ -43,15 +43,19 @@ AvoidanceHandler::AvoidanceHandler(const BaxterChain &_chain,
             {
                 customChain.addSegment(chain.getSegment(customChain.getNrOfSegments()));
             }
-            for(size_t i = 0; i < obstacles.size(); ++i)
+
+            for(size_t i = 0; i < _obstacles.size(); ++i)
             {
+                // Compute collision points
+                // obstacles are expressed in the world reference frame [WRF]
+                // coll_pt is in the end-effector reference frame [ERF]
                 collisionPoint coll_pt;
-                // get collision point
-                customChain.computeCollisionPoint(obstacles[i], coll_pt);
+                customChain.computeCollisionPoint(_obstacles[i], coll_pt);
                 collPoints.push_back(coll_pt);
                 // create new chain
                 Eigen::Matrix4d HN(Eigen::Matrix4d::Identity());
-                computeFoR(obstacles[i], coll_pt.n, HN);
+                // Compute new segment to add to the chain
+                computeFoR(_obstacles[i], coll_pt.n, HN);
                 KDL::Segment s = KDL::Segment(KDL::Joint(KDL::Joint::None), toKDLFrame(HN));
                 BaxterChain chainToAdd = customChain;
                 chainToAdd.addSegment(s);
@@ -62,14 +66,6 @@ AvoidanceHandler::AvoidanceHandler(const BaxterChain &_chain,
     }
     // ROS_ASSERT that checks if the number of chains in ctrlPointChains is nx(nJoints -1)
 }
-
-// deque<Eigen::VectorXd> AvoidanceHandler::getCtrlPointsPosition()
-// {
-//     deque<Eigen::VectorXd> ctrlPoints;
-//     for (size_t i = 0; i<ctrlPointChains.size(); ++i)
-//         ctrlPoints.push_back(ctrlPointChains[i].EndEffPosition());
-//     return ctrlPoints;
-// }
 
 Eigen::MatrixXd AvoidanceHandler::getV_LIM(const Eigen::MatrixXd &v_lim)
 {
@@ -144,7 +140,7 @@ Eigen::MatrixXd AvoidanceHandlerTactile::getV_LIM(const Eigen::MatrixXd &v_lim)
         // Get the end-effector frame of the standard or custom chain (control point derived from skin),
         // takes the z-axis (3rd column in transform matrix) ~ normal, only its first three elements of the
         // four in the homogeneous transformation format
-        Eigen::VectorXd nrm = ctrlPointChains[i].getH().col(2).block<3,1>(0,0);//.subEigen::VectorXd(0,2);
+        Eigen::VectorXd nrm = ctrlPointChains[i].getH().col(2).block<3,1>(0,0);
 
         // Project movement along the normal into joint velocity space and scale by default
         // avoidingSpeed and m of skin (or PPS) activation

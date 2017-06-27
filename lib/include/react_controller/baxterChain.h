@@ -248,12 +248,12 @@ public:
     /**
      * Computes a collision point given the coordinates of the obstacle.
      *
-     * @param  _coll_coords 3D coordinates of the obstacles in the world reference frame
-     * @param  _coll_point  collision point that is filled by reference
-     * @return              true on success, false otherwise
+     * @param  _obstacle_wrf    3D coordinates of the obstacle in the world reference frame
+     * @param  _coll_point_erf  collisionPoint onto the limb in the end-effector reference frame
+     * @return                  true on success, false otherwise
      */
-    bool computeCollisionPoint(const Eigen::Vector3d& _coll_coords,
-                               collisionPoint&  _coll_point);
+    bool computeCollisionPoint(const Eigen::Vector3d& _obstacle_wrf,
+                               collisionPoint&      _coll_point_erf);
 
     ~BaxterChain();
 };

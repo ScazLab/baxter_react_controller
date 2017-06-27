@@ -26,11 +26,10 @@ private:
                           Eigen::Matrix4d &FoR);
 
 protected:
-    std::vector<Eigen::Vector3d> obstacles;
     std::string type;
 
     std::vector<BaxterChain>    ctrlPointChains;
-    std::vector<collisionPoint> collPoints;
+    std::vector<collisionPoint>      collPoints;
 
 public:
     AvoidanceHandler(const BaxterChain &_chain,
