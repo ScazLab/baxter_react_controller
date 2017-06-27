@@ -471,7 +471,7 @@ bool BaxterChain::computeCollisionPoint(const Eigen::Vector3d& _obstacle_wrf,
     double dist = _coll_point_erf.n.norm();
     _coll_point_erf.n /= dist;
 
-    double thres = 0.5;
+    double thres = 0.3;
     // Compute the magnitude
     if (dist > thres)
     {

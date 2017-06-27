@@ -205,7 +205,7 @@ bool CtrlThread::goToPoseNoCheck(double px, double py, double pz,
 
     // ROS_INFO("sending joint position: %s", toString(des_poss).c_str());
 
-    if (exit_code != 0 && exit_code != 4 && exit_code != -4) { return false; }
+    // if (exit_code != 0 && exit_code != 4 && exit_code != -4) { return false; }
     if (is_debug)                                            { return  true; }
 
     if (isRobotUsed())
@@ -222,14 +222,14 @@ VectorXd CtrlThread::solveIK(int &_exit_code)
     NLPOptionsFromParameterServer();
     if (coll_av)
     {
-        Eigen::Vector3d point(0.63, -0.17, 0.0);
+        Eigen::Vector3d point(0.67, -0.17, 0.05);
         std::vector<Eigen::Vector3d> obstacles;
         obstacles.push_back(point);
         AvoidanceHandler *avhdl;
         avhdl = new AvoidanceHandlerTactile(*chain, obstacles);
         vLimCollision = avhdl->getV_LIM(vLim);
         cout << vLimCollision << endl;
-        // nlp->set_v_lim(vLimCollision);
+        nlp->set_v_lim(RAD2DEG * vLimCollision);
     }
     else
     {
