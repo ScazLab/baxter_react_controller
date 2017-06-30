@@ -7,7 +7,7 @@ using namespace baxter_core_msgs;
 using namespace            Eigen;
 
 CtrlThread::CtrlThread(const std::string& _name, const std::string& _limb, bool _use_robot, double _ctrl_freq,
-                       bool _is_debug, double _tol, double _vMax, bool _coll_av) :
+                       bool _is_debug, bool _coll_av, double _tol, double _vMax) :
                        RobotInterface(_name, _limb, _use_robot, _ctrl_freq, true, false, true, true), chain(0),
                        is_debug(_is_debug), internal_state(true), nlp_ctrl_ori(false), nlp_derivative_test("none"),
                        nlp_print_level(0), dT(1000.0/_ctrl_freq), tol(_tol), vMax(_vMax), coll_av(_coll_av)
@@ -220,11 +220,11 @@ bool CtrlThread::goToPoseNoCheck(double px, double py, double pz,
 VectorXd CtrlThread::solveIK(int &_exit_code)
 {
     NLPOptionsFromParameterServer();
+
     if (coll_av)
     {
-        Eigen::Vector3d point(0.67, -0.17, 0.05);
-        std::vector<Eigen::Vector3d> obstacles;
-        obstacles.push_back(point);
+        std::vector<Eigen::Vector3d> obstacles{Eigen::Vector3d(0.67, -0.17, 0.05)};
+
         AvoidanceHandler *avhdl;
         avhdl = new AvoidanceHandlerTactile(*chain, obstacles);
         vLimCollision = avhdl->getV_LIM(vLim);

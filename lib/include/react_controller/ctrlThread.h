@@ -36,8 +36,8 @@ private:
 public:
     CtrlThread(const std::string& _name, const std::string&        _limb,
                 bool _use_robot =  true, double _ctrl_freq = THREAD_FREQ,
-                bool  _is_debug = false, double       _tol =        1e-3,
-                double    _vMax = 120.0, bool     _coll_av =      true);
+                bool  _is_debug = false, bool     _coll_av =       false,
+                double     _tol =  1e-3, double      _vMax =      120.0);
 
     /**
      * Initializes the IpoptApplication with default values for every time the solver
