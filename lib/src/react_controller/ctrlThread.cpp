@@ -1,22 +1,19 @@
 #include "react_controller/ctrlThread.h"
-#include <iostream>
 
-using namespace              std;
-using namespace      sensor_msgs;
-using namespace baxter_core_msgs;
-using namespace            Eigen;
+using namespace   std;
+using namespace Eigen;
 
-CtrlThread::CtrlThread(const std::string& _name, const std::string& _limb, bool _use_robot, double _ctrl_freq,
+CtrlThread::CtrlThread(const string& _name, const string& _limb, bool _use_robot, double _ctrl_freq,
                        bool _is_debug, bool _coll_av, double _tol, double _vMax) :
                        RobotInterface(_name, _limb, _use_robot, _ctrl_freq, true, false, true, true), chain(0),
                        is_debug(_is_debug), internal_state(true), nlp_ctrl_ori(false), nlp_derivative_test("none"),
                        nlp_print_level(0), dT(1000.0/_ctrl_freq), tol(_tol), vMax(_vMax), coll_av(_coll_av)
 {
     urdf::Model robot_model;
-    std::string  xml_string;
+    string       xml_string;
 
-    std::string urdf_xml,full_urdf_xml;
-    nh.param<std::string>("urdf_xml",urdf_xml,"/robot_description");
+    string urdf_xml,full_urdf_xml;
+    nh.param<string>("urdf_xml",urdf_xml,"/robot_description");
     nh.searchParam(urdf_xml,full_urdf_xml);
 
     ROS_DEBUG("Reading xml file from parameter server");
@@ -26,7 +23,7 @@ CtrlThread::CtrlThread(const std::string& _name, const std::string& _limb, bool 
         return;
     }
 
-    nh.param(full_urdf_xml,xml_string,std::string());
+    nh.param(full_urdf_xml,xml_string,string());
     robot_model.initString(xml_string);
 
     string base_link = "base";
@@ -128,7 +125,7 @@ bool CtrlThread::debugIPOPT()
     bool      result =  true;
     int   n_failures =     0;
 
-    std::vector<double> increment{0.001, 0.004};
+    vector<double> increment{0.001, 0.004};
 
     // Let's do all the test together
     // The number of test performed is 2^2^increment.size()
@@ -189,15 +186,29 @@ bool CtrlThread::goToPoseNoCheck(double px, double py, double pz,
 
     if ((not is_debug) && waitForJointAngles(2.0))   { chain->setAng(getJointStates()); }
 
-    // ROS_INFO("actual joint  pos: %s", toString(std::vector<double>(_q.position.data(),
-    //                                             _q.position.data() + _q.position.size())).c_str());
+    // ROS_INFO("actual joint  pos: %s", toString(vector<double>(_q.position.data(),
+    //                                _q.position.data() + _q.position.size())).c_str());
     nlp = new ControllerNLP(*chain);
 
+    // Create some fake obstacles to test
+    obstacles.clear();
+    obstacles.push_back(Vector3d(0.80, -0.17, 0.0));
+    geometry_msgs::Pose pose_obs;
+    pose_obs.position.x = (obstacles[0])[0];
+    pose_obs.position.y = (obstacles[0])[1];
+    pose_obs.position.z = (obstacles[0])[2];
+
+    // Publish a set of markers to RVIZ
+    publishRVIZMarkers(vector<geometry_msgs::Pose>{getDesiredPose(),
+                                                   getCurrentPose(),
+                                                   pose_obs});
+
+    // Solve the task
     int exit_code = -1;
-    Eigen::VectorXd est_vels = solveIK(exit_code);
+    VectorXd est_vels = solveIK(exit_code);
     q_dot = est_vels;
 
-    std::vector<double> des_poss(chain->getNrOfJoints());
+    vector<double> des_poss(chain->getNrOfJoints());
     for (size_t i = 0; i < chain->getNrOfJoints(); ++i)
     {
         des_poss[i] = chain->getAng(i) + (dT * est_vels[i]);
@@ -223,20 +234,16 @@ VectorXd CtrlThread::solveIK(int &_exit_code)
 
     if (coll_av)
     {
-        std::vector<Eigen::Vector3d> obstacles{Eigen::Vector3d(0.67, -0.17, 0.05)};
-
         AvoidanceHandler *avhdl;
         avhdl = new AvoidanceHandlerTactile(*chain, obstacles);
-        vLimCollision = avhdl->getV_LIM(vLim);
-        cout << vLimCollision << endl;
-        nlp->set_v_lim(RAD2DEG * vLimCollision);
+        vlim_coll = avhdl->getV_LIM(vLim);
+        ROS_DEBUG_STREAM(vlim_coll);
+        nlp->set_v_lim(RAD2DEG * vlim_coll);
     }
     else
     {
         nlp->set_v_lim(vLim);
     }
-
-    // cout << vLim << endl;
 
     nlp->set_ctrl_ori(nlp_ctrl_ori);
     nlp->set_dt(dT);

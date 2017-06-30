@@ -25,8 +25,11 @@ private:
 
     Eigen::VectorXd q_dot;   // Vector of initial joint velocities in arm chain
 
-    Eigen::MatrixXd          vLim; // matrix of maximum joint velocities per joint
-    Eigen::MatrixXd vLimCollision; // matrix of maximum joint velocities per joint
+    Eigen::MatrixXd      vLim; // matrix of maximum joint velocities per joint
+    Eigen::MatrixXd vlim_coll; // matrix of maximum joint velocities per joint
+                               // limited by the collision points
+
+    std::vector<Eigen::Vector3d> obstacles; // Vector of 3D obstacles in the world reference frame
 
     double    dT;       // time constraint for IpOpt solver time per optimization
     double   tol;       // tolerance for constraint violations
