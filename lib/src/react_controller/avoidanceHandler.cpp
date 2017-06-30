@@ -24,16 +24,6 @@ AvoidanceHandler::AvoidanceHandler(const BaxterChain &_chain,
         angles.push_back(chain.getAng(0));
         customChain.setAng(stdToEigen(angles));
 
-        // customChain.computeCollisionPoint(_obstacles[i], coll_pt);
-        // collPoints.push_back(coll_pt);
-        // Eigen::Matrix4d HN(Eigen::Matrix4d::Identity());
-        // computeFoR(_obstacles[i], coll_pt.n, HN);
-        // KDL::Segment s = KDL::Segment(KDL::Joint(KDL::Joint::None), toKDLFrame(HN));
-        // BaxterChain chainToAdd = customChain;
-        // chainToAdd.addSegment(s);
-        // ctrlPointChains.push_back(chainToAdd);
-        // ROS_INFO("adding chain with %zu joints and %zu segments", chainToAdd.getNrOfJoints(), chainToAdd.getNrOfSegments());
-
         while (customChain.getNrOfSegments() < _chain.getNrOfSegments())
         {
             angles.push_back(chain.getAng(customChain.getNrOfJoints()));
@@ -50,7 +40,7 @@ AvoidanceHandler::AvoidanceHandler(const BaxterChain &_chain,
                 // obstacles are expressed in the world reference frame [WRF]
                 // coll_pt is in the end-effector reference frame [ERF]
                 collisionPoint coll_pt;
-                customChain.computeCollisionPoint(_obstacles[i], coll_pt);
+                customChain.obstacleToCollisionPoint(_obstacles[i], coll_pt);
                 collPoints.push_back(coll_pt);
                 ROS_INFO("Added collision point with magnitude %g", coll_pt.m);
 
@@ -132,9 +122,9 @@ Eigen::MatrixXd AvoidanceHandlerTactile::getV_LIM(const Eigen::MatrixXd &v_lim)
 {
     Eigen::MatrixXd V_LIM = v_lim;
 
-    for (size_t i = 0; i < ctrlPointChains.size(); ++i)
+    for (size_t i = 0; i < collPoints.size(); ++i)
     {
-        if (collPoints[i].m != 0.0 && i == 5)
+        if (collPoints[i].m != 0.0)
         {
             // ROS_INFO("Chain with control point - index %d (last index %d), nDOF: %d.",
             //           i, ctrlPointChains.size()-1, ctrlPointChains[i].getNrOfJoints());

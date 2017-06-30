@@ -444,8 +444,8 @@ double BaxterChain::getMin(const size_t _i)
     return l[_i];
 }
 
-bool BaxterChain::computeCollisionPoint(const Eigen::Vector3d& _obstacle_wrf,
-                                        collisionPoint&      _coll_point_erf)
+bool BaxterChain::obstacleToCollisionPoint(const Eigen::Vector3d& _obstacle_wrf,
+                                           collisionPoint&      _coll_point_erf)
 {
     int num_jnts = getNrOfJoints();
 

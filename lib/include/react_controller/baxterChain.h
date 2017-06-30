@@ -252,8 +252,8 @@ public:
      * @param  _coll_point_erf  collisionPoint onto the limb in the end-effector reference frame
      * @return                  true on success, false otherwise
      */
-    bool computeCollisionPoint(const Eigen::Vector3d& _obstacle_wrf,
-                               collisionPoint&      _coll_point_erf);
+    bool obstacleToCollisionPoint(const Eigen::Vector3d& _obstacle_wrf,
+                                  collisionPoint&      _coll_point_erf);
 
     ~BaxterChain();
 };
