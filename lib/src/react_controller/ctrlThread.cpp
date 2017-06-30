@@ -5,9 +5,10 @@ using namespace Eigen;
 
 CtrlThread::CtrlThread(const string& _name, const string& _limb, bool _use_robot, double _ctrl_freq,
                        bool _is_debug, bool _coll_av, double _tol, double _vMax) :
-                       RobotInterface(_name, _limb, _use_robot, _ctrl_freq, true, false, true, true), chain(0),
-                       is_debug(_is_debug), internal_state(true), nlp_ctrl_ori(false), nlp_derivative_test("none"),
-                       nlp_print_level(0), dT(1000.0/_ctrl_freq), tol(_tol), vMax(_vMax), coll_av(_coll_av)
+                       RobotInterface(_name, _limb, _use_robot, _ctrl_freq, true, false, true, true),
+                       chain(0), is_debug(_is_debug), internal_state(true), nlp_ctrl_ori(false),
+                       nlp_derivative_test("none"), nlp_print_level(0), dT(1000.0/_ctrl_freq),
+                       tol(_tol), vMax(_vMax), coll_av(_coll_av)
 {
     urdf::Model robot_model;
     string       xml_string;
@@ -236,9 +237,16 @@ VectorXd CtrlThread::solveIK(int &_exit_code)
     {
         AvoidanceHandler *avhdl;
         avhdl = new AvoidanceHandlerTactile(*chain, obstacles);
-        vlim_coll = avhdl->getV_LIM(vLim);
-        ROS_DEBUG_STREAM(vlim_coll);
-        nlp->set_v_lim(RAD2DEG * vlim_coll);
+        vlim_coll = avhdl->getV_LIM(DEG2RAD * vLim) * RAD2DEG;
+
+        nlp->set_v_lim(vlim_coll);
+
+        // Print stuff in a single line for convenience
+        // ROS_INFO_STREAM("Vlim collision" << vlim_coll);
+        vlim_coll.transposeInPlace();
+        VectorXd vlim_coll_vec(Map<VectorXd>(vlim_coll.data(),
+                                             vlim_coll.cols()*vlim_coll.rows()));
+        ROS_INFO_STREAM("Vlim collision" << endl << vlim_coll_vec.transpose());
     }
     else
     {

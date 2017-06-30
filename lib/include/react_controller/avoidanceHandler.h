@@ -28,8 +28,8 @@ private:
 protected:
     std::string type;
 
-    std::vector<BaxterChain>    ctrlPointChains;
-    std::vector<collisionPoint>      collPoints;
+    std::vector<BaxterChain>    ctrlChains;
+    std::vector<collisionPoint> collPoints;
 
 public:
     AvoidanceHandler(const BaxterChain &_chain,

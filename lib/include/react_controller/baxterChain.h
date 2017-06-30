@@ -141,13 +141,6 @@ public:
     const KDL::Segment& getSegment(size_t nr)const;
 
     /**
-     * Gets all collision points and normal vectors for each segment in the arm.
-     *
-     * @return true/false if success/failure
-     */
-    bool GetJointPositions(std::vector<Eigen::Vector3d>& positions);
-
-    /**
      * Function to return the geometric Jacobian of the _i'th segment
      * in the chain, or the end effector if no parameter given.
      *

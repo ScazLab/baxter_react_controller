@@ -349,9 +349,9 @@ void ControllerNLP::finalize_solution(Ipopt::SolverReturn status, Ipopt::Index n
         // };
     }
 
-    // ROS_INFO_STREAM("init pos [p_0]: " << p_0.transpose());
-    // ROS_INFO_STREAM("ref  pos [p_r]: " << p_r.transpose());
-    // ROS_INFO_STREAM("est  pos [p_e]: " << p_e.transpose());
+    ROS_INFO_STREAM("init pos [p_0]: " << p_0.transpose());
+    ROS_INFO_STREAM("ref  pos [p_r]: " << p_r.transpose());
+    ROS_INFO_STREAM("est  pos [p_e]: " << p_e.transpose());
     // Eigen::VectorXd pos_0rr = (p_0-p_r) * 1000.0;
     // ROS_INFO_STREAM("  pos 0rr [mm]: " << pos_0rr.transpose() <<
     //            "\tsquared norm [mm]: " << pos_0rr.squaredNorm());

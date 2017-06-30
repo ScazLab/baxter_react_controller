@@ -322,41 +322,6 @@ KDL::Jacobian BaxterChain::JntToJac(int _seg_nr)
     return J;
 }
 
-bool BaxterChain::GetJointPositions(vector<Vector3d>& positions)
-{
-
-    size_t segmentNr=getNrOfSegments();
-
-    KDL::JntArray jnts(getNrOfJoints());
-
-    for (size_t i = 0; i < getNrOfJoints() - 1; ++i)
-    {
-        jnts(i) = q[i];
-    }
-
-    int j=0;
-    KDL::Frame frame(KDL::Frame::Identity());
-
-    for (size_t i=0; i<segmentNr; ++i)
-    {
-        if (getSegment(i).getJoint().getType()!=KDL::Joint::None)
-        {
-            KDL::Vector   posKDL = frame.p;
-            Vector3d posEig;
-            tf::vectorKDLToEigen(posKDL, posEig);
-            positions.push_back(posEig);
-            frame = frame*getSegment(i).pose(jnts(j));
-            ++j;
-        }
-        else
-        {
-            frame = frame*getSegment(i).pose(0.0);
-        }
-    }
-
-    return true;
-}
-
 geometry_msgs::Pose BaxterChain::getPose()
 {
     geometry_msgs::Pose result;
@@ -447,14 +412,11 @@ double BaxterChain::getMin(const size_t _i)
 bool BaxterChain::obstacleToCollisionPoint(const Eigen::Vector3d& _obstacle_wrf,
                                            collisionPoint&      _coll_point_erf)
 {
-    int num_jnts = getNrOfJoints();
-
-    std::vector<Vector3d> positions;
-    GetJointPositions(positions);
-
     // Project the point onto the last segment of the chain
-    Vector3d pos_ee = getH().block<3,1>(0,3);
-    Vector3d coll_pt_wrf = projectOntoSegment(positions[num_jnts - 1], pos_ee, _obstacle_wrf);
+    Vector3d pos_ee           = getH(getNrOfJoints()-1).block<3,1>(0,3);
+    Vector3d pos_ee_minus_one = getH(getNrOfJoints()-2).block<3,1>(0,3);
+
+    Vector3d coll_pt_wrf = projectOntoSegment(pos_ee_minus_one, pos_ee, _obstacle_wrf);
 
     // Convert the collision point from the wrf to end-effector reference frame
     Vector4d tmp(0, 0, 0, 1);

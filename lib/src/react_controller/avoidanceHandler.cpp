@@ -4,23 +4,25 @@ using namespace   std;
 using namespace Eigen;
 
 AvoidanceHandler::AvoidanceHandler(const BaxterChain &_chain,
-                                   const vector<Eigen::Vector3d> &_obstacles,
+                                   const vector<Vector3d> &_obstacles,
                                    const string _type) :
                                    chain(_chain), type(_type)
 {
+    // ROS_INFO_STREAM("Chain Angles: " << chain.getAng().transpose());
+
+    std::vector<BaxterChain>    tmpCC;  // temporary array of control chains
+    std::vector<collisionPoint> tmpCP;  // temporary array of collision points
+
     if (not _obstacles.empty())
     {
-
-        collPoints.empty();
-        ctrlPointChains.empty();
         BaxterChain customChain;
-        BaxterChain testChain;
         std::vector<double> angles;
 
         while (customChain.getNrOfJoints() == 0)
         {
             customChain.addSegment(chain.getSegment(customChain.getNrOfSegments()));
         }
+
         angles.push_back(chain.getAng(0));
         customChain.setAng(stdToEigen(angles));
 
@@ -31,8 +33,12 @@ AvoidanceHandler::AvoidanceHandler(const BaxterChain &_chain,
             customChain.setAng(stdToEigen(angles));
             while (chain.getSegment(customChain.getNrOfSegments()).getJoint().getType() == KDL::Joint::None)
             {
+                if (customChain.getNrOfSegments()==chain.getNrOfSegments())  { break; };
+
                 customChain.addSegment(chain.getSegment(customChain.getNrOfSegments()));
             }
+
+            // ROS_INFO_STREAM("Get   Angles: " << customChain.getAng().transpose());
 
             for(size_t i = 0; i < _obstacles.size(); ++i)
             {
@@ -41,34 +47,61 @@ AvoidanceHandler::AvoidanceHandler(const BaxterChain &_chain,
                 // coll_pt is in the end-effector reference frame [ERF]
                 collisionPoint coll_pt;
                 customChain.obstacleToCollisionPoint(_obstacles[i], coll_pt);
-                collPoints.push_back(coll_pt);
-                ROS_INFO("Added collision point with magnitude %g", coll_pt.m);
+                tmpCP.push_back(coll_pt);
 
                 // create new segment to add to the custom chain that ends up in the collision point
-                Eigen::Matrix4d HN(Eigen::Matrix4d::Identity());
+                Matrix4d HN(Matrix4d::Identity());
                 // Compute new segment to add to the chain
                 computeFoR(_obstacles[i], coll_pt.n, HN);
                 KDL::Segment s = KDL::Segment(KDL::Joint(KDL::Joint::None), toKDLFrame(HN));
+
                 BaxterChain chainToAdd = customChain;
                 chainToAdd.addSegment(s);
-                ctrlPointChains.push_back(chainToAdd);
+                tmpCC.push_back(chainToAdd);
                 // ROS_INFO("adding chain with %zu joints and %zu segments", chainToAdd.getNrOfJoints(), chainToAdd.getNrOfSegments());
             }
         }
+
+        // Cycle through the newfound collision points to find the max, and stick to that one
+        double max_mag = 0.0;
+        int    max_idx =  -1;
+        string  cp_str =  "";
+
+        for (size_t i = 0; i < tmpCP.size(); ++i)
+        {
+            cp_str = cp_str + " " + toString(tmpCP[i].m);
+
+            if (tmpCP[i].m > 0.0)
+            {
+                if (tmpCP[i].m > max_mag)
+                {
+                    max_mag = tmpCP[i].m;
+                    max_idx =     int(i);
+                }
+            }
+        }
+
+        if (max_idx != -1)
+        {
+            ROS_INFO("Collision points with magnitude: %s Selected: %i", cp_str.c_str(), max_idx);
+
+            collPoints.push_back(tmpCP[max_idx]);
+            ctrlChains.push_back(tmpCC[max_idx]);
+        }
     }
-    // ROS_ASSERT that checks if the number of chains in ctrlPointChains is nx(nJoints -1)
+
 }
 
-Eigen::MatrixXd AvoidanceHandler::getV_LIM(const Eigen::MatrixXd &v_lim)
+MatrixXd AvoidanceHandler::getV_LIM(const MatrixXd &v_lim)
 {
     return v_lim;
 }
 
-bool AvoidanceHandler::computeFoR(const Eigen::VectorXd &pos,
-                                  const Eigen::VectorXd &norm,
-                                        Eigen::Matrix4d &FoR)
+bool AvoidanceHandler::computeFoR(const VectorXd &pos,
+                                  const VectorXd &norm,
+                                        Matrix4d &FoR)
 {
-    Eigen::Vector3d zeros;
+    Vector3d zeros;
     zeros.setZero();
 
     if (norm == zeros)
@@ -77,7 +110,7 @@ bool AvoidanceHandler::computeFoR(const Eigen::VectorXd &pos,
         return false;
     }
 
-    Eigen::Vector3d x(0,0,0), y(0,0,0), z(0,0,0);
+    Vector3d x(0,0,0), y(0,0,0), z(0,0,0);
 
     z = norm;
     if (z[0] == 0.0)
@@ -111,37 +144,37 @@ AvoidanceHandler::~AvoidanceHandler()
 /****************************************************************/
 /****************************************************************/
 AvoidanceHandlerTactile::AvoidanceHandlerTactile(const BaxterChain &_chain,
-                                                 const vector<Eigen::Vector3d> &_obstacles) :
+                                                 const vector<Vector3d> &_obstacles) :
                                                  AvoidanceHandler(_chain, _obstacles, "tactile"),
                                                  avoidingSpeed(5.0)
 {
 
 }
 
-Eigen::MatrixXd AvoidanceHandlerTactile::getV_LIM(const Eigen::MatrixXd &v_lim)
+MatrixXd AvoidanceHandlerTactile::getV_LIM(const MatrixXd &v_lim)
 {
-    Eigen::MatrixXd V_LIM = v_lim;
+    MatrixXd V_LIM = v_lim;
 
     for (size_t i = 0; i < collPoints.size(); ++i)
     {
         if (collPoints[i].m != 0.0)
         {
             // ROS_INFO("Chain with control point - index %d (last index %d), nDOF: %d.",
-            //           i, ctrlPointChains.size()-1, ctrlPointChains[i].getNrOfJoints());
+            //           i, ctrlChains.size()-1, ctrlChains[i].getNrOfJoints());
             // First 3 rows ~ dPosition/dJoints
-            Eigen::MatrixXd J_xyz = ctrlPointChains[i].GeoJacobian().block(0, 0, 3, ctrlPointChains[i].getNrOfJoints());
+            MatrixXd J_xyz = ctrlChains[i].GeoJacobian().block(0, 0, 3, ctrlChains[i].getNrOfJoints());
 
             // Get the end-effector frame of the standard or custom chain (control point derived from skin),
             // takes the z-axis (3rd column in transform matrix) ~ normal, only its first three elements of the
             // four in the homogeneous transformation format
-            Eigen::VectorXd nrm = ctrlPointChains[i].getH().col(2).block<3,1>(0,0);
+            VectorXd nrm = ctrlChains[i].getH().col(2).block<3,1>(0,0);
 
             // Project movement along the normal into joint velocity space and scale by default
             // avoidingSpeed and m of skin (or PPS) activation
-            Eigen::VectorXd s = (J_xyz.transpose()*nrm) * avoidingSpeed * collPoints[i].m;
+            VectorXd s = (J_xyz.transpose()*nrm) * avoidingSpeed * collPoints[i].m;
 
             s = s * -1.0; // we reverse the direction to obtain joint velocities that bring about avoidance
-            ROS_INFO_STREAM("s * (-1) -> joint contributions toward avoidance: " << s.transpose());
+            ROS_INFO_STREAM("s*(-1): " << s.transpose());
 
             for (size_t j = 0; j < size_t(s.rows()); ++j)
             {
