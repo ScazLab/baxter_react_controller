@@ -300,33 +300,6 @@ TEST(BaxterChainTest, testSegmentTypes)
     EXPECT_EQ(chainL.getSegment(11).getJoint().getType(), KDL::Joint::None   );
 }
 
-TEST(BaxterChainTest, testGetJointPositions)
-{
-    BaxterChain chain(getChain("right_gripper"));
-
-    std::vector<Eigen::Vector3d> positions;
-
-    chain.GetJointPositions(positions);
-
-    Eigen::Vector3d pos1 = chain.getH(0).block<3,1>(0,3);
-    EXPECT_EQ(positions[1], pos1);
-
-    Eigen::Vector3d pos2 = chain.getH(1).block<3,1>(0,3);
-    EXPECT_EQ(positions[2], pos2);
-
-    Eigen::Vector3d pos3 = chain.getH(2).block<3,1>(0,3);
-    EXPECT_EQ(positions[3], pos3);
-
-    Eigen::Vector3d pos4 = chain.getH(3).block<3,1>(0,3);
-    EXPECT_EQ(positions[4], pos4);
-
-    Eigen::Vector3d pos5 = chain.getH(4).block<3,1>(0,3);
-    EXPECT_EQ(positions[5], pos5);
-
-    Eigen::Vector3d pos6 = chain.getH(5).block<3,1>(0,3);
-    EXPECT_EQ(positions[6], pos6);
-}
-
 #include <kdl/chainjnttojacsolver.hpp>
 
 TEST(BaxterChainTest, testJacobians)
