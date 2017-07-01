@@ -46,19 +46,21 @@ AvoidanceHandler::AvoidanceHandler(const BaxterChain &_chain,
                 // obstacles are expressed in the world reference frame [WRF]
                 // coll_pt is in the end-effector reference frame [ERF]
                 collisionPoint coll_pt;
-                customChain.obstacleToCollisionPoint(_obstacles[i], coll_pt);
-                tmpCP.push_back(coll_pt);
+                if (customChain.obstacleToCollisionPoint(_obstacles[i], coll_pt))
+                {
+                    tmpCP.push_back(coll_pt);
 
-                // create new segment to add to the custom chain that ends up in the collision point
-                Matrix4d HN(Matrix4d::Identity());
-                // Compute new segment to add to the chain
-                computeFoR(_obstacles[i], coll_pt.n, HN);
-                KDL::Segment s = KDL::Segment(KDL::Joint(KDL::Joint::None), toKDLFrame(HN));
+                    // create new segment to add to the custom chain that ends up in the collision point
+                    Matrix4d HN(Matrix4d::Identity());
+                    // Compute new segment to add to the chain
+                    computeFoR(_obstacles[i], coll_pt.n, HN);
+                    KDL::Segment s = KDL::Segment(KDL::Joint(KDL::Joint::None), toKDLFrame(HN));
 
-                BaxterChain chainToAdd = customChain;
-                chainToAdd.addSegment(s);
-                tmpCC.push_back(chainToAdd);
-                // ROS_INFO("adding chain with %zu joints and %zu segments", chainToAdd.getNrOfJoints(), chainToAdd.getNrOfSegments());
+                    BaxterChain chainToAdd = customChain;
+                    chainToAdd.addSegment(s);
+                    tmpCC.push_back(chainToAdd);
+                    // ROS_INFO("adding chain with %zu joints and %zu segments", chainToAdd.getNrOfJoints(), chainToAdd.getNrOfSegments());
+                }
             }
         }
 

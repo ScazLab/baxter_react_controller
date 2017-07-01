@@ -409,6 +409,16 @@ double BaxterChain::getMin(const size_t _i)
     return l[_i];
 }
 
+bool BaxterChain::is_between(Eigen::Vector3d _a, Eigen::Vector3d _b, Eigen::Vector3d _c)
+{
+    double dot_product = (_b - _a).dot(_c - _a);
+    if (dot_product > 0 && dot_product < (_a - _b).squaredNorm())
+    {
+        return true;
+    }
+    return false;
+}
+
 bool BaxterChain::obstacleToCollisionPoint(const Eigen::Vector3d& _obstacle_wrf,
                                            collisionPoint&      _coll_point_erf)
 {
@@ -417,6 +427,11 @@ bool BaxterChain::obstacleToCollisionPoint(const Eigen::Vector3d& _obstacle_wrf,
     Vector3d pos_ee_minus_one = getH(getNrOfJoints()-2).block<3,1>(0,3);
 
     Vector3d coll_pt_wrf = projectOntoSegment(pos_ee_minus_one, pos_ee, _obstacle_wrf);
+
+    if (!is_between(pos_ee, pos_ee_minus_one, coll_pt_wrf))
+    {
+        return false;
+    }
 
     // Convert the collision point from the wrf to end-effector reference frame
     Vector4d tmp(0, 0, 0, 1);

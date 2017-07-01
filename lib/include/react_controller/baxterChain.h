@@ -238,6 +238,9 @@ public:
     double getMax(const size_t _i);
     double getMin(const size_t _i);
 
+
+    bool is_between(Eigen::Vector3d _a, Eigen::Vector3d _b, Eigen::Vector3d _c);
+
     /**
      * Computes a collision point given the coordinates of the obstacle.
      *
