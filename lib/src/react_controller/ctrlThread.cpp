@@ -204,6 +204,18 @@ bool CtrlThread::goToPoseNoCheck(double px, double py, double pz,
                                                    getCurrentPose(),
                                                    pose_obs});
 
+    for (size_t i = 0; i < chain->getNrOfJoints() - 1; ++i)
+    {
+        geometry_msgs::Pose joint_pose;
+        Vector3d joint_pos = chain->getH(i).block<3,1>(0,3);
+        joint_pose.position.x = joint_pos(0);
+        joint_pose.position.y = joint_pos(1);
+        joint_pose.position.z = joint_pos(2);
+        ROS_INFO("publishing");
+        cout << joint_pose.position << endl;
+        publishRVIZMarkers(vector<geometry_msgs::Pose>{joint_pose});
+    }
+
     // Solve the task
     int exit_code = -1;
     VectorXd est_vels = solveIK(exit_code);
