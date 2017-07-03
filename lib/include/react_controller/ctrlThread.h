@@ -38,7 +38,6 @@ private:
 
     /**
      * Publishes a vector of markers to RVIZ for visualization
-     *
      */
     void publishRVIZMarkers();
 

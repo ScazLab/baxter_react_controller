@@ -265,33 +265,11 @@ void CtrlThread::publishRVIZMarkers()
     pose_obs.position.z = (obstacles[0])[2];
 
     // Publishes all the markers to rviz
-    vector<geometry_msgs::Pose> rviz_markers{getDesiredPose(),
-                                             getCurrentPose(),
-                                             pose_obs};
-    vector<double> rviz_sizes{0.05, 0.05, 0.05};
+    RVIZMarker des_mrk(getDesiredPose(), ColorRGBA(1.0, 1.0, 0.0));
+    RVIZMarker cur_mrk(getCurrentPose(), ColorRGBA(0.0, 1.0, 1.0), 0.03);
+    RVIZMarker obs_mrk(        pose_obs, ColorRGBA(1.0, 0.0, 1.0));
 
-    std_msgs::ColorRGBA des_col, curr_col, obs_col, joint_col;
-    des_col.a = 1.0;
-    des_col.r = 1.0;
-    des_col.g = 1.0;
-    des_col.b = 0.0;
-
-    curr_col.a = 1.0;
-    curr_col.r = 0.0;
-    curr_col.g = 1.0;
-    curr_col.b = 1.0;
-
-    obs_col.a = 1.0;
-    obs_col.r = 1.0;
-    obs_col.g = 0.0;
-    obs_col.b = 1.0;
-
-    joint_col.a = 1.0;
-    joint_col.r = 0.5;
-    joint_col.g = 0.5;
-    joint_col.b = 0.5;
-
-    vector<std_msgs::ColorRGBA> rviz_cols{des_col, curr_col, obs_col};
+    vector <RVIZMarker> rviz_markers{des_mrk, cur_mrk, obs_mrk};
 
     for (size_t i = 0; i < chain->getNrOfJoints(); ++i)
     {
@@ -301,13 +279,11 @@ void CtrlThread::publishRVIZMarkers()
         joint_pose.position.y = joint_pos(1);
         joint_pose.position.z = joint_pos(2);
 
-        rviz_markers.push_back(joint_pose);
-        rviz_sizes.push_back(0.025);
-        rviz_cols.push_back(joint_col);
+        rviz_markers.push_back(RVIZMarker(joint_pose, ColorRGBA(), 0.025));
     }
 
     // Publish a set of markers to RVIZ
-    RobotInterface::publishRVIZMarkers(rviz_markers, rviz_sizes, rviz_cols);
+    RobotInterface::publishRVIZMarkers(rviz_markers);
 }
 
 CtrlThread::~CtrlThread()
