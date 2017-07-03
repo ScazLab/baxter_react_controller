@@ -191,30 +191,7 @@ bool CtrlThread::goToPoseNoCheck(double px, double py, double pz,
     //                                _q.position.data() + _q.position.size())).c_str());
     nlp = new ControllerNLP(*chain);
 
-    // Create some fake obstacles to test
-    obstacles.clear();
-    obstacles.push_back(Vector3d(0.80, -0.17, 0.0));
-    geometry_msgs::Pose pose_obs;
-    pose_obs.position.x = (obstacles[0])[0];
-    pose_obs.position.y = (obstacles[0])[1];
-    pose_obs.position.z = (obstacles[0])[2];
-
-    // Publish a set of markers to RVIZ
-    publishRVIZMarkers(vector<geometry_msgs::Pose>{getDesiredPose(),
-                                                   getCurrentPose(),
-                                                   pose_obs});
-
-    for (size_t i = 0; i < chain->getNrOfJoints() - 1; ++i)
-    {
-        geometry_msgs::Pose joint_pose;
-        Vector3d joint_pos = chain->getH(i).block<3,1>(0,3);
-        joint_pose.position.x = joint_pos(0);
-        joint_pose.position.y = joint_pos(1);
-        joint_pose.position.z = joint_pos(2);
-        ROS_INFO("publishing");
-        cout << joint_pose.position << endl;
-        publishRVIZMarkers(vector<geometry_msgs::Pose>{joint_pose});
-    }
+    publishRVIZMarkers();
 
     // Solve the task
     int exit_code = -1;
@@ -258,7 +235,7 @@ VectorXd CtrlThread::solveIK(int &_exit_code)
         vlim_coll.transposeInPlace();
         VectorXd vlim_coll_vec(Map<VectorXd>(vlim_coll.data(),
                                              vlim_coll.cols()*vlim_coll.rows()));
-        ROS_INFO_STREAM("Vlim collision" << endl << vlim_coll_vec.transpose());
+        ROS_INFO_STREAM("Vlim collision" << vlim_coll_vec.transpose());
     }
     else
     {
@@ -274,6 +251,63 @@ VectorXd CtrlThread::solveIK(int &_exit_code)
     _exit_code=app->OptimizeTNLP(GetRawPtr(nlp));
 
     return nlp->get_result();
+}
+
+void CtrlThread::publishRVIZMarkers()
+{
+    // TODO remove this at some point
+    // Create some fake obstacles to test
+    obstacles.clear();
+    obstacles.push_back(Vector3d(0.80, -0.17, 0.0));
+    geometry_msgs::Pose pose_obs;
+    pose_obs.position.x = (obstacles[0])[0];
+    pose_obs.position.y = (obstacles[0])[1];
+    pose_obs.position.z = (obstacles[0])[2];
+
+    // Publishes all the markers to rviz
+    vector<geometry_msgs::Pose> rviz_markers{getDesiredPose(),
+                                             getCurrentPose(),
+                                             pose_obs};
+    vector<double> rviz_sizes{0.05, 0.05, 0.05};
+
+    std_msgs::ColorRGBA des_col, curr_col, obs_col, joint_col;
+    des_col.a = 1.0;
+    des_col.r = 1.0;
+    des_col.g = 1.0;
+    des_col.b = 0.0;
+
+    curr_col.a = 1.0;
+    curr_col.r = 0.0;
+    curr_col.g = 1.0;
+    curr_col.b = 1.0;
+
+    obs_col.a = 1.0;
+    obs_col.r = 1.0;
+    obs_col.g = 0.0;
+    obs_col.b = 1.0;
+
+    joint_col.a = 1.0;
+    joint_col.r = 0.5;
+    joint_col.g = 0.5;
+    joint_col.b = 0.5;
+
+    vector<std_msgs::ColorRGBA> rviz_cols{des_col, curr_col, obs_col};
+
+    for (size_t i = 0; i < chain->getNrOfJoints(); ++i)
+    {
+        geometry_msgs::Pose joint_pose;
+        Vector3d joint_pos = chain->getH(i).block<3,1>(0,3);
+        joint_pose.position.x = joint_pos(0);
+        joint_pose.position.y = joint_pos(1);
+        joint_pose.position.z = joint_pos(2);
+
+        rviz_markers.push_back(joint_pose);
+        rviz_sizes.push_back(0.025);
+        rviz_cols.push_back(joint_col);
+    }
+
+    // Publish a set of markers to RVIZ
+    RobotInterface::publishRVIZMarkers(rviz_markers, rviz_sizes, rviz_cols);
 }
 
 CtrlThread::~CtrlThread()

@@ -36,6 +36,12 @@ private:
     double  vMax;       // maximum velocity of joints
     bool coll_av;       // collision avoidance mode
 
+    /**
+     * Publishes a vector of markers to RVIZ for visualization
+     *
+     */
+    void publishRVIZMarkers();
+
 public:
     CtrlThread(const std::string& _name, const std::string&        _limb,
                 bool _use_robot =  true, double _ctrl_freq = THREAD_FREQ,
