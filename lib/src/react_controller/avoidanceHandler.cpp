@@ -70,6 +70,8 @@ AvoidanceHandler::AvoidanceHandler(const BaxterChain &_chain,
                     // ROS_INFO("adding chain with %zu joints and %zu segments", chainToAdd.getNrOfJoints(), chainToAdd.getNrOfSegments());
                 }
             }
+
+            // ROS_INFO("tmpCP.size %lu tmpCC.size %lu", tmpCP.size(), tmpCC.size());
         }
 
         // Cycle through the newfound collision points to find the max, and stick to that one
@@ -100,6 +102,31 @@ AvoidanceHandler::AvoidanceHandler(const BaxterChain &_chain,
         }
     }
 
+}
+
+std::vector<geometry_msgs::Pose> AvoidanceHandler::getCtrlPoints()
+{
+    std::vector<geometry_msgs::Pose> res;
+
+    for (size_t i = 0; i < ctrlChains.size(); ++i)
+    {
+        geometry_msgs::Pose pt;
+
+        Eigen::Matrix4d H = ctrlChains[i].getH();
+        Eigen::Quaterniond q(H.block<3,3>(0,0));
+
+        pt.position.x = H(0,3);
+        pt.position.y = H(1,3);
+        pt.position.z = H(2,3);
+        pt.orientation.x = q.x();
+        pt.orientation.y = q.y();
+        pt.orientation.z = q.z();
+        pt.orientation.w = q.w();
+
+        res.push_back(pt);
+    }
+
+    return res;
 }
 
 MatrixXd AvoidanceHandler::getV_LIM(const MatrixXd &v_lim)

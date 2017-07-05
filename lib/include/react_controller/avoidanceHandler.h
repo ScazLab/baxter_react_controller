@@ -38,11 +38,11 @@ public:
 
     std::string getType() { return type; };
 
-    // std::deque<Eigen::VectorXd> getCtrlPointsPosition();
-
     virtual Eigen::MatrixXd getV_LIM(const Eigen::MatrixXd &v_lim);
 
-    ~AvoidanceHandler();
+    std::vector<geometry_msgs::Pose> getCtrlPoints();
+
+    virtual ~AvoidanceHandler();
 };
 
 /****************************************************************/
@@ -55,9 +55,9 @@ public:
     AvoidanceHandlerTactile(const BaxterChain &_chain,
                             const std::vector<Eigen::Vector3d> &_obstacles);
 
-    ~AvoidanceHandlerTactile();
-
     Eigen::MatrixXd getV_LIM(const Eigen::MatrixXd &v_lim);
+
+    ~AvoidanceHandlerTactile();
 };
 
 
