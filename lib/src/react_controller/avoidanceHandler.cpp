@@ -61,7 +61,7 @@ AvoidanceHandler::AvoidanceHandler(const BaxterChain &_chain,
                     // create new segment to add to the custom chain that ends up in the collision point
                     Matrix4d HN(Matrix4d::Identity());
                     // Compute new segment to add to the chain
-                    computeFoR(_obstacles[i], coll_pt.n, HN);
+                    computeFoR(coll_pt.x, coll_pt.n, HN);
                     KDL::Segment s = KDL::Segment(KDL::Joint(KDL::Joint::None), toKDLFrame(HN));
 
                     BaxterChain chainToAdd = customChain;
@@ -114,6 +114,11 @@ std::vector<geometry_msgs::Pose> AvoidanceHandler::getCtrlPoints()
 
         Eigen::Matrix4d H = ctrlChains[i].getH();
         Eigen::Quaterniond q(H.block<3,3>(0,0));
+        q.x() = H(0,2);
+        q.y() = H(1,2);
+        q.z() = H(2,2);
+        q.w() =    0.0;
+        q.normalize();
 
         pt.position.x = H(0,3);
         pt.position.y = H(1,3);

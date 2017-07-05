@@ -258,7 +258,7 @@ void CtrlThread::publishRVIZMarkers()
     // TODO remove this at some point
     // Create some fake obstacles to test
     obstacles.clear();
-    obstacles.push_back(Vector3d(0.80, -0.17, 0.0));
+    obstacles.push_back(Vector3d(0.80, -0.12, 0.0));
     geometry_msgs::Pose pose_obs;
     pose_obs.position.x = (obstacles[0])[0];
     pose_obs.position.y = (obstacles[0])[1];
@@ -285,11 +285,10 @@ void CtrlThread::publishRVIZMarkers()
     if (coll_av)
     {
         std::vector<geometry_msgs::Pose> ctrl_pts = avhdl->getCtrlPoints();
-
         for (size_t i = 0; i < ctrl_pts.size(); ++i)
         {
             rviz_markers.push_back(RVIZMarker(ctrl_pts[i], ColorRGBA(1.0, 0.0, 0.0), 0.1,
-                                   visualization_msgs::Marker::ARROW));
+                                   visualization_msgs::Marker::ARROW, 0.1));
         }
     }
 
