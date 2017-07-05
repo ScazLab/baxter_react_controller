@@ -15,22 +15,29 @@ AvoidanceHandler::AvoidanceHandler(const BaxterChain &_chain,
 
     if (not _obstacles.empty())
     {
+        // Let's start by creating a custom chain with only one joint
         BaxterChain customChain;
-        std::vector<double> angles;
+
+        Eigen::VectorXd angles(1);
+        angles[0] = chain.getAng(0);
 
         while (customChain.getNrOfJoints() == 0)
         {
             customChain.addSegment(chain.getSegment(customChain.getNrOfSegments()));
         }
 
-        angles.push_back(chain.getAng(0));
-        customChain.setAng(stdToEigen(angles));
+        customChain.setAng(angles);
 
+        // This while loop incrementally creates bigger chains (up to the end-effector)
         while (customChain.getNrOfSegments() < _chain.getNrOfSegments())
         {
-            angles.push_back(chain.getAng(customChain.getNrOfJoints()));
+            angles.conservativeResize(angles.rows()+1);
+            angles[angles.rows()-1] = chain.getAng(customChain.getNrOfJoints());
+
             customChain.addSegment(chain.getSegment(customChain.getNrOfSegments()));
-            customChain.setAng(stdToEigen(angles));
+
+            customChain.setAng(angles);
+
             while (chain.getSegment(customChain.getNrOfSegments()).getJoint().getType() == KDL::Joint::None)
             {
                 if (customChain.getNrOfSegments()==chain.getNrOfSegments())  { break; };
@@ -38,7 +45,8 @@ AvoidanceHandler::AvoidanceHandler(const BaxterChain &_chain,
                 customChain.addSegment(chain.getSegment(customChain.getNrOfSegments()));
             }
 
-            // ROS_INFO_STREAM("Get   Angles: " << customChain.getAng().transpose());
+            // ROS_INFO_STREAM("Get Angles:  " << customChain.getAng().transpose());
+            // ROS_INFO_STREAM("Real Angles: " <<       chain.getAng().transpose());
 
             for(size_t i = 0; i < _obstacles.size(); ++i)
             {
