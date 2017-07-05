@@ -282,8 +282,8 @@ void CtrlThread::publishRVIZMarkers()
         rviz_markers.push_back(RVIZMarker(joint_pose, ColorRGBA(), 0.025));
     }
 
-    // Publish a set of markers to RVIZ
-    RobotInterface::publishRVIZMarkers(rviz_markers);
+    // Let's publish a set of markers to RVIZ
+    rviz_pub.setMarkers(rviz_markers);
 }
 
 CtrlThread::~CtrlThread()
