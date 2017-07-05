@@ -89,11 +89,14 @@ bool changeFoR(const Vector3d orig, const Matrix4d transform, Vector3d &new_pt)
 KDL::Frame toKDLFrame(Eigen::Matrix4d mat)
 {
     KDL::Vector x, y, z, pos;
+
     tf::vectorEigenToKDL(mat.block<3,1>(0,0), x);
     tf::vectorEigenToKDL(mat.block<3,1>(0,1), y);
     tf::vectorEigenToKDL(mat.block<3,1>(0,2), z);
     KDL::Rotation rot = KDL::Rotation(x, y, z);
+
     tf::vectorEigenToKDL(mat.block<3,1>(0,3), pos);
+
     return KDL::Frame(rot, pos);
 }
 

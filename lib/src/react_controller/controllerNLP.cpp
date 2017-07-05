@@ -330,6 +330,8 @@ void ControllerNLP::finalize_solution(Ipopt::SolverReturn status, Ipopt::Index n
 
     // printf("\n");
     if (status != Ipopt::SUCCESS)     { ROS_WARN("IPOPT Failed. Error code: %i", status); }
+    else                              { ROS_INFO("IPOPT succeeded!");                     }
+
     switch(status)
     {
         case Ipopt::SUCCESS                  : break;

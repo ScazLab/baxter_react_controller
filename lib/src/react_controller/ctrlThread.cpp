@@ -62,10 +62,10 @@ CtrlThread::CtrlThread(const string& _name, const string& _limb, bool _use_robot
 void CtrlThread::initializeNLP()
 {
     app=new Ipopt::IpoptApplication;
-    app->Options()->SetNumericValue(            "tol", tol    );
-    app->Options()->SetNumericValue("constr_viol_tol", tol*100);
-    app->Options()->SetNumericValue( "acceptable_tol", tol    );
-    app->Options()->SetIntegerValue("acceptable_iter",      10);
+    app->Options()->SetNumericValue(            "tol", tol);
+    app->Options()->SetNumericValue("constr_viol_tol", tol);
+    app->Options()->SetNumericValue( "acceptable_tol", tol);
+    app->Options()->SetIntegerValue("acceptable_iter",  10);
     app->Options()->SetStringValue ( "mu_strategy", "adaptive");
     // if (is_debug == false) { app->Options()->SetStringValue ("linear_solver", "ma57"); }
     app->Options()->SetNumericValue("max_cpu_time", 0.95 * dT / 1000.0);
@@ -191,12 +191,12 @@ bool CtrlThread::goToPoseNoCheck(double px, double py, double pz,
     //                                _q.position.data() + _q.position.size())).c_str());
     nlp = new ControllerNLP(*chain);
 
-    publishRVIZMarkers();
-
     // Solve the task
     int exit_code = -1;
     VectorXd est_vels = solveIK(exit_code);
     q_dot = est_vels;
+
+    publishRVIZMarkers();
 
     vector<double> des_poss(chain->getNrOfJoints());
     for (size_t i = 0; i < chain->getNrOfJoints(); ++i)
@@ -208,6 +208,7 @@ bool CtrlThread::goToPoseNoCheck(double px, double py, double pz,
 
     // if (exit_code != 0 && exit_code != 4 && exit_code != -4) { return false; }
     if (is_debug)                                            { return  true; }
+    if (exit_code == 5)                                      { return  true; }
 
     if (isRobotUsed())
     {
@@ -224,8 +225,7 @@ VectorXd CtrlThread::solveIK(int &_exit_code)
 
     if (coll_av)
     {
-        AvoidanceHandler *avhdl;
-        avhdl = new AvoidanceHandlerTactile(*chain, obstacles);
+        avhdl = std::make_unique<AvoidanceHandlerTactile>(*chain, obstacles);
         vlim_coll = avhdl->getV_LIM(DEG2RAD * vLim) * RAD2DEG;
 
         nlp->set_v_lim(vlim_coll);
@@ -235,7 +235,7 @@ VectorXd CtrlThread::solveIK(int &_exit_code)
         vlim_coll.transposeInPlace();
         VectorXd vlim_coll_vec(Map<VectorXd>(vlim_coll.data(),
                                              vlim_coll.cols()*vlim_coll.rows()));
-        ROS_INFO_STREAM("Vlim collision" << vlim_coll_vec.transpose());
+        ROS_INFO_STREAM("Vlim collision " << vlim_coll_vec.transpose());
     }
     else
     {
@@ -280,6 +280,17 @@ void CtrlThread::publishRVIZMarkers()
         joint_pose.position.z = joint_pos(2);
 
         rviz_markers.push_back(RVIZMarker(joint_pose, ColorRGBA(), 0.025));
+    }
+
+    if (coll_av)
+    {
+        std::vector<geometry_msgs::Pose> ctrl_pts = avhdl->getCtrlPoints();
+
+        for (size_t i = 0; i < ctrl_pts.size(); ++i)
+        {
+            rviz_markers.push_back(RVIZMarker(ctrl_pts[i], ColorRGBA(1.0, 0.0, 0.0), 0.1,
+                                   visualization_msgs::Marker::ARROW));
+        }
     }
 
     // Let's publish a set of markers to RVIZ
