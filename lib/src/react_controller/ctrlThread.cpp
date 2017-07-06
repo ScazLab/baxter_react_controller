@@ -194,7 +194,6 @@ bool CtrlThread::goToPoseNoCheck(double px, double py, double pz,
     // Solve the task
     int exit_code = -1;
     VectorXd est_vels = solveIK(exit_code);
-    q_dot = est_vels;
 
     publishRVIZMarkers();
 
@@ -209,6 +208,11 @@ bool CtrlThread::goToPoseNoCheck(double px, double py, double pz,
     // if (exit_code != 0 && exit_code != 4 && exit_code != -4) { return false; }
     if (is_debug)                                            { return  true; }
     if (exit_code == 5)                                      { return  true; }
+
+    // if (exit_code == 0)
+    {
+        q_dot = est_vels;
+    }
 
     if (isRobotUsed())
     {
