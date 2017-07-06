@@ -147,17 +147,18 @@ void ControllerNLP::init()
     R_0 = H_0.block<3,3>(0,0);
     p_0 = H_0.block<3,1>(0,3);
 
-    ROS_INFO_STREAM_COND(print_level>=2, "H_0: \n" << H_0);
-    ROS_INFO_STREAM_COND(print_level>=2, "R_0: \n" << R_0);
-    ROS_INFO_STREAM_COND(print_level>=2, "p_0: \t" << p_0.transpose());
+    ROS_INFO_STREAM_COND(print_level>=8, "H_0: \n" << H_0);
+    ROS_INFO_STREAM_COND(print_level>=8, "R_0: \n" << R_0);
+    ROS_INFO_STREAM_COND(print_level>=8, "p_0: \t" << p_0.transpose());
 
     MatrixXd J_0 = chain.GeoJacobian();
     J_0_xyz = J_0.block(0,0,3,chain.getNrOfJoints());
     J_0_ang = J_0.block(3,0,3,chain.getNrOfJoints());
 
-    ROS_INFO_STREAM_COND(print_level>=6, "J_0:    \n" << J_0    );
-    ROS_INFO_STREAM_COND(print_level>=6, "J_0_xyz:\n" << J_0_xyz);
-    ROS_INFO_STREAM_COND(print_level>=6, "J_0_ang:\n" << J_0_ang);
+    ROS_INFO_STREAM_COND(print_level>=8, "J_0:    \n" << J_0    );
+    ROS_INFO_STREAM_COND(print_level>=2, "J_0_xyz:\n" << J_0_xyz);
+
+    ROS_INFO_STREAM_COND(print_level>=2 && ctrl_ori, "J_0_ang:\n" << J_0_ang);
 
     computeBounds();
 }
