@@ -106,6 +106,16 @@ void ControllerNLP::set_x_r(const Eigen::Vector3d &_p_r, const Eigen::Quaternion
 void ControllerNLP::set_v_lim(const MatrixXd &_v_lim)
 {
     v_lim = DEG2RAD*_v_lim;
+
+    if (print_level >= 2)
+    {
+        // Print stuff in a single line for convenience
+        MatrixXd vlim = v_lim;
+        vlim.transposeInPlace();
+        VectorXd vlim_vec(Map<VectorXd>(vlim.data(), vlim.cols()*vlim.rows()));
+
+        ROS_INFO_STREAM("vlim: " << vlim_vec.transpose());
+    }
 }
 
 /****************************************************************/
@@ -193,6 +203,9 @@ bool ControllerNLP::get_bounds_info(Ipopt::Index n, Ipopt::Number *x_l, Ipopt::N
     {
         x_l[i]=bounds(i,0);
         x_u[i]=bounds(i,1);
+
+        ROS_ASSERT_MSG(x_l[i]<x_u[i], "Inconsistent variable bounds! Joint: %i x_l[i]: %g x_u[i]: %g",
+                                                                              int(i), x_l[i], x_u[i]);
     }
 
     // reaching in position
@@ -229,6 +242,7 @@ void ControllerNLP::computeQuantities(const Ipopt::Number *x, const bool new_x)
 
         err_xyz = p_r-p_e;
 
+        ROS_INFO_STREAM_COND(print_level>=2, "    v_e: " <<     v_e.transpose());
         ROS_INFO_STREAM_COND(print_level>=2, "err_xyz: " << err_xyz.transpose() <<
                                         " squaredNorm: " << err_xyz.squaredNorm());
         if (ctrl_ori)
@@ -402,8 +416,7 @@ void ControllerNLP::finalize_solution(Ipopt::SolverReturn status, Ipopt::Index n
     ROS_INFO_STREAM_COND(print_level>=2, "q_e: " << VectorXd(q_0 + (dt * v_e)).transpose());
     printf("\n");
 
-    // print_level check is there in order to be able to successfully test ipopt during unit testing
-    if (status == Ipopt::SUCCESS && print_level != 0)
+    if (status == Ipopt::SUCCESS)
     {
         ROS_ASSERT_MSG(pos_err.squaredNorm() < 10, "This should never happen!");
     }

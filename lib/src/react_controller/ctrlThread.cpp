@@ -207,7 +207,7 @@ bool CtrlThread::goToPoseNoCheck(double px, double py, double pz,
 
     // if (exit_code != 0 && exit_code != 4 && exit_code != -4) { return false; }
     if (is_debug)                                            { return  true; }
-    if (exit_code == 5)                                      { return  true; }
+    if (exit_code == 5 || exit_code == 2)                    { return  true; }
 
     // if (exit_code == 0)
     {
@@ -227,19 +227,14 @@ VectorXd CtrlThread::solveIK(int &_exit_code)
 {
     NLPOptionsFromParameterServer();
 
+    nlp->set_print_level(size_t(nlp_print_level));
+
     if (coll_av)
     {
         avhdl = std::make_unique<AvoidanceHandlerTactile>(*chain, obstacles);
         vlim_coll = avhdl->getV_LIM(DEG2RAD * vLim) * RAD2DEG;
 
         nlp->set_v_lim(vlim_coll);
-
-        // Print stuff in a single line for convenience
-        // ROS_INFO_STREAM("Vlim collision" << vlim_coll);
-        vlim_coll.transposeInPlace();
-        VectorXd vlim_coll_vec(Map<VectorXd>(vlim_coll.data(),
-                                             vlim_coll.cols()*vlim_coll.rows()));
-        // ROS_INFO_STREAM("Vlim collision " << vlim_coll_vec.transpose());
     }
     else
     {
@@ -250,7 +245,6 @@ VectorXd CtrlThread::solveIK(int &_exit_code)
     nlp->set_dt(dT);
     nlp->set_x_r(x_n, o_n);
     nlp->set_v_0(q_dot);
-    nlp->set_print_level(size_t(nlp_print_level));
     nlp->init();
 
     _exit_code=app->OptimizeTNLP(GetRawPtr(nlp));
