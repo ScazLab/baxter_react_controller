@@ -75,6 +75,7 @@ matrix:
       apt:
         packages:
         - g++-4.9
+        - libgfortran-4.9-dev
         sources: &1
         - ubuntu-toolchain-r-test
         - llvm-toolchain-trusty
