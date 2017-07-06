@@ -113,11 +113,7 @@ std::vector<geometry_msgs::Pose> AvoidanceHandler::getCtrlPoints()
         geometry_msgs::Pose pt;
 
         Eigen::Matrix4d H = ctrlChains[i].getH();
-        Eigen::Quaterniond q(H.block<3,3>(0,0));
-        q.x() = H(0,2);
-        q.y() = H(1,2);
-        q.z() = H(2,2);
-        q.w() =    0.0;
+        Eigen::Quaterniond q(0.0, H(0,2), H(1,2), H(2,2)); // w, x, y, z
         q.normalize();
 
         pt.position.x = H(0,3);
@@ -216,7 +212,7 @@ MatrixXd AvoidanceHandlerTactile::getV_LIM(const MatrixXd &v_lim)
             VectorXd s = (J_xyz.transpose()*nrm) * avoidingSpeed * collPoints[i].m;
 
             s = s * -1.0; // we reverse the direction to obtain joint velocities that bring about avoidance
-            ROS_INFO_STREAM("s*(-1): " << s.transpose());
+            // ROS_INFO_STREAM("s*(-1): " << s.transpose());
 
             for (size_t j = 0; j < size_t(s.rows()); ++j)
             {

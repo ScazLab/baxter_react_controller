@@ -235,7 +235,7 @@ VectorXd CtrlThread::solveIK(int &_exit_code)
         vlim_coll.transposeInPlace();
         VectorXd vlim_coll_vec(Map<VectorXd>(vlim_coll.data(),
                                              vlim_coll.cols()*vlim_coll.rows()));
-        ROS_INFO_STREAM("Vlim collision " << vlim_coll_vec.transpose());
+        // ROS_INFO_STREAM("Vlim collision " << vlim_coll_vec.transpose());
     }
     else
     {

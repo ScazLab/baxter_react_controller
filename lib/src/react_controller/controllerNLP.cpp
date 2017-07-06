@@ -362,6 +362,11 @@ void ControllerNLP::finalize_solution(Ipopt::SolverReturn status, Ipopt::Index n
     ROS_INFO_STREAM("  pos err [mm]: " << pos_err.transpose() <<
                "\tsquared norm [mm]: " << pos_err.squaredNorm());
 
+    if (status == Ipopt::SUCCESS)
+    {
+        ROS_ASSERT_MSG(pos_err.squaredNorm() < 10, "This should never happen!");
+    }
+
     if (ctrl_ori)
     {
         Quaterniond o_e(R_e);
