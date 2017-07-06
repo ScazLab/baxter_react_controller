@@ -246,6 +246,7 @@ VectorXd CtrlThread::solveIK(int &_exit_code)
     nlp->set_dt(dT);
     nlp->set_x_r(x_n, o_n);
     nlp->set_v_0(q_dot);
+    nlp->set_print_level(size_t(nlp_print_level));
     nlp->init();
 
     _exit_code=app->OptimizeTNLP(GetRawPtr(nlp));

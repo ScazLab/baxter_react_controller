@@ -25,6 +25,9 @@ private:
     // Flag to know if to control the orientation or not
     bool ctrl_ori;
 
+    // Print level of the IPOPT app
+    size_t print_level;
+
     Eigen::Vector3d     p_0;  // Initial 3D position
     Eigen::VectorXd     q_0;  // Initial ND joint configuration
     Eigen::VectorXd     v_0;  // Initial ND joint velocities
@@ -85,6 +88,7 @@ public:
     void set_ctrl_ori(const bool _ctrl_ori);
     void set_dt(const double _dt);
     void set_v_0(const Eigen::VectorXd &_v_0);
+    void set_print_level(size_t _print_level);
 
     // Property getParameters() const;
     bool get_nlp_info(Ipopt::Index &n, Ipopt::Index &m, Ipopt::Index &nnz_jac_g,

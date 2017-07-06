@@ -9,7 +9,7 @@ using namespace   std;
 
 /****************************************************************/
 ControllerNLP::ControllerNLP(BaxterChain chain_, double dt_, bool ctrl_ori_) :
-                             chain(chain_), dt(dt_), ctrl_ori(ctrl_ori_),
+                             chain(chain_), dt(dt_), ctrl_ori(ctrl_ori_), print_level(0),
                              q_0(chain_.getNrOfJoints()), v_0(chain_.getNrOfJoints()),
                              J_0_xyz(3,chain_.getNrOfJoints()), J_0_ang(3,chain_.getNrOfJoints()),
                              v_e(chain_.getNrOfJoints()), q_lim(chain_.getNrOfJoints(),2),
@@ -124,7 +124,14 @@ void ControllerNLP::set_dt(const double _dt)
 /****************************************************************/
 void ControllerNLP::set_v_0(const VectorXd &_v_0)
 {
+    ROS_ASSERT(v_0.size() == _v_0.size());
     v_0 = _v_0;
+}
+
+/****************************************************************/
+void ControllerNLP::set_print_level(size_t _print_level)
+{
+    print_level = _print_level;
 }
 
 /****************************************************************/
@@ -133,24 +140,24 @@ void ControllerNLP::init()
     q_0 = chain.getAng();
     // v_0 = chain.getVel();
 
-    // ROS_INFO_STREAM("q_0: [" << q_0.transpose() << "]");
-    // ROS_INFO_STREAM("v_0: [" << v_0.transpose() << "]");
+    ROS_INFO_STREAM_COND(print_level>=4, "q_0: [" << q_0.transpose() << "]");
+    ROS_INFO_STREAM_COND(print_level>=4, "v_0: [" << v_0.transpose() << "]");
 
     Matrix4d H_0 = chain.getH();
     R_0 = H_0.block<3,3>(0,0);
     p_0 = H_0.block<3,1>(0,3);
 
-    // ROS_INFO_STREAM("H_0: \n" << H_0);
-    // ROS_INFO_STREAM("R_0: \n" << R_0);
-    // ROS_INFO_STREAM("p_0: \t" << p_0.transpose());
+    ROS_INFO_STREAM_COND(print_level>=4, "H_0: \n" << H_0);
+    ROS_INFO_STREAM_COND(print_level>=4, "R_0: \n" << R_0);
+    ROS_INFO_STREAM_COND(print_level>=4, "p_0: \t" << p_0.transpose());
 
     MatrixXd J_0 = chain.GeoJacobian();
     J_0_xyz = J_0.block(0,0,3,chain.getNrOfJoints());
     J_0_ang = J_0.block(3,0,3,chain.getNrOfJoints());
 
-    // ROS_INFO_STREAM("J_0:    \n" << J_0    );
-    // ROS_INFO_STREAM("J_0_xyz:\n" << J_0_xyz);
-    // ROS_INFO_STREAM("J_0_ang:\n" << J_0_ang);
+    ROS_INFO_STREAM_COND(print_level>=4, "J_0:    \n" << J_0    );
+    ROS_INFO_STREAM_COND(print_level>=4, "J_0_xyz:\n" << J_0_xyz);
+    ROS_INFO_STREAM_COND(print_level>=4, "J_0_ang:\n" << J_0_ang);
 
     computeBounds();
 }
@@ -224,10 +231,12 @@ void ControllerNLP::computeQuantities(const Ipopt::Number *x, const bool new_x)
         if (theta > 0.0) { w_e /= theta; }
 
         AngleAxisd w_e_aa(theta * dt, w_e);   // angular increment in axis angle representation
-        // ROS_INFO_STREAM("w_e_aa: \t" << w_e_aa.axis().transpose() << " " << w_e_aa.angle());
+        ROS_INFO_STREAM_COND(print_level>=6, "w_e_aa: \t" <<
+                             w_e_aa.axis().transpose() << " " << w_e_aa.angle());
 
         R_e = w_e_aa.toRotationMatrix() * R_0;
-        // ROS_INFO_STREAM("R_e: \n" << R_e);
+        ROS_INFO_STREAM_COND(print_level>=6, "R_e: \n" << R_e);
+
         Quaterniond o_e(R_e);
         p_e = p_0 + dt * (J_0_xyz * v_e);
 
@@ -235,8 +244,7 @@ void ControllerNLP::computeQuantities(const Ipopt::Number *x, const bool new_x)
         err_ang = angularError(R_r, R_e);
         // err_ang = angularError(o_r, o_e);
 
-        // ROS_INFO_STREAM(" aa_err: " << aa_err.axis().transpose() << " " << aa_err.angle());
-        // ROS_INFO_STREAM("err_ang: " << err_ang.transpose());
+        ROS_INFO_STREAM_COND(print_level>=4, "err_ang: " << err_ang.transpose());
 
         MatrixXd L=-0.5*(skew_nr*skew(R_e.col(0))+
                          skew_sr*skew(R_e.col(1))+
@@ -351,16 +359,16 @@ void ControllerNLP::finalize_solution(Ipopt::SolverReturn status, Ipopt::Index n
         // };
     }
 
-    ROS_INFO_STREAM("init pos [p_0]: " << p_0.transpose());
-    ROS_INFO_STREAM("ref  pos [p_r]: " << p_r.transpose());
-    ROS_INFO_STREAM("est  pos [p_e]: " << p_e.transpose());
+    ROS_INFO_STREAM_COND(print_level>=2, "init pos [p_0]: " << p_0.transpose());
+    ROS_INFO_STREAM_COND(print_level>=2, "ref  pos [p_r]: " << p_r.transpose());
+    ROS_INFO_STREAM_COND(print_level>=2, "est  pos [p_e]: " << p_e.transpose());
     // Eigen::VectorXd pos_0rr = (p_0-p_r) * 1000.0;
     // ROS_INFO_STREAM("  pos 0rr [mm]: " << pos_0rr.transpose() <<
     //            "\tsquared norm [mm]: " << pos_0rr.squaredNorm());
 
     Eigen::VectorXd pos_err = (p_e-p_r) * 1000.0;
-    ROS_INFO_STREAM("  pos err [mm]: " << pos_err.transpose() <<
-               "\tsquared norm [mm]: " << pos_err.squaredNorm());
+    ROS_INFO_STREAM_COND(print_level>=2, "  pos err [mm]: " << pos_err.transpose() <<
+                                    "\tsquared norm [mm]: " << pos_err.squaredNorm());
 
     if (status == Ipopt::SUCCESS)
     {
