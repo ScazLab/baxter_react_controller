@@ -140,24 +140,24 @@ void ControllerNLP::init()
     q_0 = chain.getAng();
     // v_0 = chain.getVel();
 
-    ROS_INFO_STREAM_COND(print_level>=4, "q_0: [" << q_0.transpose() << "]");
-    ROS_INFO_STREAM_COND(print_level>=4, "v_0: [" << v_0.transpose() << "]");
+    ROS_INFO_STREAM_COND(print_level>=2, "q_0: [" << q_0.transpose() << "]");
+    ROS_INFO_STREAM_COND(print_level>=2, "v_0: [" << v_0.transpose() << "]");
 
     Matrix4d H_0 = chain.getH();
     R_0 = H_0.block<3,3>(0,0);
     p_0 = H_0.block<3,1>(0,3);
 
-    ROS_INFO_STREAM_COND(print_level>=4, "H_0: \n" << H_0);
-    ROS_INFO_STREAM_COND(print_level>=4, "R_0: \n" << R_0);
-    ROS_INFO_STREAM_COND(print_level>=4, "p_0: \t" << p_0.transpose());
+    ROS_INFO_STREAM_COND(print_level>=2, "H_0: \n" << H_0);
+    ROS_INFO_STREAM_COND(print_level>=2, "R_0: \n" << R_0);
+    ROS_INFO_STREAM_COND(print_level>=2, "p_0: \t" << p_0.transpose());
 
     MatrixXd J_0 = chain.GeoJacobian();
     J_0_xyz = J_0.block(0,0,3,chain.getNrOfJoints());
     J_0_ang = J_0.block(3,0,3,chain.getNrOfJoints());
 
-    ROS_INFO_STREAM_COND(print_level>=4, "J_0:    \n" << J_0    );
-    ROS_INFO_STREAM_COND(print_level>=4, "J_0_xyz:\n" << J_0_xyz);
-    ROS_INFO_STREAM_COND(print_level>=4, "J_0_ang:\n" << J_0_ang);
+    ROS_INFO_STREAM_COND(print_level>=6, "J_0:    \n" << J_0    );
+    ROS_INFO_STREAM_COND(print_level>=6, "J_0_xyz:\n" << J_0_xyz);
+    ROS_INFO_STREAM_COND(print_level>=6, "J_0_ang:\n" << J_0_ang);
 
     computeBounds();
 }
@@ -224,33 +224,40 @@ void ControllerNLP::computeQuantities(const Ipopt::Number *x, const bool new_x)
             v_e[i]=x[i];
         }
 
-        // Now, let's compute the position and orientation errors
-        // See https://math.stackexchange.com/questions/773902/integrating-body-angular-velocity/2176586#217658
-        Vector3d  w_e = J_0_ang*v_e;          // rotational (angular) speed
-        double theta =   w_e.norm();
-        if (theta > 0.0) { w_e /= theta; }
-
-        AngleAxisd w_e_aa(theta * dt, w_e);   // angular increment in axis angle representation
-        ROS_INFO_STREAM_COND(print_level>=6, "w_e_aa: \t" <<
-                             w_e_aa.axis().transpose() << " " << w_e_aa.angle());
-
-        R_e = w_e_aa.toRotationMatrix() * R_0;
-        ROS_INFO_STREAM_COND(print_level>=6, "R_e: \n" << R_e);
-
-        Quaterniond o_e(R_e);
         p_e = p_0 + dt * (J_0_xyz * v_e);
 
         err_xyz = p_r-p_e;
-        err_ang = angularError(R_r, R_e);
-        // err_ang = angularError(o_r, o_e);
 
-        ROS_INFO_STREAM_COND(print_level>=4, "err_ang: " << err_ang.transpose());
+        ROS_INFO_STREAM_COND(print_level>=2, "err_xyz: " << err_xyz.transpose() <<
+                                        " squaredNorm: " << err_xyz.squaredNorm());
+        if (ctrl_ori)
+        {
+            // Now, let's compute the position and orientation errors
+            // See https://math.stackexchange.com/questions/773902/integrating-body-angular-velocity/2176586#217658
+            Vector3d  w_e = J_0_ang*v_e;          // rotational (angular) speed
+            double theta =   w_e.norm();
+            if (theta > 0.0) { w_e /= theta; }
 
-        MatrixXd L=-0.5*(skew_nr*skew(R_e.col(0))+
-                         skew_sr*skew(R_e.col(1))+
-                         skew_ar*skew(R_e.col(2)));
+            AngleAxisd w_e_aa(theta * dt, w_e);   // angular increment in axis angle representation
+            ROS_INFO_STREAM_COND(print_level>=6, "w_e_aa: \t" <<
+                                 w_e_aa.axis().transpose() << " " << w_e_aa.angle());
 
-        Derr_ang=-dt*(L*J_0_ang);
+            R_e = w_e_aa.toRotationMatrix() * R_0;
+            ROS_INFO_STREAM_COND(print_level>=6, "R_e: \n" << R_e);
+
+            Quaterniond o_e(R_e);
+
+            err_ang = angularError(R_r, R_e);
+            // err_ang = angularError(o_r, o_e);
+            ROS_INFO_STREAM_COND(print_level>=2, "err_ang: " << err_ang.transpose() <<
+                                            " squaredNorm: " << err_ang.squaredNorm());
+
+            MatrixXd L=-0.5*(skew_nr*skew(R_e.col(0))+
+                             skew_sr*skew(R_e.col(1))+
+                             skew_ar*skew(R_e.col(2)));
+
+            Derr_ang=-dt*(L*J_0_ang);
+        }
     }
 }
 
@@ -370,12 +377,6 @@ void ControllerNLP::finalize_solution(Ipopt::SolverReturn status, Ipopt::Index n
     ROS_INFO_STREAM_COND(print_level>=2, "  pos err [mm]: " << pos_err.transpose() <<
                                     "\tsquared norm [mm]: " << pos_err.squaredNorm());
 
-    // print_level check is there in order to be able to successfully test ipopt during unit testing
-    if (status == Ipopt::SUCCESS && print_level == 0)
-    {
-        ROS_ASSERT_MSG(pos_err.squaredNorm() < 10, "This should never happen!");
-    }
-
     if (ctrl_ori)
     {
         Quaterniond o_e(R_e);
@@ -394,17 +395,18 @@ void ControllerNLP::finalize_solution(Ipopt::SolverReturn status, Ipopt::Index n
         // ROS_INFO_STREAM("o_r: \n" << o_r.toRotationMatrix());
     }
 
-    // VectorXd j(chain.getNrOfJoints());
+    ROS_INFO_STREAM_COND(print_level>=2, "v_0: " << v_0.transpose());
+    ROS_INFO_STREAM_COND(print_level>=2, "q_0: " << q_0.transpose());
+    ROS_INFO_STREAM_COND(print_level>=2, "v_e: " << v_e.transpose());
+    ROS_INFO_STREAM_COND(print_level>=2, "q_e: " << VectorXd(q_0 + (dt * v_e)).transpose());
+    printf("\n");
 
-    // for (size_t i = 0; i < chain.getNrOfJoints(); ++i)
-    // {
-    //     j(i) = q_0[i] + (dt * v_e[i]);
-    // }
+    // print_level check is there in order to be able to successfully test ipopt during unit testing
+    if (status == Ipopt::SUCCESS && print_level != 0)
+    {
+        ROS_ASSERT_MSG(pos_err.squaredNorm() < 10, "This should never happen!");
+    }
 
-    // ROS_INFO_STREAM("initial  joint vels: " << v_0);
-    // ROS_INFO_STREAM("initial joint state: " << q_0);
-    // ROS_INFO_STREAM("computed joint vels: " << v_e);
-    // ROS_INFO_STREAM("computed next state: " <<   j);
 }
 
 ControllerNLP::~ControllerNLP()
