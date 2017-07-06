@@ -104,11 +104,11 @@ ADD_DEFINITIONS ( -Wall -Wextra -Wno-unused-parameter -Werror)
 
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
-include_directories(lib/include
-                    ${IPOPT_INCLUDE_DIRS}
-                    ${Eigen_INCLUDE_DIRS}
-                    ${orocos_kdl_INCLUDE_DIRS}
-                    ${catkin_INCLUDE_DIRS})
+include_directories(lib/include)
+include_directories(SYSTEM ${IPOPT_INCLUDE_DIRS}
+                           ${Eigen_INCLUDE_DIRS}
+                           ${orocos_kdl_INCLUDE_DIRS}
+                           ${catkin_INCLUDE_DIRS})
 
 
 ## Declare a C++ library
