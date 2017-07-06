@@ -184,7 +184,7 @@ AvoidanceHandler::~AvoidanceHandler()
 AvoidanceHandlerTactile::AvoidanceHandlerTactile(const BaxterChain &_chain,
                                                  const vector<Vector3d> &_obstacles) :
                                                  AvoidanceHandler(_chain, _obstacles, "tactile"),
-                                                 avoidingSpeed(5.0)
+                                                 avoidingSpeed(0.25)
 {
 
 }
