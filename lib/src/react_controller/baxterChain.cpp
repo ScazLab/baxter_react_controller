@@ -428,17 +428,13 @@ bool BaxterChain::obstacleToCollisionPoint(const Eigen::Vector3d& _obstacle_wrf,
 
     Vector3d coll_pt_wrf = projectOntoSegment(pos_ee_minus_one, pos_ee, _obstacle_wrf);
 
-    // if (!is_between(pos_ee, pos_ee_minus_one, coll_pt_wrf))
-    // {
-    //     return false;
-    // }
-
     // Convert the collision point from the wrf to end-effector reference frame
     Vector4d tmp(0, 0, 0, 1);
     tmp.block<3,1>(0,0) = coll_pt_wrf;
 
     changeFoR(coll_pt_wrf, getH(), _coll_point_erf.x);
 
+    // Convert the obstacle point from the wrf to end-effector reference frame
     Vector3d obstacle_erf;
     changeFoR(_obstacle_wrf, getH(), obstacle_erf);
 
@@ -454,7 +450,7 @@ bool BaxterChain::obstacleToCollisionPoint(const Eigen::Vector3d& _obstacle_wrf,
 
     _coll_point_erf.n /= dist;
 
-    double thres = 0.3;
+    double thres = 0.5;
     // Compute the magnitude
     if (dist > thres)
     {
