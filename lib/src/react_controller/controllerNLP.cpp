@@ -35,8 +35,6 @@ ControllerNLP::ControllerNLP(BaxterChain chain_, double dt_, bool ctrl_ori_) :
         v_lim(r,0)=-v_lim(r,1);
     }
     bounds=v_lim;
-
-    computeGuard();
 }
 
 /****************************************************************/
@@ -61,11 +59,14 @@ void ControllerNLP::computeGuard()
 /****************************************************************/
 void ControllerNLP::computeBounds()
 {
+    computeGuard();
+
     bounds.resize(chain.getNrOfJoints(), 2);
 
     for (size_t i=0; i<chain.getNrOfJoints(); ++i)
     {
         double qi=q_0[i];
+
         if ((qi>=qGuardMinInt[i]) && (qi<=qGuardMaxInt[i]))
         {
             bounds(i,0)=bounds(i,1)=1.0;
@@ -83,11 +84,16 @@ void ControllerNLP::computeBounds()
                          0.5*(1.0+tanh(-10.0*(qi-qGuardMaxCOG[i])/qGuard[i])));
         }
     }
+
+    // ROS_INFO_STREAM_COND(print_level>=2, "bounds before" << endl << bounds);
+
     for (size_t i=0; i<chain.getNrOfJoints(); ++i)
     {
         bounds(i,0)*=v_lim(i,0);
         bounds(i,1)*=v_lim(i,1);
     }
+
+    // ROS_INFO_STREAM_COND(print_level>=2, "bounds after" << endl << bounds);
 }
 
 /****************************************************************/
@@ -170,7 +176,7 @@ void ControllerNLP::init()
 
     ROS_INFO_STREAM_COND(print_level>=2 && ctrl_ori, "J_0_ang:\n" << J_0_ang);
 
-    computeBounds();
+    // computeBounds();
 }
 
 /****************************************************************/
@@ -204,8 +210,17 @@ bool ControllerNLP::get_bounds_info(Ipopt::Index n, Ipopt::Number *x_l, Ipopt::N
         x_l[i]=bounds(i,0);
         x_u[i]=bounds(i,1);
 
-        ROS_ASSERT_MSG(x_l[i]<x_u[i], "Inconsistent variable bounds! Joint: %i x_l[i]: %g x_u[i]: %g",
-                                                                              int(i), x_l[i], x_u[i]);
+        if (x_l[i] > x_u[i])
+        {
+            ROS_ERROR("Inconsistent variable bounds! Joint: %i x_l[i]: %g x_u[i]: %g",
+                                                              int(i), x_l[i], x_u[i]);
+            ROS_ERROR("qGuard: %g Max: %g Min: %g", qGuard[i], chain.getMax(i), chain.getMin(i));
+            ROS_ERROR("qGuardMinExt: %g qGuardMinInt: %g qGuardMinCOG: %g",
+                       qGuardMinExt[i], qGuardMinInt[i], qGuardMinCOG[i]);
+            ROS_ERROR("qGuardMaxExt: %g qGuardMaxInt: %g qGuardMaxCOG: %g",
+                       qGuardMaxExt[i], qGuardMaxInt[i], qGuardMaxCOG[i]);
+            ROS_ASSERT(false);
+        }
     }
 
     // reaching in position
