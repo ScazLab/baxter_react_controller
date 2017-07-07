@@ -194,6 +194,7 @@ bool CtrlThread::goToPoseNoCheck(double px, double py, double pz,
     // Solve the task
     int exit_code = -1;
     VectorXd est_vels = solveIK(exit_code);
+    // ROS_INFO_STREAM("est_vels: " << est_vels.transpose());
 
     publishRVIZMarkers();
 
@@ -257,7 +258,7 @@ void CtrlThread::publishRVIZMarkers()
     // TODO remove this at some point
     // Create some fake obstacles to test
     obstacles.clear();
-    obstacles.push_back(Vector3d(0.80, -0.12, 0.0));
+    obstacles.push_back(Vector3d(0.50, -0.22, 0.2));
     geometry_msgs::Pose pose_obs;
     pose_obs.position.x = (obstacles[0])[0];
     pose_obs.position.y = (obstacles[0])[1];
@@ -268,7 +269,7 @@ void CtrlThread::publishRVIZMarkers()
     RVIZMarker cur_mrk(getCurrentPose(), ColorRGBA(0.0, 1.0, 1.0), 0.03);
     RVIZMarker obs_mrk(        pose_obs, ColorRGBA(1.0, 0.0, 1.0));
 
-    vector <RVIZMarker> rviz_markers{des_mrk, cur_mrk, obs_mrk};
+    vector <RVIZMarker> rviz_markers{obs_mrk};
 
     for (size_t i = 0; i < chain->getNrOfJoints(); ++i)
     {
