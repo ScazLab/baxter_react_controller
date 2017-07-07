@@ -446,6 +446,12 @@ bool BaxterChain::obstacleToCollisionPoint(const Eigen::Vector3d& _obstacle_wrf,
     _coll_point_erf.n  = ( obstacle_erf - _coll_point_erf.x);
 
     double dist = _coll_point_erf.n.norm();
+
+    if (!is_between(pos_ee, pos_ee_minus_one, coll_pt_wrf))
+    {
+        dist += min((pos_ee - coll_pt_wrf).squaredNorm(), (pos_ee_minus_one - coll_pt_wrf).squaredNorm());
+    }
+
     _coll_point_erf.n /= dist;
 
     double thres = 0.3;
