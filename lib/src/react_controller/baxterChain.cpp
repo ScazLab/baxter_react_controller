@@ -475,25 +475,90 @@ BaxterChain::~BaxterChain()
     return;
 }
 
-std::vector<RVIZMarker> asRVIZMarkers(BaxterChain _chain)
+std::vector<RVIZMarker> asRVIZMarkers(BaxterChain _chain, bool _pub_joints,
+                                         bool _pub_links, bool _pub_ori)
 {
     std::vector<RVIZMarker> res;
-    std::vector<geometry_msgs::Point> joint_positions;
 
-    for (size_t i = 0; i < _chain.getNrOfJoints(); ++i)
+    if (_pub_joints || _pub_links)
     {
-        geometry_msgs::Point joint_position;
-        Vector3d joint_pos = _chain.getH(i).block<3,1>(0,3);
-        joint_position.x = joint_pos(0);
-        joint_position.y = joint_pos(1);
-        joint_position.z = joint_pos(2);
+        std::vector<geometry_msgs::Point> joint_positions;
 
-        joint_positions.push_back(joint_position);
+        for (size_t i = 0; i < _chain.getNrOfJoints(); ++i)
+        {
+            geometry_msgs::Point joint_position;
+            Vector3d joint_pos = _chain.getH(i).block<3,1>(0,3);
+            joint_position.x = joint_pos(0);
+            joint_position.y = joint_pos(1);
+            joint_position.z = joint_pos(2);
+
+            joint_positions.push_back(joint_position);
+        }
+
+        if (_pub_links)
+        {
+            res.push_back(RVIZMarker(joint_positions, ColorRGBA(), 0.012,
+                          visualization_msgs::Marker::LINE_STRIP));
+        }
+
+        if (_pub_joints)
+        {
+            res.push_back(RVIZMarker(joint_positions, ColorRGBA(1.0, 0.0, 1.0), 0.025));
+        }
     }
 
-    res.push_back(RVIZMarker(joint_positions, ColorRGBA(), 0.012,
-                  visualization_msgs::Marker::LINE_STRIP));
-    res.push_back(RVIZMarker(joint_positions, ColorRGBA(1.0, 0.0, 1.0), 0.025));
+    if (_pub_ori)
+    {
+        // We can represent the end-effector's reference frame as
+        // three RVIZMarkers with type ARROW
+        for (int i = 0; i < 3; ++i)
+        {
+            geometry_msgs::Pose pt;
+
+            Eigen::Matrix4d H = _chain.getH();
+            Eigen::Quaterniond q(H.block<3,3>(0,0));
+            // ROS_INFO_STREAM("[q]: " << q.vec().transpose() << " " << q.w());
+
+            // For axis y and z, let's add a small rotation to the quaternion
+            if      (i == 1)
+            {
+                q = Eigen::Quaterniond(H.block<3,3>(0,0) *
+                                       AngleAxisd( 0.5*M_PI, Vector3d::UnitZ()));
+            }
+            else if (i == 2)
+            {
+                q = Eigen::Quaterniond(H.block<3,3>(0,0) *
+                                       AngleAxisd(-0.5*M_PI, Vector3d::UnitY()));
+            }
+
+            q.normalize();
+
+            pt.position.x = H(0,3);
+            pt.position.y = H(1,3);
+            pt.position.z = H(2,3);
+            pt.orientation.x = q.x();
+            pt.orientation.y = q.y();
+            pt.orientation.z = q.z();
+            pt.orientation.w = q.w();
+
+            ColorRGBA col(0.2, 0.2, 0.2, 1.0);
+
+            if      (i == 0)
+            {
+                col.col.r = 0.8;
+            }
+            else if (i == 1)
+            {
+                col.col.g = 0.8;
+            }
+            else if (i == 2)
+            {
+                col.col.b = 0.8;
+            }
+
+            res.push_back(RVIZMarker(pt, col, 0.1, visualization_msgs::Marker::ARROW));
+        }
+    }
 
     return res;
 }

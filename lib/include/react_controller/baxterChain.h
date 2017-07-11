@@ -258,10 +258,17 @@ public:
      * Friend function to convert the baxter chain as a set of RVIZmarkers for
      * visualization in RVIZ.
      *
-     * @param _chain the BaxterChain to visualize.
-     * @return       a vector of RVIZ Markers. They can be directly sent to an RVIZPublisher object.
+     * @param _chain      the BaxterChain to visualize.
+     * @param _pub_joints if to publish the joints as a set of spheres (default  true)
+     * @param _pub_links  if to publish the  links as a set of  sticks (default  true)
+     * @param _pub_ori    if to publish the end-effector orientation   (default false)
+     * @return            a vector of RVIZ Markers.
+     *                    They can be directly provided to an RVIZPublisher object.
      */
-    friend std::vector<RVIZMarker> asRVIZMarkers(BaxterChain _chain);
+    friend std::vector<RVIZMarker> asRVIZMarkers(BaxterChain _chain,
+                                                 bool _pub_joints =  true,
+                                                 bool _pub_links  =  true,
+                                                 bool _pub_ori    = false);
 
     ~BaxterChain();
 };

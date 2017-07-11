@@ -303,8 +303,8 @@ TEST(BaxterChainTest, testRVIZVisualization)
 
     rviz_pub.start();
 
-    vector <RVIZMarker> rviz_markersR = asRVIZMarkers(chainR);
-    vector <RVIZMarker> rviz_markersL = asRVIZMarkers(chainL);
+    vector <RVIZMarker> rviz_markersR = asRVIZMarkers(chainR, true, true, true);
+    vector <RVIZMarker> rviz_markersL = asRVIZMarkers(chainL, true, true, true);
 
     rviz_markersR.insert(std::end(rviz_markersR),
                          std::begin(rviz_markersL), std::end(rviz_markersL));

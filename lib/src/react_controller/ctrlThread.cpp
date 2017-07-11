@@ -265,11 +265,7 @@ void CtrlThread::publishRVIZMarkers()
     pose_obs.position.z = (obstacles[0])[2];
 
     // Publishes all the markers to rviz
-    RVIZMarker des_mrk(getDesiredPose(), ColorRGBA(1.0, 1.0, 0.0));
-    RVIZMarker cur_mrk(getCurrentPose(), ColorRGBA(0.0, 1.0, 1.0), 0.03);
-    RVIZMarker obs_mrk(        pose_obs, ColorRGBA(1.0, 0.0, 1.0));
-
-    vector <RVIZMarker> rviz_markers{obs_mrk};
+    vector <RVIZMarker> rviz_markers{RVIZMarker(pose_obs, ColorRGBA(1.0, 0.0, 1.0))};
     vector <RVIZMarker> rviz_chain = asRVIZMarkers(*chain);
 
     rviz_markers.insert(std::end(rviz_markers),
