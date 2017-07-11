@@ -478,17 +478,22 @@ BaxterChain::~BaxterChain()
 std::vector<RVIZMarker> asRVIZMarkers(BaxterChain _chain)
 {
     std::vector<RVIZMarker> res;
+    std::vector<geometry_msgs::Point> joint_positions;
 
     for (size_t i = 0; i < _chain.getNrOfJoints(); ++i)
     {
-        geometry_msgs::Pose joint_pose;
+        geometry_msgs::Point joint_position;
         Vector3d joint_pos = _chain.getH(i).block<3,1>(0,3);
-        joint_pose.position.x = joint_pos(0);
-        joint_pose.position.y = joint_pos(1);
-        joint_pose.position.z = joint_pos(2);
+        joint_position.x = joint_pos(0);
+        joint_position.y = joint_pos(1);
+        joint_position.z = joint_pos(2);
 
-        res.push_back(RVIZMarker(joint_pose, ColorRGBA(), 0.025));
+        joint_positions.push_back(joint_position);
     }
+
+    res.push_back(RVIZMarker(joint_positions, ColorRGBA(), 0.012,
+                  visualization_msgs::Marker::LINE_STRIP));
+    res.push_back(RVIZMarker(joint_positions, ColorRGBA(1.0, 0.0, 1.0), 0.025));
 
     return res;
 }
