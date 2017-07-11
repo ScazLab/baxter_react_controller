@@ -50,7 +50,11 @@ cache:
 - apt
 notifications:
   email: false
-  slack: scazlab:8EDCWkzrKK7EsZoVPIXXd7oD
+  slack:
+    rooms:
+    - scazlab:8EDCWkzrKK7EsZoVPIXXd7oD
+    on_success: change
+    on_failure: always
 
 # Configuration variables. All variables are global now, but this can be used to
 # trigger a build matrix for different ROS distributions if desired.
