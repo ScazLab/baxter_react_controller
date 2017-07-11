@@ -140,8 +140,8 @@ bool AvoidanceHandler::computeFoR(const VectorXd &pos,
         z[0] = 0.00000001;    // Avoid the division by 0
     }
 
-    y[0] = -z[2]/z[0]; //y is in normal plane
-    y[2] = 1; //this setting is arbitrary
+    y[0] =      -z[2]/z[0]; // y is in normal plane
+    y[2] =               1; // this setting is arbitrary
     x    = -1*(z.cross(y));
 
     // Let's make them unitary vectors:

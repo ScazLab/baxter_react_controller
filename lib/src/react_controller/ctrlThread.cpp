@@ -258,14 +258,11 @@ void CtrlThread::publishRVIZMarkers()
     // TODO remove this at some point
     // Create some fake obstacles to test
     obstacles.clear();
-    obstacles.push_back(Vector3d(0.50, -0.22, 0.2));
-    geometry_msgs::Pose pose_obs;
-    pose_obs.position.x = (obstacles[0])[0];
-    pose_obs.position.y = (obstacles[0])[1];
-    pose_obs.position.z = (obstacles[0])[2];
+    Vector3d obs(0.50, -0.22, 0.2);
+    obstacles.push_back(obs);
 
     // Publishes all the markers to rviz
-    vector <RVIZMarker> rviz_markers{RVIZMarker(pose_obs, ColorRGBA(1.0, 0.0, 1.0))};
+    vector <RVIZMarker> rviz_markers{RVIZMarker(obs, ColorRGBA(1.0, 0.0, 1.0), 0.03)};
     vector <RVIZMarker> rviz_chain = asRVIZMarkers(*chain);
 
     rviz_markers.insert(std::end(rviz_markers),
