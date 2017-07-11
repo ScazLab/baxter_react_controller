@@ -40,7 +40,19 @@ public:
 
     virtual Eigen::MatrixXd getV_LIM(const Eigen::MatrixXd &v_lim);
 
-    std::vector<geometry_msgs::Pose> getCtrlPoints();
+    /**
+     * Gets the control chains
+     *
+     * @return an std::vector of all the control chains
+     */
+    std::vector<BaxterChain> getCtrlChains();
+
+    /**
+     * Gets the control points
+     *
+     * @return an std::vector of all the control points
+     */
+    std::vector<collisionPoint> getCtrlPoints();
 
     virtual ~AvoidanceHandler();
 };

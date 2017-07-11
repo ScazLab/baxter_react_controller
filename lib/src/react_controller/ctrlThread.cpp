@@ -271,15 +271,24 @@ void CtrlThread::publishRVIZMarkers()
     rviz_markers.insert(std::end(rviz_markers),
                         std::begin(rviz_chain), std::end(rviz_chain));
 
+    vector <RVIZMarker> rviz_coll;
+
     if (coll_av)
     {
-        std::vector<geometry_msgs::Pose> ctrl_pts = avhdl->getCtrlPoints();
-        for (size_t i = 0; i < ctrl_pts.size(); ++i)
+        std::vector<BaxterChain> ctrl_chains = avhdl->getCtrlChains();
+        vector <RVIZMarker> rvzcc;
+
+        for (size_t i = 0; i < ctrl_chains.size(); ++i)
         {
-            rviz_markers.push_back(RVIZMarker(ctrl_pts[i], ColorRGBA(1.0, 0.0, 0.0), 0.1,
-                                   visualization_msgs::Marker::ARROW, 0.1));
+            rvzcc = asRVIZMarkers(ctrl_chains[i], false, false, true);
         }
+
+        rviz_coll.insert(std::end(rviz_coll),
+                         std::begin(  rvzcc), std::end(rvzcc));
     }
+
+    rviz_markers.insert(std::end(rviz_markers),
+                        std::begin( rviz_coll), std::end(rviz_coll));
 
     // Let's publish a set of markers to RVIZ
     rviz_pub.setMarkers(rviz_markers);

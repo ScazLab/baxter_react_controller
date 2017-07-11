@@ -104,30 +104,14 @@ AvoidanceHandler::AvoidanceHandler(const BaxterChain &_chain,
 
 }
 
-std::vector<geometry_msgs::Pose> AvoidanceHandler::getCtrlPoints()
+std::vector<BaxterChain> AvoidanceHandler::getCtrlChains()
 {
-    std::vector<geometry_msgs::Pose> res;
+    return ctrlChains;
+}
 
-    for (size_t i = 0; i < ctrlChains.size(); ++i)
-    {
-        geometry_msgs::Pose pt;
-
-        Eigen::Matrix4d H = ctrlChains[i].getH();
-        Eigen::Quaterniond q(0.0, H(0,2), H(1,2), H(2,2)); // w, x, y, z
-        q.normalize();
-
-        pt.position.x = H(0,3);
-        pt.position.y = H(1,3);
-        pt.position.z = H(2,3);
-        pt.orientation.x = q.x();
-        pt.orientation.y = q.y();
-        pt.orientation.z = q.z();
-        pt.orientation.w = q.w();
-
-        res.push_back(pt);
-    }
-
-    return res;
+std::vector<collisionPoint> AvoidanceHandler::getCtrlPoints()
+{
+    return collPoints;
 }
 
 MatrixXd AvoidanceHandler::getV_LIM(const MatrixXd &v_lim)
