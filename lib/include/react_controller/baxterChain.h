@@ -9,7 +9,8 @@
 #include <kdl/jntarray.hpp>
 #include <urdf/model.h>
 #include <sensor_msgs/JointState.h>
-#include <robot_utils/utils.h>
+#include <robot_utils/rviz_publisher.h>
+
 #include "react_controller/react_control_utils.h"
 
 /**
@@ -49,7 +50,9 @@ private:
     FRIEND_TEST(BaxterChainTest, testFWDKin);
 
 public:
-
+    /**
+     * Array of KDL::Segments that compose the chain.
+     */
     std::vector<KDL::Segment> segments;
 
     /** CONSTRUCTORS **/
@@ -250,6 +253,15 @@ public:
      */
     bool obstacleToCollisionPoint(const Eigen::Vector3d& _obstacle_wrf,
                                   collisionPoint&      _coll_point_erf);
+
+    /**
+     * Friend function to convert the baxter chain as a set of RVIZmarkers for
+     * visualization in RVIZ.
+     *
+     * @param _chain the BaxterChain to visualize.
+     * @return       a vector of RVIZ Markers. They can be directly sent to an RVIZPublisher object.
+     */
+    friend std::vector<RVIZMarker> asRVIZMarkers(BaxterChain _chain);
 
     ~BaxterChain();
 };

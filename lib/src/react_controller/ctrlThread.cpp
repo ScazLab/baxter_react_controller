@@ -270,17 +270,10 @@ void CtrlThread::publishRVIZMarkers()
     RVIZMarker obs_mrk(        pose_obs, ColorRGBA(1.0, 0.0, 1.0));
 
     vector <RVIZMarker> rviz_markers{obs_mrk};
+    vector <RVIZMarker> rviz_chain = asRVIZMarkers(*chain);
 
-    for (size_t i = 0; i < chain->getNrOfJoints(); ++i)
-    {
-        geometry_msgs::Pose joint_pose;
-        Vector3d joint_pos = chain->getH(i).block<3,1>(0,3);
-        joint_pose.position.x = joint_pos(0);
-        joint_pose.position.y = joint_pos(1);
-        joint_pose.position.z = joint_pos(2);
-
-        rviz_markers.push_back(RVIZMarker(joint_pose, ColorRGBA(), 0.025));
-    }
+    rviz_markers.insert(std::end(rviz_markers),
+                        std::begin(rviz_chain), std::end(rviz_chain));
 
     if (coll_av)
     {

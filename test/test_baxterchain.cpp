@@ -81,11 +81,6 @@ TEST(BaxterChainTest, testCollisionPoints)
     EXPECT_EQ(coll_points[2].n[2],  0);
 }
 
-TEST(BaxterChainTest, computeCollisionPoint)
-{
-
-}
-
 BaxterChain getChain(const std::string &_tip_link)
 {
     urdf::Model robot_model;
@@ -298,6 +293,24 @@ TEST(BaxterChainTest, testSegmentTypes)
     EXPECT_EQ(chainL.getSegment( 9).getJoint().getType(), KDL::Joint::None   );
     EXPECT_EQ(chainL.getSegment(10).getJoint().getType(), KDL::Joint::None   );
     EXPECT_EQ(chainL.getSegment(11).getJoint().getType(), KDL::Joint::None   );
+}
+
+TEST(BaxterChainTest, testRVIZVisualization)
+{
+    BaxterChain chainR(getChain("right_gripper"));
+    BaxterChain chainL(getChain( "left_gripper"));
+    RVIZPublisher rviz_pub("rviz_tester");
+
+    rviz_pub.start();
+
+    vector <RVIZMarker> rviz_markersR = asRVIZMarkers(chainR);
+    vector <RVIZMarker> rviz_markersL = asRVIZMarkers(chainL);
+
+    rviz_markersR.insert(std::end(rviz_markersR),
+                         std::begin(rviz_markersL), std::end(rviz_markersL));
+    rviz_pub.setMarkers(rviz_markersR);
+
+    ros::Duration(1.0).sleep();
 }
 
 #include <kdl/chainjnttojacsolver.hpp>
