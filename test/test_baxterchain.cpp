@@ -116,7 +116,7 @@ TEST(BaxterChainTest, testClass)
 
     // getH() is expected to be different from getH(6) because of
     // some segments that are attached at the end of the chain.
-    EXPECT_NE(chain.getH(), chain.getH(chain.getNrOfJoints()-1));
+    EXPECT_EQ(chain.getH(), chain.getH(chain.getNrOfJoints()-1));
     // Eigen::IOFormat HeavyFmt(FullPrecision, 0, ", ", ";\n", "[", "]", "[", "]");
     // cout << "getH (): " << chain.getH( ).format(HeavyFmt) << endl;
     // cout << "getH(6): " << chain.getH(6).format(HeavyFmt) << endl;
@@ -167,43 +167,43 @@ TEST(BaxterChainTest, testRemoveSegment)
     EXPECT_EQ(chainR.getNrOfJoints(),      6);
     EXPECT_EQ(chainR.getNrOfSegments(),    8);
     EXPECT_EQ(chainR.GeoJacobian().cols(), 6);
-    EXPECT_EQ(H6, chainR.getH()) << "getH (): " << chainR.getH( ) << endl
-                                 << "     H6: " <<             H6 << endl;
+    EXPECT_EQ(H5, chainR.getH()) << "getH (): " << chainR.getH( ) << endl
+                                 << "     H5: " <<             H6 << endl;
 
     chainR.removeJoint();
     EXPECT_EQ(chainR.getNrOfJoints(),      5);
     EXPECT_EQ(chainR.getNrOfSegments(),    7);
     EXPECT_EQ(chainR.GeoJacobian().cols(), 5);
-    EXPECT_EQ(H5, chainR.getH()) << "getH (): " << chainR.getH( ) << endl
-                                 << "     H5: " <<             H5 << endl;
+    EXPECT_EQ(H4, chainR.getH()) << "getH (): " << chainR.getH( ) << endl
+                                 << "     H4: " <<             H5 << endl;
 
     chainR.removeJoint();
     EXPECT_EQ(chainR.getNrOfJoints(),      4);
     EXPECT_EQ(chainR.getNrOfSegments(),    6);
     EXPECT_EQ(chainR.GeoJacobian().cols(), 4);
-    EXPECT_EQ(H4, chainR.getH()) << "getH (): " << chainR.getH( ) << endl
-                                 << "     H4: " <<             H4 << endl;
+    EXPECT_EQ(H3, chainR.getH()) << "getH (): " << chainR.getH( ) << endl
+                                 << "     H3: " <<             H4 << endl;
 
     chainR.removeJoint();
     EXPECT_EQ(chainR.getNrOfJoints(),      3);
     EXPECT_EQ(chainR.getNrOfSegments(),    5);
     EXPECT_EQ(chainR.GeoJacobian().cols(), 3);
-    EXPECT_EQ(H3, chainR.getH()) << "getH (): " << chainR.getH( ) << endl
-                                 << "     H3: " <<             H3 << endl;
+    EXPECT_EQ(H2, chainR.getH()) << "getH (): " << chainR.getH( ) << endl
+                                 << "     H2: " <<             H3 << endl;
 
     chainR.removeJoint();
     EXPECT_EQ(chainR.getNrOfJoints(),      2);
     EXPECT_EQ(chainR.getNrOfSegments(),    4);
     EXPECT_EQ(chainR.GeoJacobian().cols(), 2);
-    EXPECT_EQ(H2, chainR.getH()) << "getH (): " << chainR.getH( ) << endl
-                                 << "     H2: " <<             H2 << endl;
+    EXPECT_EQ(H1, chainR.getH()) << "getH (): " << chainR.getH( ) << endl
+                                 << "     H1: " <<             H2 << endl;
 
     chainR.removeJoint();
     EXPECT_EQ(chainR.getNrOfJoints(),      1);
     EXPECT_EQ(chainR.getNrOfSegments(),    3);
     EXPECT_EQ(chainR.GeoJacobian().cols(), 1);
-    EXPECT_EQ(H1, chainR.getH()) << "getH (): " << chainR.getH( ) << endl
-                                 << "     H1: " <<             H1 << endl;
+    EXPECT_EQ(H0, chainR.getH()) << "getH (): " << chainR.getH( ) << endl
+                                 << "     H0: " <<             H1 << endl;
 
     // Left chain tests
     H6 = chainL.getH(6);
@@ -222,43 +222,43 @@ TEST(BaxterChainTest, testRemoveSegment)
     EXPECT_EQ(chainL.getNrOfJoints(),      6);
     EXPECT_EQ(chainL.getNrOfSegments(),    8);
     EXPECT_EQ(chainL.GeoJacobian().cols(), 6);
-    EXPECT_EQ(H6, chainL.getH()) << "getH (): " << chainL.getH( ) << endl
-                                 << "     H6: " <<             H6 << endl;
+    EXPECT_EQ(H5, chainL.getH()) << "getH (): " << chainL.getH( ) << endl
+                                 << "     H5: " <<             H6 << endl;
 
     chainL.removeJoint();
     EXPECT_EQ(chainL.getNrOfJoints(),      5);
     EXPECT_EQ(chainL.getNrOfSegments(),    7);
     EXPECT_EQ(chainL.GeoJacobian().cols(), 5);
-    EXPECT_EQ(H5, chainL.getH()) << "getH (): " << chainL.getH( ) << endl
-                                 << "     H5: " <<             H5 << endl;
+    EXPECT_EQ(H4, chainL.getH()) << "getH (): " << chainL.getH( ) << endl
+                                 << "     H4: " <<             H5 << endl;
 
     chainL.removeJoint();
     EXPECT_EQ(chainL.getNrOfJoints(),      4);
     EXPECT_EQ(chainL.getNrOfSegments(),    6);
     EXPECT_EQ(chainL.GeoJacobian().cols(), 4);
-    EXPECT_EQ(H4, chainL.getH()) << "getH (): " << chainL.getH( ) << endl
-                                 << "     H4: " <<             H4 << endl;
+    EXPECT_EQ(H3, chainL.getH()) << "getH (): " << chainL.getH( ) << endl
+                                 << "     H3: " <<             H4 << endl;
 
     chainL.removeJoint();
     EXPECT_EQ(chainL.getNrOfJoints(),      3);
     EXPECT_EQ(chainL.getNrOfSegments(),    5);
     EXPECT_EQ(chainL.GeoJacobian().cols(), 3);
-    EXPECT_EQ(H3, chainL.getH()) << "getH (): " << chainL.getH( ) << endl
-                                 << "     H3: " <<             H3 << endl;
+    EXPECT_EQ(H2, chainL.getH()) << "getH (): " << chainL.getH( ) << endl
+                                 << "     H2: " <<             H3 << endl;
 
     chainL.removeJoint();
     EXPECT_EQ(chainL.getNrOfJoints(),      2);
     EXPECT_EQ(chainL.getNrOfSegments(),    4);
     EXPECT_EQ(chainL.GeoJacobian().cols(), 2);
-    EXPECT_EQ(H2, chainL.getH()) << "getH (): " << chainL.getH( ) << endl
-                                 << "     H2: " <<             H2 << endl;
+    EXPECT_EQ(H1, chainL.getH()) << "getH (): " << chainL.getH( ) << endl
+                                 << "     H1: " <<             H2 << endl;
 
     chainL.removeJoint();
     EXPECT_EQ(chainL.getNrOfJoints(),      1);
     EXPECT_EQ(chainL.getNrOfSegments(),    3);
     EXPECT_EQ(chainL.GeoJacobian().cols(), 1);
-    EXPECT_EQ(H1, chainL.getH()) << "getH (): " << chainL.getH( ) << endl
-                                 << "     H1: " <<             H1 << endl;
+    EXPECT_EQ(H0, chainL.getH()) << "getH (): " << chainL.getH( ) << endl
+                                 << "     H0: " <<             H1 << endl;
 }
 
 TEST(BaxterChainTest, testSegmentTypes)
@@ -293,6 +293,24 @@ TEST(BaxterChainTest, testSegmentTypes)
     EXPECT_EQ(chainL.getSegment( 9).getJoint().getType(), KDL::Joint::None   );
     EXPECT_EQ(chainL.getSegment(10).getJoint().getType(), KDL::Joint::None   );
     EXPECT_EQ(chainL.getSegment(11).getJoint().getType(), KDL::Joint::None   );
+}
+
+TEST(BaxterChainTest, testRVIZVisualization)
+{
+    BaxterChain chainR(getChain("right_gripper"));
+    BaxterChain chainL(getChain( "left_gripper"));
+    RVIZPublisher rviz_pub("rviz_tester");
+
+    rviz_pub.start();
+
+    vector <RVIZMarker> rviz_markersR = asRVIZMarkers(chainR, true, true, true);
+    vector <RVIZMarker> rviz_markersL = asRVIZMarkers(chainL, true, true, true);
+
+    rviz_markersR.insert(std::end(rviz_markersR),
+                         std::begin(rviz_markersL), std::end(rviz_markersL));
+    rviz_pub.setMarkers(rviz_markersR);
+
+    ros::Duration(0.25).sleep();
 }
 
 #include <kdl/chainjnttojacsolver.hpp>

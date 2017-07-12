@@ -26,23 +26,35 @@ private:
                           Eigen::Matrix4d &FoR);
 
 protected:
-    std::vector<collisionPoint> collPoints;
     std::string type;
 
-    std::vector<BaxterChain>    ctrlPointChains;
+    std::vector<BaxterChain>    ctrlChains;
+    std::vector<collisionPoint> collPoints;
 
 public:
     AvoidanceHandler(const BaxterChain &_chain,
-                             const std::vector<collisionPoint> &_collPoints,
+                             const std::vector<Eigen::Vector3d> &_obstacles,
                              const std::string _type = "none");
 
     std::string getType() { return type; };
 
-    // std::deque<Eigen::VectorXd> getCtrlPointsPosition();
-
     virtual Eigen::MatrixXd getV_LIM(const Eigen::MatrixXd &v_lim);
 
-    ~AvoidanceHandler();
+    /**
+     * Gets the control chains
+     *
+     * @return an std::vector of all the control chains
+     */
+    std::vector<BaxterChain> getCtrlChains();
+
+    /**
+     * Gets the control points
+     *
+     * @return an std::vector of all the control points
+     */
+    std::vector<collisionPoint> getCtrlPoints();
+
+    virtual ~AvoidanceHandler();
 };
 
 /****************************************************************/
@@ -53,11 +65,11 @@ private:
 
 public:
     AvoidanceHandlerTactile(const BaxterChain &_chain,
-                            const std::vector<collisionPoint> &_collPoints);
-
-    ~AvoidanceHandlerTactile();
+                            const std::vector<Eigen::Vector3d> &_obstacles);
 
     Eigen::MatrixXd getV_LIM(const Eigen::MatrixXd &v_lim);
+
+    ~AvoidanceHandlerTactile();
 };
 
 

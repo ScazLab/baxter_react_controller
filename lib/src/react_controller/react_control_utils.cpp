@@ -77,3 +77,42 @@ bool computeCollisionPoints(const std::vector<Vector3d>&      _joints,
 
     return true;
 }
+
+bool changeFoR(const Vector3d orig, const Matrix4d transform, Vector3d &new_pt)
+{
+    Vector4d tmp(0, 0, 0, 1);
+    tmp.block<3,1>(0,0) = orig;
+    new_pt = (transform.inverse() * tmp).block<3,1>(0,0);
+    return true;
+}
+
+KDL::Frame toKDLFrame(Eigen::Matrix4d mat)
+{
+    KDL::Vector x, y, z, pos;
+
+    tf::vectorEigenToKDL(mat.block<3,1>(0,0), x);
+    tf::vectorEigenToKDL(mat.block<3,1>(0,1), y);
+    tf::vectorEigenToKDL(mat.block<3,1>(0,2), z);
+    KDL::Rotation rot = KDL::Rotation(x, y, z);
+
+    tf::vectorEigenToKDL(mat.block<3,1>(0,3), pos);
+
+    return KDL::Frame(rot, pos);
+}
+
+Eigen::VectorXd stdToEigen(std::vector<double> vec)
+{
+    Eigen::VectorXd eigen_vec(vec.size());
+    for (size_t i = 0; i < vec.size(); ++i)
+    {
+        eigen_vec(i) = vec[i];
+    }
+    return eigen_vec;
+}
+
+Eigen::Vector3d projectOntoSegment(Eigen::Vector3d base, Eigen::Vector3d tip, Eigen::Vector3d point)
+{
+    Eigen::Vector3d ab = tip - base;
+    Eigen::Vector3d ap = point - base;
+    return base + ((ap).dot(ab)) / ((ab).dot(ab)) * ab;
+}

@@ -322,42 +322,6 @@ KDL::Jacobian BaxterChain::JntToJac(int _seg_nr)
     return J;
 }
 
-bool BaxterChain::GetJointPositions(vector<Vector3d>& positions)
-{
-    Vector3d point(0.40, -0.25, 0.45);
-
-    size_t segmentNr=getNrOfSegments();
-
-    KDL::JntArray jnts(getNrOfJoints());
-
-    for (size_t i = 0; i < getNrOfJoints() - 1; ++i)
-    {
-        jnts(i) = q[i];
-    }
-
-    int j=0;
-    KDL::Frame frame(KDL::Frame::Identity());
-
-    for (size_t i=0; i<segmentNr; ++i)
-    {
-        if (getSegment(i).getJoint().getType()!=KDL::Joint::None)
-        {
-            frame = frame*getSegment(i).pose(jnts(j));
-            KDL::Vector   posKDL = frame.p;
-            Vector3d posEig;
-            tf::vectorKDLToEigen(posKDL, posEig);
-            positions.push_back(posEig);
-            ++j;
-        }
-        else
-        {
-            frame = frame*getSegment(i).pose(0.0);
-        }
-    }
-
-    return true;
-}
-
 geometry_msgs::Pose BaxterChain::getPose()
 {
     geometry_msgs::Pose result;
@@ -393,7 +357,7 @@ Matrix4d BaxterChain::getH(const size_t _i)
     {
         if (getSegment(s).getJoint().getType()!=KDL::Joint::None)
         {
-            if (j == _i) { break; }
+            if (j == _i + 1) { break; }
             ++j;
         }
     }
@@ -445,7 +409,156 @@ double BaxterChain::getMin(const size_t _i)
     return l[_i];
 }
 
+bool BaxterChain::is_between(Eigen::Vector3d _a, Eigen::Vector3d _b, Eigen::Vector3d _c)
+{
+    double dot_product = (_b - _a).dot(_c - _a);
+    if (dot_product > 0 && dot_product < (_a - _b).squaredNorm())
+    {
+        return true;
+    }
+    return false;
+}
+
+bool BaxterChain::obstacleToCollisionPoint(const Eigen::Vector3d& _obstacle_wrf,
+                                           collisionPoint&      _coll_point_erf)
+{
+    // Project the point onto the last segment of the chain
+    Vector3d pos_ee           = getH(getNrOfJoints()-1).block<3,1>(0,3);
+    Vector3d pos_ee_minus_one = getH(getNrOfJoints()-2).block<3,1>(0,3);
+
+    Vector3d coll_pt_wrf = projectOntoSegment(pos_ee_minus_one, pos_ee, _obstacle_wrf);
+
+    // Convert the collision point from the wrf to end-effector reference frame
+    Vector4d tmp(0, 0, 0, 1);
+    tmp.block<3,1>(0,0) = coll_pt_wrf;
+
+    changeFoR(coll_pt_wrf, getH(), _coll_point_erf.x);
+
+    // Convert the obstacle point from the wrf to end-effector reference frame
+    Vector3d obstacle_erf;
+    changeFoR(_obstacle_wrf, getH(), obstacle_erf);
+
+    // Compute the norm vector in the end-effector reference frame
+    _coll_point_erf.n  = ( obstacle_erf - _coll_point_erf.x);
+
+    double dist = _coll_point_erf.n.norm();
+
+    if (!is_between(pos_ee, pos_ee_minus_one, coll_pt_wrf))
+    {
+        dist += min((pos_ee - coll_pt_wrf).squaredNorm(), (pos_ee_minus_one - coll_pt_wrf).squaredNorm());
+    }
+
+    _coll_point_erf.n /= dist;
+
+    double thres = 0.5;
+    // Compute the magnitude
+    if (dist > thres)
+    {
+        _coll_point_erf.m = 0.0;
+    }
+    else
+    {
+        _coll_point_erf.m = (thres - dist) / thres;
+    }
+
+
+    // ROS_INFO("coll point %zu at x: %g y: %g z: %g", i,
+    //           _coll_points[i].x(0), _coll_points[i].x(1), _coll_points[i].x(2));
+    // ROS_INFO("      norm %zu at x: %g y: %g z: %g", i,
+    //           _coll_points[i].n(0), _coll_points[i].n(1), _coll_points[i].n(2));
+
+    return true;
+}
+
 BaxterChain::~BaxterChain()
 {
     return;
+}
+
+std::vector<RVIZMarker> asRVIZMarkers(BaxterChain _chain, bool _pub_joints,
+                                         bool _pub_links, bool _pub_ori)
+{
+    std::vector<RVIZMarker> res;
+
+    if (_pub_joints || _pub_links)
+    {
+        std::vector<geometry_msgs::Point> joint_positions;
+
+        for (size_t i = 0; i < _chain.getNrOfJoints(); ++i)
+        {
+            geometry_msgs::Point joint_position;
+            Vector3d joint_pos = _chain.getH(i).block<3,1>(0,3);
+            joint_position.x = joint_pos(0);
+            joint_position.y = joint_pos(1);
+            joint_position.z = joint_pos(2);
+
+            joint_positions.push_back(joint_position);
+        }
+
+        if (_pub_links)
+        {
+            res.push_back(RVIZMarker(joint_positions, ColorRGBA(), 0.012,
+                          visualization_msgs::Marker::LINE_STRIP));
+        }
+
+        if (_pub_joints)
+        {
+            res.push_back(RVIZMarker(joint_positions, ColorRGBA(1.0, 0.0, 1.0), 0.025));
+        }
+    }
+
+    if (_pub_ori)
+    {
+        // We can represent the end-effector's reference frame as
+        // three RVIZMarkers with type ARROW
+        for (int i = 0; i < 3; ++i)
+        {
+            geometry_msgs::Pose pt;
+
+            Eigen::Matrix4d H = _chain.getH();
+            Eigen::Quaterniond q(H.block<3,3>(0,0));
+            // ROS_INFO_STREAM("[q]: " << q.vec().transpose() << " " << q.w());
+
+            // For axis y and z, let's add a small rotation to the quaternion
+            if      (i == 1)
+            {
+                q = Eigen::Quaterniond(H.block<3,3>(0,0) *
+                                       AngleAxisd( 0.5*M_PI, Vector3d::UnitZ()));
+            }
+            else if (i == 2)
+            {
+                q = Eigen::Quaterniond(H.block<3,3>(0,0) *
+                                       AngleAxisd(-0.5*M_PI, Vector3d::UnitY()));
+            }
+
+            q.normalize();
+
+            pt.position.x = H(0,3);
+            pt.position.y = H(1,3);
+            pt.position.z = H(2,3);
+            pt.orientation.x = q.x();
+            pt.orientation.y = q.y();
+            pt.orientation.z = q.z();
+            pt.orientation.w = q.w();
+
+            ColorRGBA col(0.2, 0.2, 0.2, 1.0);
+
+            if      (i == 0)
+            {
+                col.col.r = 0.8;
+            }
+            else if (i == 1)
+            {
+                col.col.g = 0.8;
+            }
+            else if (i == 2)
+            {
+                col.col.b = 0.8;
+            }
+
+            res.push_back(RVIZMarker(pt, col, 0.1, visualization_msgs::Marker::ARROW));
+        }
+    }
+
+    return res;
 }

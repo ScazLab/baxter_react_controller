@@ -90,4 +90,18 @@ bool computeCollisionPoints(const std::vector<Eigen::Vector3d>&      _joints,
                             const             Eigen::Vector3d & _coll_coords,
                             std::vector<collisionPoint>&        _coll_points);
 
+bool changeFoR(const Eigen::Vector3d orig, const Eigen::Matrix4d transform, Eigen::Vector3d &new_pt);
+
+/**
+ * Takes a 4x4 Eigen matrix and converts it to a KDL Frame.
+ *
+ * @param  mat          4d matrix to convert
+ * @return              KDL Frame of converted matrix
+ */
+KDL::Frame toKDLFrame(Eigen::Matrix4d mat);
+
+Eigen::VectorXd stdToEigen(std::vector<double> vec);
+
+Eigen::Vector3d projectOntoSegment(Eigen::Vector3d base, Eigen::Vector3d tip, Eigen::Vector3d point);
+
 #endif

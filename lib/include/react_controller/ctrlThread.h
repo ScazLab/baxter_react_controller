@@ -25,19 +25,28 @@ private:
 
     Eigen::VectorXd q_dot;   // Vector of initial joint velocities in arm chain
 
-    Eigen::MatrixXd          vLim; // matrix of maximum joint velocities per joint
-    Eigen::MatrixXd vLimCollision; // matrix of maximum joint velocities per joint
+    Eigen::MatrixXd      vLim; // matrix of maximum joint velocities per joint
+    Eigen::MatrixXd vlim_coll; // matrix of maximum joint velocities per joint
+                               // limited by the collision points
+
+    std::vector<Eigen::Vector3d>  obstacles; // Vector of 3D obstacles in the world reference frame
+    std::unique_ptr<AvoidanceHandler> avhdl; // Pointer to the avoidance handler
 
     double    dT;       // time constraint for IpOpt solver time per optimization
     double   tol;       // tolerance for constraint violations
     double  vMax;       // maximum velocity of joints
     bool coll_av;       // collision avoidance mode
 
+    /**
+     * Publishes a vector of markers to RVIZ for visualization
+     */
+    void publishRVIZMarkers();
+
 public:
     CtrlThread(const std::string& _name, const std::string&        _limb,
                 bool _use_robot =  true, double _ctrl_freq = THREAD_FREQ,
-                bool  _is_debug = false, double       _tol =        1e-3,
-                double    _vMax = 120.0, bool     _coll_av =      false);
+                bool  _is_debug = false, bool     _coll_av =       false,
+                double     _tol =  1e-6, double      _vMax =      120.0);
 
     /**
      * Initializes the IpoptApplication with default values for every time the solver

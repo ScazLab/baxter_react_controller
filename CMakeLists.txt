@@ -1,8 +1,11 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(baxter_react_controller)
 
+## Add C++14 support
 if(CMAKE_COMPILER_IS_GNUCXX OR ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang"))
-    set(CMAKE_CXX_FLAGS "-std=c++11 ${CMAKE_CXX_FLAGS}")
+    # message("Setting C++14 and C++11 support..")
+    set(CMAKE_CXX_FLAGS "-std=c++14")
+    # message(${CMAKE_CXX_FLAGS})
 endif()
 
 ## Find catkin macros and libraries
@@ -90,7 +93,7 @@ catkin_package(
    INCLUDE_DIRS lib/include
    LIBRARIES react_controller
 #  CATKIN_DEPENDS other_catkin_pkg
-   DEPENDS Eigen orocos_kdl
+   DEPENDS Eigen orocos_kdl IPOPT
 )
 
 ###########
@@ -101,11 +104,11 @@ ADD_DEFINITIONS ( -Wall -Wextra -Wno-unused-parameter -Werror)
 
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
-include_directories(lib/include
-                    ${IPOPT_INCLUDE_DIRS}
-                    ${Eigen_INCLUDE_DIRS}
-                    ${orocos_kdl_INCLUDE_DIRS}
-                    ${catkin_INCLUDE_DIRS})
+include_directories(lib/include)
+include_directories(SYSTEM ${IPOPT_INCLUDE_DIRS}
+                           ${Eigen_INCLUDE_DIRS}
+                           ${orocos_kdl_INCLUDE_DIRS}
+                           ${catkin_INCLUDE_DIRS})
 
 
 ## Declare a C++ library
@@ -129,8 +132,8 @@ add_executable(baxter_react_controller src/baxter_react_controller.cpp)
 add_dependencies(baxter_react_controller ${${PROJECT_NAME}_EXPORTED_TARGETS} react_controller ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
-target_link_libraries(baxter_react_controller               react_controller
-                                                            ${catkin_LIBRARIES})
+target_link_libraries(baxter_react_controller   react_controller
+                                                ${catkin_LIBRARIES})
 
 #############
 ## Install ##

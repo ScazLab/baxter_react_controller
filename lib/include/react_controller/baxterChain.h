@@ -9,7 +9,8 @@
 #include <kdl/jntarray.hpp>
 #include <urdf/model.h>
 #include <sensor_msgs/JointState.h>
-#include <robot_utils/utils.h>
+#include <robot_utils/rviz_publisher.h>
+
 #include "react_controller/react_control_utils.h"
 
 /**
@@ -49,7 +50,9 @@ private:
     FRIEND_TEST(BaxterChainTest, testFWDKin);
 
 public:
-
+    /**
+     * Array of KDL::Segments that compose the chain.
+     */
     std::vector<KDL::Segment> segments;
 
     /** CONSTRUCTORS **/
@@ -139,13 +142,6 @@ public:
      * @return a constant reference to the nth segment
      */
     const KDL::Segment& getSegment(size_t nr)const;
-
-    /**
-     * Gets all collision points and normal vectors for each segment in the arm.
-     *
-     * @return true/false if success/failure
-     */
-    bool GetJointPositions(std::vector<Eigen::Vector3d>& positions);
 
     /**
      * Function to return the geometric Jacobian of the _i'th segment
@@ -244,6 +240,35 @@ public:
      */
     double getMax(const size_t _i);
     double getMin(const size_t _i);
+
+
+    bool is_between(Eigen::Vector3d _a, Eigen::Vector3d _b, Eigen::Vector3d _c);
+
+    /**
+     * Computes a collision point given the coordinates of the obstacle.
+     *
+     * @param  _obstacle_wrf    3D coordinates of the obstacle in the world reference frame
+     * @param  _coll_point_erf  collisionPoint onto the limb in the end-effector reference frame
+     * @return                  true on success, false otherwise
+     */
+    bool obstacleToCollisionPoint(const Eigen::Vector3d& _obstacle_wrf,
+                                  collisionPoint&      _coll_point_erf);
+
+    /**
+     * Friend function to convert the baxter chain as a set of RVIZmarkers for
+     * visualization in RVIZ.
+     *
+     * @param _chain      the BaxterChain to visualize.
+     * @param _pub_joints if to publish the joints as a set of spheres (default  true)
+     * @param _pub_links  if to publish the  links as a set of  sticks (default  true)
+     * @param _pub_ori    if to publish the end-effector orientation   (default false)
+     * @return            a vector of RVIZ Markers.
+     *                    They can be directly provided to an RVIZPublisher object.
+     */
+    friend std::vector<RVIZMarker> asRVIZMarkers(BaxterChain _chain,
+                                                 bool _pub_joints =  true,
+                                                 bool _pub_links  =  true,
+                                                 bool _pub_ori    = false);
 
     ~BaxterChain();
 };

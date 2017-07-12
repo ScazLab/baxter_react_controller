@@ -15,7 +15,11 @@ int main(int argc, char ** argv)
 
     bool is_debug;
     _n.param<bool>("is_debug", is_debug, false);
-    ROS_INFO("is_debug flag set to %s", is_debug==true?"true":"false");
+    ROS_INFO(" is_debug flag set to %s", is_debug==true?"true":"false");
+
+    bool coll_av;
+    _n.param<bool>("coll_av", coll_av, false);
+    ROS_INFO("  coll_av flag set to %s", coll_av==true?"true":"false");
 
     string limb;
     _n.param<string>("limb", limb, "right");
@@ -23,7 +27,7 @@ int main(int argc, char ** argv)
     ROS_INFO("Limb to be used set to %s", limb.c_str());
 
     printf("\n");
-    CtrlThread arm("baxter_react_controller", limb, use_robot, 50.0, is_debug);
+    CtrlThread arm("baxter_react_controller", limb, use_robot, 50.0, is_debug, coll_av);
     printf("\n");
 
     if (is_debug == true)

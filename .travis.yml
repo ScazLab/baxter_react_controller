@@ -46,15 +46,15 @@
 dist: trusty
 sudo: required
 language: generic
-compiler:
-  - clang
-  - gcc
 cache:
-  - apt
-
+- apt
 notifications:
   email: false
-  slack: scazlab:8EDCWkzrKK7EsZoVPIXXd7oD
+  slack:
+    rooms:
+    - scazlab:8EDCWkzrKK7EsZoVPIXXd7oD
+    on_success: change
+    on_failure: always
 
 # Configuration variables. All variables are global now, but this can be used to
 # trigger a build matrix for different ROS distributions if desired.
@@ -68,6 +68,31 @@ env:
     - ROS_PARALLEL_JOBS='-j8 -l6'
     - REPO_NAME=$(echo $TRAVIS_REPO_SLUG | cut -d"/" -f2) # if you have multiple packages per repo, change this variable accordingly
     - IPOPT_DIR=~/src/ipopt/build
+
+# Build matrix
+matrix:
+  include:
+  - os: linux
+    compiler: g++-4.9
+    env: CTEST_TARGET_SYSTEM=Linux-gcc CTEST_MODEL=Nightly CXX=g++-4.9 CC=gcc-4.9
+    addons:
+      apt:
+        packages:
+        - g++-4.9
+        - libgfortran-4.9-dev
+        sources: &1
+        - ubuntu-toolchain-r-test
+        - llvm-toolchain-trusty
+        - llvm-toolchain-trusty-3.7
+        - llvm-toolchain-trusty-3.6
+  # - os: linux
+  #   compiler: clang-3.6
+  #   env: CTEST_TARGET_SYSTEM=Linux-gcc CTEST_MODEL=Nightly CXX=clang++-3.6 CC=clang-3.6
+  #   addons:
+  #     apt:
+  #       packages:
+  #       - clang-3.6
+  #       sources: *1
 
 ################################################################################
 

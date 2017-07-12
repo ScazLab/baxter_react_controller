@@ -1,22 +1,20 @@
 #include "react_controller/ctrlThread.h"
-#include <iostream>
 
-using namespace              std;
-using namespace      sensor_msgs;
-using namespace baxter_core_msgs;
-using namespace            Eigen;
+using namespace   std;
+using namespace Eigen;
 
-CtrlThread::CtrlThread(const std::string& _name, const std::string& _limb, bool _use_robot, double _ctrl_freq,
-                       bool _is_debug, double _tol, double _vMax, bool _coll_av) :
-                       RobotInterface(_name, _limb, _use_robot, _ctrl_freq, true, false, true, true), chain(0),
-                       is_debug(_is_debug), internal_state(true), nlp_ctrl_ori(false), nlp_derivative_test("none"),
-                       nlp_print_level(0), dT(1000.0/_ctrl_freq), tol(_tol), vMax(_vMax), coll_av(_coll_av)
+CtrlThread::CtrlThread(const string& _name, const string& _limb, bool _use_robot, double _ctrl_freq,
+                       bool _is_debug, bool _coll_av, double _tol, double _vMax) :
+                       RobotInterface(_name, _limb, _use_robot, _ctrl_freq, true, false, true, true),
+                       chain(0), is_debug(_is_debug), internal_state(true), nlp_ctrl_ori(false),
+                       nlp_derivative_test("none"), nlp_print_level(0), dT(1000.0/_ctrl_freq),
+                       tol(_tol), vMax(_vMax), coll_av(_coll_av)
 {
     urdf::Model robot_model;
-    std::string  xml_string;
+    string       xml_string;
 
-    std::string urdf_xml,full_urdf_xml;
-    nh.param<std::string>("urdf_xml",urdf_xml,"/robot_description");
+    string urdf_xml,full_urdf_xml;
+    nh.param<string>("urdf_xml",urdf_xml,"/robot_description");
     nh.searchParam(urdf_xml,full_urdf_xml);
 
     ROS_DEBUG("Reading xml file from parameter server");
@@ -26,7 +24,7 @@ CtrlThread::CtrlThread(const std::string& _name, const std::string& _limb, bool 
         return;
     }
 
-    nh.param(full_urdf_xml,xml_string,std::string());
+    nh.param(full_urdf_xml,xml_string,string());
     robot_model.initString(xml_string);
 
     string base_link = "base";
@@ -64,10 +62,10 @@ CtrlThread::CtrlThread(const std::string& _name, const std::string& _limb, bool 
 void CtrlThread::initializeNLP()
 {
     app=new Ipopt::IpoptApplication;
-    app->Options()->SetNumericValue(            "tol", tol    );
-    app->Options()->SetNumericValue("constr_viol_tol", tol*100);
-    app->Options()->SetNumericValue( "acceptable_tol", tol    );
-    app->Options()->SetIntegerValue("acceptable_iter",      10);
+    app->Options()->SetNumericValue(            "tol", tol);
+    app->Options()->SetNumericValue("constr_viol_tol", tol);
+    app->Options()->SetNumericValue( "acceptable_tol", tol);
+    app->Options()->SetIntegerValue("acceptable_iter",  10);
     app->Options()->SetStringValue ( "mu_strategy", "adaptive");
     // if (is_debug == false) { app->Options()->SetStringValue ("linear_solver", "ma57"); }
     app->Options()->SetNumericValue("max_cpu_time", 0.95 * dT / 1000.0);
@@ -128,7 +126,7 @@ bool CtrlThread::debugIPOPT()
     bool      result =  true;
     int   n_failures =     0;
 
-    std::vector<double> increment{0.001, 0.004};
+    vector<double> increment{0.001, 0.004};
 
     // Let's do all the test together
     // The number of test performed is 2^2^increment.size()
@@ -189,15 +187,18 @@ bool CtrlThread::goToPoseNoCheck(double px, double py, double pz,
 
     if ((not is_debug) && waitForJointAngles(2.0))   { chain->setAng(getJointStates()); }
 
-    // ROS_INFO("actual joint  pos: %s", toString(std::vector<double>(_q.position.data(),
-    //                                             _q.position.data() + _q.position.size())).c_str());
+    // ROS_INFO("actual joint  pos: %s", toString(vector<double>(_q.position.data(),
+    //                                _q.position.data() + _q.position.size())).c_str());
     nlp = new ControllerNLP(*chain);
 
+    // Solve the task
     int exit_code = -1;
-    Eigen::VectorXd est_vels = solveIK(exit_code);
-    q_dot = est_vels;
+    VectorXd est_vels = solveIK(exit_code);
+    // ROS_INFO_STREAM("est_vels: " << est_vels.transpose());
 
-    std::vector<double> des_poss(chain->getNrOfJoints());
+    publishRVIZMarkers();
+
+    vector<double> des_poss(chain->getNrOfJoints());
     for (size_t i = 0; i < chain->getNrOfJoints(); ++i)
     {
         des_poss[i] = chain->getAng(i) + (dT * est_vels[i]);
@@ -205,8 +206,14 @@ bool CtrlThread::goToPoseNoCheck(double px, double py, double pz,
 
     // ROS_INFO("sending joint position: %s", toString(des_poss).c_str());
 
-    if (exit_code != 0 && exit_code != 4 && exit_code != -4) { return false; }
+    // if (exit_code != 0 && exit_code != 4 && exit_code != -4) { return false; }
     if (is_debug)                                            { return  true; }
+    if (exit_code == 5 || exit_code == 2)                    { return  true; }
+
+    // if (exit_code == 0)
+    {
+        q_dot = est_vels;
+    }
 
     if (isRobotUsed())
     {
@@ -221,19 +228,14 @@ VectorXd CtrlThread::solveIK(int &_exit_code)
 {
     NLPOptionsFromParameterServer();
 
+    nlp->set_print_level(size_t(nlp_print_level));
+
     if (coll_av)
     {
-        std::vector<Eigen::Vector3d> positions;
-        chain->GetJointPositions(positions);
+        avhdl = std::make_unique<AvoidanceHandlerTactile>(*chain, obstacles);
+        vlim_coll = avhdl->getV_LIM(DEG2RAD * vLim) * RAD2DEG;
 
-        Eigen::Vector3d point(0.63, -0.17, 0.0);
-        std::vector<collisionPoint> collisionPoints;
-        computeCollisionPoints(positions, point, collisionPoints);
-        AvoidanceHandler *avhdl;
-        avhdl = new AvoidanceHandlerTactile(*chain, collisionPoints);
-        vLimCollision = avhdl->getV_LIM(vLim);
-        cout << vLimCollision << endl;
-        nlp->set_v_lim(vLimCollision);
+        nlp->set_v_lim(vlim_coll);
     }
     else
     {
@@ -249,6 +251,44 @@ VectorXd CtrlThread::solveIK(int &_exit_code)
     _exit_code=app->OptimizeTNLP(GetRawPtr(nlp));
 
     return nlp->get_result();
+}
+
+void CtrlThread::publishRVIZMarkers()
+{
+    // TODO remove this at some point
+    // Create some fake obstacles to test
+    obstacles.clear();
+    Vector3d obs(0.50, -0.22, 0.2);
+    obstacles.push_back(obs);
+
+    // Publishes all the markers to rviz
+    vector <RVIZMarker> rviz_markers{RVIZMarker(obs, ColorRGBA(1.0, 0.0, 1.0), 0.03)};
+    vector <RVIZMarker> rviz_chain = asRVIZMarkers(*chain);
+
+    rviz_markers.insert(std::end(rviz_markers),
+                        std::begin(rviz_chain), std::end(rviz_chain));
+
+    vector <RVIZMarker> rviz_coll;
+
+    if (coll_av)
+    {
+        std::vector<BaxterChain> ctrl_chains = avhdl->getCtrlChains();
+        vector <RVIZMarker> rvzcc;
+
+        for (size_t i = 0; i < ctrl_chains.size(); ++i)
+        {
+            rvzcc = asRVIZMarkers(ctrl_chains[i], false, false, true);
+        }
+
+        rviz_coll.insert(std::end(rviz_coll),
+                         std::begin(  rvzcc), std::end(rvzcc));
+    }
+
+    rviz_markers.insert(std::end(rviz_markers),
+                        std::begin( rviz_coll), std::end(rviz_coll));
+
+    // Let's publish a set of markers to RVIZ
+    rviz_pub.setMarkers(rviz_markers);
 }
 
 CtrlThread::~CtrlThread()

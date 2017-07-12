@@ -47,6 +47,69 @@ TEST(UtilsTest, toMatrix4d)
                         << endl << endl << "Eigen:\n" <<    eigen << endl;
 }
 
+TEST(UtilsTest, toKDLFrame)
+{
+    EXPECT_TRUE(true);
+    KDL::Frame frame(KDL::Frame::Identity());
+    Matrix4d   eigen(  Matrix4d::Identity());
+
+    EXPECT_EQ(frame, toKDLFrame(eigen));
+    EXPECT_EQ(frame, toKDLFrame(eigen.inverse()));
+
+    // Test some positions
+    eigen(0,3) =  0.1;
+    frame.p[0] =  0.1;
+    EXPECT_EQ(frame, toKDLFrame(eigen));
+
+    eigen(1,3) = 0.01;
+    frame.p[1] = 0.01;
+    EXPECT_EQ(frame, toKDLFrame(eigen));
+
+    eigen(2,3) =  100;
+    frame.p[2] =  100;
+    EXPECT_EQ(frame, toKDLFrame(eigen));
+
+    // Test some rotations
+    frame.M  = KDL::Rotation(0,1,0, 1,0,0, 0,0,-1 );
+    eigen.block<3,3>(0,0) << 0,1,0, 1,0,0, 0,0,-1;
+    EXPECT_EQ(frame, toKDLFrame(eigen));
+
+    frame.M  = KDL::Rotation(-1,0,0, 0,0,1, 0,1,0 );
+    eigen.block<3,3>(0,0) << -1,0,0, 0,0,1, 0,1,0;
+    EXPECT_EQ(frame, toKDLFrame(eigen));
+
+    frame.M  = KDL::Rotation(0,-1,0, 0,0,1, 1,0,0 );
+    eigen.block<3,3>(0,0) << 0,-1,0, 0,0,1, 1,0,0;
+    EXPECT_EQ(frame, toKDLFrame(eigen));
+}
+
+TEST(UtilsTest, changeFoR)
+{
+    // EXPECT_TRUE(true);
+    Eigen::Vector3d original_point(3, 4, 1);
+
+    // Test translation
+    Eigen::Matrix4d transform = Matrix4d::Identity();
+    transform.block<3,1>(0,3) = Vector3d(1, 2, 0);
+    Eigen::Vector3d new_point;
+    changeFoR(original_point, transform, new_point);
+
+    EXPECT_EQ(new_point, Vector3d(2, 2, 1));
+
+    // Test rotation 180 degrees around z axis
+    transform = Matrix4d::Identity();
+    transform(0, 0) = -1; transform(1, 1) = -1;
+    changeFoR(original_point, transform, new_point);
+
+    EXPECT_EQ(new_point, Vector3d(-3, -4, 1));
+
+    // Test rotation and translation
+    transform.block<3,1>(0,3) = Vector3d(1, 2, 0);
+    changeFoR(original_point, transform, new_point);
+    EXPECT_EQ(new_point, Vector3d(-2, -2, 1));
+
+}
+
 Matrix3d rotateMat(const Matrix3d& _ori_mat, double _rot_x, double _rot_y, double _rot_z)
 {
     Matrix3d new_mat;
@@ -112,6 +175,39 @@ TEST(UtilsTest, angleAxisErrAng)
     // testAngularErrors(R0,   0.0,   0.0, 180.0);      // 180° rotation about z axis
     // testAngularErrors(R0,   0.0,   0.0, 181.0);      // 181° rotation about z axis
     // testAngularErrors(R0, 180.0, 180.0, 180.0);      // 180° rotation about all axes
+}
+
+TEST(UtilsTest, testProjectOntoSegment)
+{
+    Vector3d base(0, 0, 0);
+    Vector3d tip(1, 0, 0);
+
+
+    Vector3d obstacle(0.5, 1, 0);
+    Vector3d expect(0.5, 0, 0);
+    Vector3d projection = projectOntoSegment(base, tip, obstacle);
+    EXPECT_EQ(expect, projection);
+
+
+    obstacle(0) = 0.75;
+    expect(0) = 0.75;
+    projection = projectOntoSegment(base, tip, obstacle);
+    EXPECT_EQ(expect, projection);
+
+    obstacle(0) = 1.5;
+    expect(0) = 1.5;
+    projection = projectOntoSegment(base, tip, obstacle);
+    EXPECT_EQ(expect, projection);
+
+    obstacle(1) = -1;
+    projection = projectOntoSegment(base, tip, obstacle);
+    EXPECT_EQ(expect, projection);
+
+    tip(1) = 1;
+    obstacle(0) = 1;
+    expect(0) = 0;
+    projection = projectOntoSegment(base, tip, obstacle);
+    EXPECT_EQ(expect, projection);
 }
 
 // Run all the tests that were declared with TEST()
