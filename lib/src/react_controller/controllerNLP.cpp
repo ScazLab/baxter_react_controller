@@ -59,41 +59,47 @@ void ControllerNLP::computeGuard()
 /****************************************************************/
 void ControllerNLP::computeBounds()
 {
-    computeGuard();
+    // computeGuard();
 
-    bounds.resize(chain.getNrOfJoints(), 2);
+    // bounds.resize(chain.getNrOfJoints(), 2);
 
-    for (size_t i=0; i<chain.getNrOfJoints(); ++i)
-    {
-        double qi=q_0[i];
+    // for (size_t i=0; i<chain.getNrOfJoints(); ++i)
+    // {
+    //     double qi=q_0[i];
 
-        if ((qi>=qGuardMinInt[i]) && (qi<=qGuardMaxInt[i]))
-        {
-            bounds(i,0)=bounds(i,1)=1.0;
-        }
-        else if (qi<qGuardMinInt[i])
-        {
-            bounds(i,0)=(qi<=qGuardMinExt[i]?0.0:
-                         0.5*(1.0+tanh(+10.0*(qi-qGuardMinCOG[i])/qGuard[i])));
-            bounds(i,1)=1.0;
-        }
-        else
-        {
-            bounds(i,0)=1.0;
-            bounds(i,1)=(qi>=qGuardMaxExt[i]?0.0:
-                         0.5*(1.0+tanh(-10.0*(qi-qGuardMaxCOG[i])/qGuard[i])));
-        }
-    }
+    //     if ((qi>=qGuardMinInt[i]) && (qi<=qGuardMaxInt[i]))
+    //     {
+    //         bounds(i,0)=bounds(i,1)=1.0;
+    //     }
+    //     else if (qi<qGuardMinInt[i])
+    //     {
+    //         bounds(i,0)=(qi<=qGuardMinExt[i]?0.0:
+    //                      0.5*(1.0+tanh(+10.0*(qi-qGuardMinCOG[i])/qGuard[i])));
+    //         bounds(i,1)=1.0;
+    //     }
+    //     else
+    //     {
+    //         bounds(i,0)=1.0;
+    //         bounds(i,1)=(qi>=qGuardMaxExt[i]?0.0:
+    //                      0.5*(1.0+tanh(-10.0*(qi-qGuardMaxCOG[i])/qGuard[i])));
+    //     }
+    // }
 
     // ROS_INFO_STREAM_COND(print_level>=2, "bounds before" << endl << bounds);
 
-    for (size_t i=0; i<chain.getNrOfJoints(); ++i)
-    {
-        bounds(i,0)*=v_lim(i,0);
-        bounds(i,1)*=v_lim(i,1);
-    }
+    // for (size_t i=0; i<chain.getNrOfJoints(); ++i)
+    // {
+    //     bounds(i,0)*=v_lim(i,0);
+    //     bounds(i,1)*=v_lim(i,1);
+    // }
 
     // ROS_INFO_STREAM_COND(print_level>=2, "bounds after" << endl << bounds);
+
+    for (size_t i=0; i<chain.getNrOfJoints(); ++i)
+    {
+        bounds(i,0)=v_lim(i,0);
+        bounds(i,1)=v_lim(i,1);
+    }
 }
 
 /****************************************************************/
@@ -176,7 +182,7 @@ void ControllerNLP::init()
 
     ROS_INFO_STREAM_COND(print_level>=2 && ctrl_ori, "J_0_ang:\n" << J_0_ang);
 
-    // computeBounds();
+    computeBounds();
 }
 
 /****************************************************************/
@@ -204,7 +210,6 @@ bool ControllerNLP::get_nlp_info(Ipopt::Index &n, Ipopt::Index &m, Ipopt::Index 
 bool ControllerNLP::get_bounds_info(Ipopt::Index n, Ipopt::Number *x_l, Ipopt::Number *x_u,
                                     Ipopt::Index m, Ipopt::Number *g_l, Ipopt::Number *g_u)
 {
-
     for (Ipopt::Index i=0; i<n; ++i)
     {
         x_l[i]=bounds(i,0);
