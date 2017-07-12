@@ -310,7 +310,7 @@ TEST(BaxterChainTest, testRVIZVisualization)
                          std::begin(rviz_markersL), std::end(rviz_markersL));
     rviz_pub.setMarkers(rviz_markersR);
 
-    ros::Duration(0.25).sleep();
+    ros::Duration(0.5).sleep();
 }
 
 #include <kdl/chainjnttojacsolver.hpp>
