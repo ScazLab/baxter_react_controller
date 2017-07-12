@@ -46,6 +46,7 @@
 dist: trusty
 sudo: required
 language: generic
+group: deprecated-2017Q3
 cache:
 - apt
 notifications:
