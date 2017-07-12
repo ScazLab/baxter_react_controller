@@ -13,7 +13,7 @@ AvoidanceHandler::AvoidanceHandler(const BaxterChain &_chain,
     std::vector<BaxterChain>    tmpCC;  // temporary array of control chains
     std::vector<collisionPoint> tmpCP;  // temporary array of collision points
 
-    if (not _obstacles.empty())
+    for (size_t i = 0; i < _obstacles.size(); ++i)
     {
         // Let's start by creating a custom chain with only one joint
         BaxterChain customChain;
@@ -48,27 +48,25 @@ AvoidanceHandler::AvoidanceHandler(const BaxterChain &_chain,
             // ROS_INFO_STREAM("Get Angles:  " << customChain.getAng().transpose());
             // ROS_INFO_STREAM("Real Angles: " <<       chain.getAng().transpose());
 
-            for(size_t i = 0; i < _obstacles.size(); ++i)
+            // Compute collision points
+            // obstacles are expressed in the world reference frame [WRF]
+            // coll_pt is in the end-effector reference frame [ERF]
+            collisionPoint coll_pt;
+
+            if (customChain.obstacleToCollisionPoint(_obstacles[i], coll_pt))
             {
-                // Compute collision points
-                // obstacles are expressed in the world reference frame [WRF]
-                // coll_pt is in the end-effector reference frame [ERF]
-                collisionPoint coll_pt;
-                if (customChain.obstacleToCollisionPoint(_obstacles[i], coll_pt))
-                {
-                    tmpCP.push_back(coll_pt);
+                tmpCP.push_back(coll_pt);
 
-                    // create new segment to add to the custom chain that ends up in the collision point
-                    Matrix4d HN(Matrix4d::Identity());
-                    // Compute new segment to add to the chain
-                    computeFoR(coll_pt.x, coll_pt.n, HN);
-                    KDL::Segment s = KDL::Segment(KDL::Joint(KDL::Joint::None), toKDLFrame(HN));
+                // create new segment to add to the custom chain that ends up in the collision point
+                Matrix4d HN(Matrix4d::Identity());
+                // Compute new segment to add to the chain
+                computeFoR(coll_pt.x, coll_pt.n, HN);
+                KDL::Segment s = KDL::Segment(KDL::Joint(KDL::Joint::None), toKDLFrame(HN));
 
-                    BaxterChain chainToAdd = customChain;
-                    chainToAdd.addSegment(s);
-                    tmpCC.push_back(chainToAdd);
-                    // ROS_INFO("adding chain with %zu joints and %zu segments", chainToAdd.getNrOfJoints(), chainToAdd.getNrOfSegments());
-                }
+                BaxterChain chainToAdd = customChain;
+                chainToAdd.addSegment(s);
+                tmpCC.push_back(chainToAdd);
+                // ROS_INFO("adding chain with %zu joints and %zu segments", chainToAdd.getNrOfJoints(), chainToAdd.getNrOfSegments());
             }
 
             // ROS_INFO("tmpCP.size %lu tmpCC.size %lu", tmpCP.size(), tmpCC.size());
@@ -100,6 +98,9 @@ AvoidanceHandler::AvoidanceHandler(const BaxterChain &_chain,
             collPoints.push_back(tmpCP[max_idx]);
             ctrlChains.push_back(tmpCC[max_idx]);
         }
+
+        tmpCC.clear();
+        tmpCP.clear();
     }
 
 }
