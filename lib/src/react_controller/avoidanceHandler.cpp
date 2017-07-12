@@ -158,6 +158,30 @@ bool AvoidanceHandler::computeFoR(const VectorXd &pos,
     return true;
 }
 
+std::vector<RVIZMarker> AvoidanceHandler::toRVIZMarkers()
+{
+    std::vector<RVIZMarker> res;
+
+    vector <RVIZMarker> rvzcc;
+
+    for (size_t i = 0; i < ctrlChains.size(); ++i)
+    {
+        rvzcc = asRVIZMarkers(ctrlChains[i], false, false, true);
+
+        // Let's use the magnitude of the collision point as length
+        // of the arrow to be displayed to RVIZ
+        for (int j = 0; j < 3; ++j)
+        {
+            rvzcc[j].size *= collPoints[i].m;
+        }
+
+        res.insert(std::end(res),
+                   std::begin(rvzcc), std::end(rvzcc));
+    }
+
+    return res;
+}
+
 AvoidanceHandler::~AvoidanceHandler()
 {
 

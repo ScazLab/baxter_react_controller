@@ -258,36 +258,28 @@ void CtrlThread::publishRVIZMarkers()
     // TODO remove this at some point
     // Create some fake obstacles to test
     obstacles.clear();
-    Vector3d obs(0.50, -0.22, 0.2);
-    obstacles.push_back(obs);
+    Vector3d obs1(0.50, -0.22, 0.2);
+    Vector3d obs2(0.20, -0.42, 0.1);
+    obstacles.push_back(obs1);
+    obstacles.push_back(obs2);
 
     // Publishes all the markers to rviz
-    vector <RVIZMarker> rviz_markers{RVIZMarker(obs, ColorRGBA(1.0, 0.0, 1.0), 0.03)};
+    vector <RVIZMarker> rviz_markers{RVIZMarker(obs1, ColorRGBA(1.0, 0.0, 1.0), 0.03),
+                                     RVIZMarker(obs2, ColorRGBA(1.0, 0.0, 1.0), 0.03)};
     vector <RVIZMarker> rviz_chain = asRVIZMarkers(*chain);
 
     rviz_markers.insert(std::end(rviz_markers),
                         std::begin(rviz_chain), std::end(rviz_chain));
 
-    vector <RVIZMarker> rviz_coll;
-
     if (coll_av)
     {
-        std::vector<BaxterChain> ctrl_chains = avhdl->getCtrlChains();
-        vector <RVIZMarker> rvzcc;
+        vector <RVIZMarker> rviz_coll = avhdl->toRVIZMarkers();
 
-        for (size_t i = 0; i < ctrl_chains.size(); ++i)
-        {
-            rvzcc = asRVIZMarkers(ctrl_chains[i], false, false, true);
-        }
-
-        rviz_coll.insert(std::end(rviz_coll),
-                         std::begin(  rvzcc), std::end(rvzcc));
+        rviz_markers.insert(std::end(rviz_markers),
+                            std::begin( rviz_coll), std::end(rviz_coll));
     }
 
-    rviz_markers.insert(std::end(rviz_markers),
-                        std::begin( rviz_coll), std::end(rviz_coll));
-
-    // Let's publish a set of markers to RVIZ
+    // Let's publish the set of markers to RVIZ
     rviz_pub.setMarkers(rviz_markers);
 }
 

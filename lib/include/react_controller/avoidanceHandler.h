@@ -54,6 +54,16 @@ public:
      */
     std::vector<collisionPoint> getCtrlPoints();
 
+
+    /**
+     * Convert the control chains to a set of RVIZmarkers for
+     * visualization in RVIZ.
+     *
+     * @return  a vector of RVIZ Markers.
+     *          They can be directly provided to an RVIZPublisher object.
+     */
+    std::vector<RVIZMarker> toRVIZMarkers();
+
     virtual ~AvoidanceHandler();
 };
 
