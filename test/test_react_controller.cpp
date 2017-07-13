@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 
-#include <baxter_collaboration_msgs/GoToPose.h>
-#include <baxter_collaboration_msgs/ArmState.h>
+#include <human_robot_collaboration_msgs/GoToPose.h>
+#include <human_robot_collaboration_msgs/ArmState.h>
 #include <baxter_core_msgs/AssemblyState.h>
 #include <robot_utils/utils.h>
 
@@ -21,8 +21,8 @@ private:
     ros::Subscriber as_sub;  // Subscriber for the arm   state
     ros::Subscriber gz_sub;  // Subscriber for the robot state
 
-    std::unique_ptr<baxter_collaboration_msgs::ArmState> as_state_ptr;
-    std::unique_ptr<baxter_core_msgs::AssemblyState>     gz_state_ptr;
+    std::unique_ptr<human_robot_collaboration_msgs::ArmState> as_state_ptr;
+    std::unique_ptr<baxter_core_msgs::AssemblyState>          gz_state_ptr;
 
     std::vector<geometry_msgs::Pose> _wp;
 
@@ -74,9 +74,9 @@ private:
      *
      * @param msg the message received.
      */
-    void armStateCb(const baxter_collaboration_msgs::ArmState& msg)
+    void armStateCb(const human_robot_collaboration_msgs::ArmState& msg)
     {
-        as_state_ptr.reset(new baxter_collaboration_msgs::ArmState(msg));
+        as_state_ptr.reset(new human_robot_collaboration_msgs::ArmState(msg));
     };
 
     void robotStateCb(const baxter_core_msgs::AssemblyState& msg)
@@ -86,12 +86,12 @@ private:
 
 public:
     explicit reactControllerTester(std::string _limb) : nh("test_react_controller"),
-                 limb(_limb), as_state_ptr(new baxter_collaboration_msgs::ArmState),
-                                                              gz_state_ptr(nullptr)
+                 limb(_limb), as_state_ptr(new human_robot_collaboration_msgs::ArmState),
+                                                                   gz_state_ptr(nullptr)
     {
         EXPECT_TRUE(importWayPoints(nh, _wp));
 
-        pub = nh.advertise<baxter_collaboration_msgs::GoToPose>(
+        pub = nh.advertise<human_robot_collaboration_msgs::GoToPose>(
               "/baxter_react_controller/" + limb + "/go_to_pose", SUBSCRIBER_BUFFER, true);
 
         as_sub = nh.subscribe("/baxter_react_controller/" + limb + "/state", SUBSCRIBER_BUFFER,
@@ -198,7 +198,7 @@ public:
     {
         for (size_t i = 0; i < _wp.size(); ++i)
         {
-            baxter_collaboration_msgs::GoToPose msg;
+            human_robot_collaboration_msgs::GoToPose msg;
             msg.type       =  "pose";
             msg.ctrl_mode  =       1;
             msg.check_mode = "loose"; // Either strict or loose

@@ -17,8 +17,8 @@
     uri: https://github.com/RethinkRobotics/baxter_simulator.git
 
 - git:
-    local-name: baxter_collaboration
-    uri: https://github.com/scazlab/baxter_collaboration.git
+    local-name: human_robot_collaboration
+    uri: https://github.com/scazlab/human_robot_collaboration.git
 
 - git:
     local-name: svox_tts

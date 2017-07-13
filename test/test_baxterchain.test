@@ -1,6 +1,6 @@
 <launch>
     <!-- Let's load the baxter URDF from the parameter server -->
-    <include file="$(find baxter_collaboration_lib)/launch/baxter_urdf.launch" />
+    <include file="$(find human_robot_collaboration_lib)/launch/baxter_urdf.launch" />
 
     <test test-name="test_baxterchain" pkg="baxter_react_controller" type="test_baxterchain" />
 </launch>
