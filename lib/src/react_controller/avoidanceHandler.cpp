@@ -13,7 +13,7 @@ AvoidanceHandler::AvoidanceHandler(const BaxterChain &_chain,
     std::vector<BaxterChain>    tmpCC;  // temporary array of control chains
     std::vector<collisionPoint> tmpCP;  // temporary array of collision points
 
-    if (not _obstacles.empty())
+    for (size_t i = 0; i < _obstacles.size(); ++i)
     {
         // Let's start by creating a custom chain with only one joint
         BaxterChain customChain;
@@ -48,27 +48,25 @@ AvoidanceHandler::AvoidanceHandler(const BaxterChain &_chain,
             // ROS_INFO_STREAM("Get Angles:  " << customChain.getAng().transpose());
             // ROS_INFO_STREAM("Real Angles: " <<       chain.getAng().transpose());
 
-            for(size_t i = 0; i < _obstacles.size(); ++i)
+            // Compute collision points
+            // obstacles are expressed in the world reference frame [WRF]
+            // coll_pt is in the end-effector reference frame [ERF]
+            collisionPoint coll_pt;
+
+            if (customChain.obstacleToCollisionPoint(_obstacles[i], coll_pt))
             {
-                // Compute collision points
-                // obstacles are expressed in the world reference frame [WRF]
-                // coll_pt is in the end-effector reference frame [ERF]
-                collisionPoint coll_pt;
-                if (customChain.obstacleToCollisionPoint(_obstacles[i], coll_pt))
-                {
-                    tmpCP.push_back(coll_pt);
+                tmpCP.push_back(coll_pt);
 
-                    // create new segment to add to the custom chain that ends up in the collision point
-                    Matrix4d HN(Matrix4d::Identity());
-                    // Compute new segment to add to the chain
-                    computeFoR(coll_pt.x, coll_pt.n, HN);
-                    KDL::Segment s = KDL::Segment(KDL::Joint(KDL::Joint::None), toKDLFrame(HN));
+                // create new segment to add to the custom chain that ends up in the collision point
+                Matrix4d HN(Matrix4d::Identity());
+                // Compute new segment to add to the chain
+                computeFoR(coll_pt.x, coll_pt.n, HN);
+                KDL::Segment s = KDL::Segment(KDL::Joint(KDL::Joint::None), toKDLFrame(HN));
 
-                    BaxterChain chainToAdd = customChain;
-                    chainToAdd.addSegment(s);
-                    tmpCC.push_back(chainToAdd);
-                    // ROS_INFO("adding chain with %zu joints and %zu segments", chainToAdd.getNrOfJoints(), chainToAdd.getNrOfSegments());
-                }
+                BaxterChain chainToAdd = customChain;
+                chainToAdd.addSegment(s);
+                tmpCC.push_back(chainToAdd);
+                // ROS_INFO("adding chain with %zu joints and %zu segments", chainToAdd.getNrOfJoints(), chainToAdd.getNrOfSegments());
             }
 
             // ROS_INFO("tmpCP.size %lu tmpCC.size %lu", tmpCP.size(), tmpCC.size());
@@ -95,11 +93,14 @@ AvoidanceHandler::AvoidanceHandler(const BaxterChain &_chain,
 
         if (max_idx != -1)
         {
-            ROS_INFO("Collision points with magnitude: %s Selected: %i", cp_str.c_str(), max_idx);
+            // ROS_INFO("Collision points with magnitude: %s Selected: %i", cp_str.c_str(), max_idx);
 
             collPoints.push_back(tmpCP[max_idx]);
             ctrlChains.push_back(tmpCC[max_idx]);
         }
+
+        tmpCC.clear();
+        tmpCP.clear();
     }
 
 }
@@ -158,6 +159,30 @@ bool AvoidanceHandler::computeFoR(const VectorXd &pos,
     return true;
 }
 
+std::vector<RVIZMarker> AvoidanceHandler::toRVIZMarkers()
+{
+    std::vector<RVIZMarker> res;
+
+    vector <RVIZMarker> rvzcc;
+
+    for (size_t i = 0; i < ctrlChains.size(); ++i)
+    {
+        rvzcc = asRVIZMarkers(ctrlChains[i], false, false, true);
+
+        // Let's use the magnitude of the collision point as length
+        // of the arrow to be displayed to RVIZ
+        for (int j = 0; j < 3; ++j)
+        {
+            rvzcc[j].size *= collPoints[i].m;
+        }
+
+        res.insert(std::end(res),
+                   std::begin(rvzcc), std::end(rvzcc));
+    }
+
+    return res;
+}
+
 AvoidanceHandler::~AvoidanceHandler()
 {
 
@@ -189,7 +214,7 @@ MatrixXd AvoidanceHandlerTactile::getV_LIM(const MatrixXd &v_lim)
             // Get the end-effector frame of the standard or custom chain (control point derived from skin),
             // takes the z-axis (3rd column in transform matrix) ~ normal, only its first three elements of the
             // four in the homogeneous transformation format
-            VectorXd nrm = ctrlChains[i].getH().col(2).block<3,1>(0,0);
+            VectorXd nrm = ctrlChains[i].getH().block<3,1>(0,2);
 
             // Project movement along the normal into joint velocity space and scale by default
             // avoidingSpeed and m of skin (or PPS) activation
@@ -200,22 +225,25 @@ MatrixXd AvoidanceHandlerTactile::getV_LIM(const MatrixXd &v_lim)
 
             for (size_t j = 0; j < size_t(s.rows()); ++j)
             {
-                // ROS_INFO("Joint: %lu, s[j]: %g, limits before: Min: %g, Max: %g",j,s[j],V_LIM(j,0),V_LIM(j,1));
+                double sj =       s[j];
+                double vm = V_LIM(j,0);
+                double vM = V_LIM(j,1);
+
                 if (s[j] >= 0.0) //joint contributes to avoidance, we will set the min velocity accordingly
                 {
                     s[j]       = min(v_lim(j,1),       s[j]); // make sure new min vel is <= max vel
                     V_LIM(j,0) = max(V_LIM(j,0),       s[j]); // set min vel to max of s[j] and current limit ~ avoiding action
                     V_LIM(j,1) = max(V_LIM(j,0), V_LIM(j,1)); // make sure current max is at least equal to current min
-                    // ROS_INFO(" s>=0 clause, joint contributes to avoidance,"
-                    //          " adjusting Min; limits after: Min: %g, Max: %g",V_LIM(j,0),V_LIM(j,1));
+                    ROS_INFO("s[%lu]: %g   \t[avoidance], adjusting min. "
+                             "Limits: [%g %g]->[%g %g]",j, sj, vm, vM, V_LIM(j,0),V_LIM(j,1));
                 }
                 else //joint acts to bring control point toward obstacle - we will shape the max vel
                 {
                     s[j]       = max(v_lim(j,0),       s[j]);
                     V_LIM(j,1) = min(V_LIM(j,1),       s[j]);
                     V_LIM(j,0) = min(V_LIM(j,0), V_LIM(j,1));
-                    // ROS_INFO(" s<0 clause, joint contributes to approach, adjusting Max;"
-                    //          " limits after: Min: %g, Max: %f",V_LIM(j,0),V_LIM(j,1));
+                    ROS_INFO("s[%lu]: %g   \t[ approach], adjusting max. "
+                             "Limits: [%g %g]->[%g %g]",j, sj, vm, vM, V_LIM(j,0),V_LIM(j,1));
                 }
             }
         }
