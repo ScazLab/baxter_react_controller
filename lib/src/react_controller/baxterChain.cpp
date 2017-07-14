@@ -420,52 +420,50 @@ bool BaxterChain::is_between(Eigen::Vector3d _a, Eigen::Vector3d _b, Eigen::Vect
 }
 
 bool BaxterChain::obstacleToCollisionPoint(const Eigen::Vector3d& _obstacle_wrf,
-                                           collisionPoint&      _coll_point_erf)
+                                           collisionPoint&             _coll_pt)
 {
+    _coll_pt.o_wrf = _obstacle_wrf;
+
+
     // Project the point onto the last segment of the chain
     Vector3d pos_ee           = getH(getNrOfJoints()-1).block<3,1>(0,3);
     Vector3d pos_ee_minus_one = getH(getNrOfJoints()-2).block<3,1>(0,3);
 
-    Vector3d coll_pt_wrf = projectOntoSegment(pos_ee_minus_one, pos_ee, _obstacle_wrf);
+    _coll_pt.x_wrf = projectOntoSegment(pos_ee_minus_one, pos_ee, _obstacle_wrf);
+    _coll_pt.n_wrf = _obstacle_wrf - _coll_pt.x_wrf;
 
     // Convert the collision point from the wrf to end-effector reference frame
     Vector4d tmp(0, 0, 0, 1);
-    tmp.block<3,1>(0,0) = coll_pt_wrf;
+    tmp.block<3,1>(0,0) = _coll_pt.x_wrf;
 
-    changeFoR(coll_pt_wrf, getH(), _coll_point_erf.x);
+    changeFoR(_coll_pt.x_wrf, getH(), _coll_pt.x_erf);
 
     // Convert the obstacle point from the wrf to end-effector reference frame
     Vector3d obstacle_erf;
     changeFoR(_obstacle_wrf, getH(), obstacle_erf);
 
     // Compute the norm vector in the end-effector reference frame
-    _coll_point_erf.n  = ( obstacle_erf - _coll_point_erf.x);
+    _coll_pt.n_erf = ( obstacle_erf - _coll_pt.x_erf);
 
-    double dist = _coll_point_erf.n.norm();
+    double dist = _coll_pt.n_erf.norm();
 
-    if (!is_between(pos_ee, pos_ee_minus_one, coll_pt_wrf))
+    if (!is_between(pos_ee, pos_ee_minus_one, _coll_pt.x_wrf))
     {
-        dist += min((pos_ee - coll_pt_wrf).squaredNorm(), (pos_ee_minus_one - coll_pt_wrf).squaredNorm());
+        dist += min((pos_ee - _coll_pt.x_wrf).squaredNorm(), (pos_ee_minus_one - _coll_pt.x_wrf).squaredNorm());
     }
 
-    _coll_point_erf.n /= dist;
+    _coll_pt.n_erf /= dist;
 
     double thres = 0.5;
     // Compute the magnitude
     if (dist > thres)
     {
-        _coll_point_erf.m = 0.0;
+        _coll_pt.m = 0.0;
     }
     else
     {
-        _coll_point_erf.m = (thres - dist) / thres;
+        _coll_pt.m = (thres - dist) / thres;
     }
-
-
-    // ROS_INFO("coll point %zu at x: %g y: %g z: %g", i,
-    //           _coll_points[i].x(0), _coll_points[i].x(1), _coll_points[i].x(2));
-    // ROS_INFO("      norm %zu at x: %g y: %g z: %g", i,
-    //           _coll_points[i].n(0), _coll_points[i].n(1), _coll_points[i].n(2));
 
     return true;
 }

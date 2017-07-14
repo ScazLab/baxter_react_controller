@@ -49,35 +49,6 @@ Vector3d angularError(const Quaterniond& _a, const Quaterniond& _b)
     return _b.w()*_a.vec() - _a.w()*_b.vec() -skew(_a.vec())*_b.vec();
 }
 
-bool computeCollisionPoints(const std::vector<Vector3d>&      _joints,
-                            const             Vector3d & _coll_coords,
-                            std::vector<collisionPoint>& _coll_points)
-{
-    _coll_points.clear();
-
-    for (size_t i = 0; i < _joints.size() - 1; ++i)
-    {
-        Vector3d ab = _joints[i + 1] - _joints[i];
-        Vector3d ap = _coll_coords - _joints[i];
-        Vector3d coll_pt = _joints[i] + ((ap).dot(ab)) / ((ab).dot(ab)) * ab;
-
-        collisionPoint cp;
-        cp.x = coll_pt;
-        cp.m = (_coll_coords - coll_pt).norm();
-        cp.n = (_coll_coords - coll_pt) / cp.m;
-
-        _coll_points.push_back(cp);
-
-        // ROS_INFO("coll point %zu at x: %g y: %g z: %g", i,
-        //           _coll_points[i].x(0), _coll_points[i].x(1), _coll_points[i].x(2));
-        // ROS_INFO("      norm %zu at x: %g y: %g z: %g", i,
-        //           _coll_points[i].n(0), _coll_points[i].n(1), _coll_points[i].n(2));
-    }
-    // printf("\n");
-
-    return true;
-}
-
 bool changeFoR(const Vector3d orig, const Matrix4d transform, Vector3d &new_pt)
 {
     Vector4d tmp(0, 0, 0, 1);
@@ -114,5 +85,6 @@ Eigen::Vector3d projectOntoSegment(Eigen::Vector3d base, Eigen::Vector3d tip, Ei
 {
     Eigen::Vector3d ab = tip - base;
     Eigen::Vector3d ap = point - base;
+
     return base + ((ap).dot(ab)) / ((ab).dot(ab)) * ab;
 }

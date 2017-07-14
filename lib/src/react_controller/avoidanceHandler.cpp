@@ -60,7 +60,7 @@ AvoidanceHandler::AvoidanceHandler(const BaxterChain &_chain,
                 // create new segment to add to the custom chain that ends up in the collision point
                 Matrix4d HN(Matrix4d::Identity());
                 // Compute new segment to add to the chain
-                computeFoR(coll_pt.x, coll_pt.n, HN);
+                computeFoR(coll_pt.x_erf, coll_pt.n_erf, HN);
                 KDL::Segment s = KDL::Segment(KDL::Joint(KDL::Joint::None), toKDLFrame(HN));
 
                 BaxterChain chainToAdd = customChain;
