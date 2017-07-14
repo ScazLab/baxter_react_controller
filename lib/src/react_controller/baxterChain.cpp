@@ -454,6 +454,8 @@ bool BaxterChain::obstacleToCollisionPoint(const Eigen::Vector3d& _obstacle_wrf,
 
     _coll_pt.n_erf /= dist;
 
+    double rho   = 0.4;
+    double alpha = 6.0;
     double thres = 0.5;
     // Compute the magnitude
     if (dist > thres)
@@ -462,8 +464,10 @@ bool BaxterChain::obstacleToCollisionPoint(const Eigen::Vector3d& _obstacle_wrf,
     }
     else
     {
-        _coll_pt.m = (thres - dist) / thres;
+        _coll_pt.m = 1.0/(1.0+exp((dist*(2.0/rho)-1.0)*alpha));
     }
+
+    ROS_ASSERT(_coll_pt.m >= 0.0 && _coll_pt.m <= 1.0);
 
     return true;
 }
