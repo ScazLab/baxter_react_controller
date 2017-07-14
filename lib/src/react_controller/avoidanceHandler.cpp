@@ -81,7 +81,7 @@ AvoidanceHandler::AvoidanceHandler(const BaxterChain &_chain,
         {
             cp_str = cp_str + " " + toString(tmpCP[i].m);
 
-            if (tmpCP[i].m > 0.0)
+            if (tmpCP[i].m > 1e-2)
             {
                 if (tmpCP[i].m > max_mag)
                 {
@@ -216,10 +216,7 @@ MatrixXd AvoidanceHandlerTactile::getV_LIM(const MatrixXd &v_lim)
 
         // Project movement along the normal into joint velocity space and scale by default
         // avoidingSpeed and m of skin (or PPS) activation
-        VectorXd s = (J_xyz.transpose()*nrm) * avoidingSpeed * collPoints[i].m;
-
-        s = s * -1.0; // we reverse the direction to obtain joint velocities that bring about avoidance
-        // ROS_INFO_STREAM("s*(-1): " << s.transpose());
+        VectorXd s = J_xyz.transpose()*nrm;
 
         for (size_t j = 0; j < size_t(s.rows()); ++j)
         {
@@ -227,23 +224,57 @@ MatrixXd AvoidanceHandlerTactile::getV_LIM(const MatrixXd &v_lim)
             double vm = V_LIM(j,0);
             double vM = V_LIM(j,1);
 
-            if (s[j] >= 0.0) //joint contributes to avoidance, we will set the min velocity accordingly
+            if (s[j] >= 0.0)
             {
-                s[j]       = min(v_lim(j,1),       s[j]); // make sure new min vel is <= max vel
-                V_LIM(j,0) = max(V_LIM(j,0),       s[j]); // set min vel to max of s[j] and current limit ~ avoiding action
-                V_LIM(j,1) = max(V_LIM(j,0), V_LIM(j,1)); // make sure current max is at least equal to current min
+                double tmp = v_lim(j,1)*(1.0 - collPoints[i].m);
+
+                V_LIM(j,1) = std::min(V_LIM(j,1),        tmp);
+                V_LIM(j,0) = std::min(V_LIM(j,0), V_LIM(j,1));
                 ROS_INFO("s[%lu]: %g   \t[avoidance], adjusting min. "
                          "Limits: [%g %g]->[%g %g]",j, sj, vm, vM, V_LIM(j,0),V_LIM(j,1));
             }
-            else //joint acts to bring control point toward obstacle - we will shape the max vel
+            else
             {
-                s[j]       = max(v_lim(j,0),       s[j]);
-                V_LIM(j,1) = min(V_LIM(j,1),       s[j]);
-                V_LIM(j,0) = min(V_LIM(j,0), V_LIM(j,1));
+                double tmp = v_lim(j,0)*(1.0 - collPoints[i].m);
+
+                V_LIM(j,0) = std::max(V_LIM(j,0),        tmp);
+                V_LIM(j,1) = std::max(V_LIM(j,0), V_LIM(j,1));
                 ROS_INFO("s[%lu]: %g   \t[ approach], adjusting max. "
                          "Limits: [%g %g]->[%g %g]",j, sj, vm, vM, V_LIM(j,0),V_LIM(j,1));
             }
         }
+
+        // LEGACY CODE
+        // // Project movement along the normal into joint velocity space and scale by default
+        // // avoidingSpeed and m of skin (or PPS) activation
+        // VectorXd s = (J_xyz.transpose()*nrm) * avoidingSpeed * collPoints[i].m;
+
+        // s = s * -1.0; // we reverse the direction to obtain joint velocities that bring about avoidance
+        // // ROS_INFO_STREAM("s*(-1): " << s.transpose());
+
+        // for (size_t j = 0; j < size_t(s.rows()); ++j)
+        // {
+        //     double sj =       s[j];
+        //     double vm = V_LIM(j,0);
+        //     double vM = V_LIM(j,1);
+
+        //     if (s[j] >= 0.0) //joint contributes to avoidance, we will set the min velocity accordingly
+        //     {
+        //         s[j]       = min(v_lim(j,1),       s[j]); // make sure new min vel is <= max vel
+        //         V_LIM(j,0) = max(V_LIM(j,0),       s[j]); // set min vel to max of s[j] and current limit ~ avoiding action
+        //         V_LIM(j,1) = max(V_LIM(j,0), V_LIM(j,1)); // make sure current max is at least equal to current min
+        //         ROS_INFO("s[%lu]: %g   \t[avoidance], adjusting min. "
+        //                  "Limits: [%g %g]->[%g %g]",j, sj, vm, vM, V_LIM(j,0),V_LIM(j,1));
+        //     }
+        //     else //joint acts to bring control point toward obstacle - we will shape the max vel
+        //     {
+        //         s[j]       = max(v_lim(j,0),       s[j]);
+        //         V_LIM(j,1) = min(V_LIM(j,1),       s[j]);
+        //         V_LIM(j,0) = min(V_LIM(j,0), V_LIM(j,1));
+        //         ROS_INFO("s[%lu]: %g   \t[ approach], adjusting max. "
+        //                  "Limits: [%g %g]->[%g %g]",j, sj, vm, vM, V_LIM(j,0),V_LIM(j,1));
+        //     }
+        // }
     }
 
     return V_LIM;
