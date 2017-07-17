@@ -221,7 +221,7 @@ bool CtrlThread::goToPoseNoCheck(double px, double py, double pz,
         if (goToJointConfNoCheck(des_poss))   { return true; }
     }
 
-    return false;
+    return true;
 }
 
 VectorXd CtrlThread::solveIK(int &_exit_code)
@@ -259,7 +259,7 @@ void CtrlThread::publishRVIZMarkers()
     // Create some fake obstacles to test
     obstacles.clear();
     // Vector3d obs1(0.20, -0.42, 0.3);
-    Vector3d obs2(0.50, -0.22, 0.2);
+    Vector3d obs2(0.00, 0.0, 0.65);
     // obstacles.push_back(obs1);
     obstacles.push_back(obs2);
 

@@ -248,11 +248,11 @@ public:
      * Computes a collision point given the coordinates of the obstacle.
      *
      * @param  _obstacle_wrf    3D coordinates of the obstacle in the world reference frame
-     * @param  _coll_pt         collisionPoint computed from the obstacle
+     * @param  _coll_pt         CollisionPoint computed from the obstacle
      * @return                  true on success, false otherwise
      */
     bool obstacleToCollisionPoint(const Eigen::Vector3d& _obstacle_wrf,
-                                  collisionPoint&             _coll_pt);
+                                  CollisionPoint&             _coll_pt);
 
     /**
      * Friend function to convert the baxter chain as a set of RVIZmarkers for

@@ -420,7 +420,7 @@ bool BaxterChain::is_between(Eigen::Vector3d _a, Eigen::Vector3d _b, Eigen::Vect
 }
 
 bool BaxterChain::obstacleToCollisionPoint(const Eigen::Vector3d& _obstacle_wrf,
-                                           collisionPoint&             _coll_pt)
+                                           CollisionPoint&             _coll_pt)
 {
     _coll_pt.o_wrf = _obstacle_wrf;
 
@@ -460,14 +460,14 @@ bool BaxterChain::obstacleToCollisionPoint(const Eigen::Vector3d& _obstacle_wrf,
     // Compute the magnitude
     if (dist > thres)
     {
-        _coll_pt.m = 0.0;
+        _coll_pt.mag = 0.0;
     }
     else
     {
-        _coll_pt.m = 1.0/(1.0+exp((dist*(2.0/rho)-1.0)*alpha));
+        _coll_pt.mag = 1.0/(1.0+exp((dist*(2.0/rho)-1.0)*alpha));
     }
 
-    ROS_ASSERT(_coll_pt.m >= 0.0 && _coll_pt.m <= 1.0);
+    ROS_ASSERT(_coll_pt.mag >= 0.0 && _coll_pt.mag <= 1.0);
 
     return true;
 }

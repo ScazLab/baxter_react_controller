@@ -11,7 +11,7 @@ AvoidanceHandler::AvoidanceHandler(const BaxterChain &_chain,
     // ROS_INFO_STREAM("Chain Angles: " << chain.getAng().transpose());
 
     std::vector<BaxterChain>    tmpCC;  // temporary array of control chains
-    std::vector<collisionPoint> tmpCP;  // temporary array of collision points
+    std::vector<CollisionPoint> tmpCP;  // temporary array of collision points
 
     for (size_t i = 0; i < _obstacles.size(); ++i)
     {
@@ -51,7 +51,7 @@ AvoidanceHandler::AvoidanceHandler(const BaxterChain &_chain,
             // Compute collision points
             // obstacles are expressed in the world reference frame [WRF]
             // coll_pt is in the end-effector reference frame [ERF]
-            collisionPoint coll_pt;
+            CollisionPoint coll_pt;
 
             if (customChain.obstacleToCollisionPoint(_obstacles[i], coll_pt))
             {
@@ -79,13 +79,13 @@ AvoidanceHandler::AvoidanceHandler(const BaxterChain &_chain,
 
         for (size_t i = 0; i < tmpCP.size(); ++i)
         {
-            cp_str = cp_str + " " + toString(tmpCP[i].m);
+            cp_str = cp_str + " " + toString(tmpCP[i].mag);
 
-            if (tmpCP[i].m > 1e-2)
+            if (tmpCP[i].mag > 1e-2)
             {
-                if (tmpCP[i].m > max_mag)
+                if (tmpCP[i].mag > max_mag)
                 {
-                    max_mag = tmpCP[i].m;
+                    max_mag = tmpCP[i].mag;
                     max_idx =     int(i);
                 }
             }
@@ -110,7 +110,7 @@ std::vector<BaxterChain> AvoidanceHandler::getCtrlChains()
     return ctrlChains;
 }
 
-std::vector<collisionPoint> AvoidanceHandler::getCtrlPoints()
+std::vector<CollisionPoint> AvoidanceHandler::getCtrlPoints()
 {
     return collPoints;
 }
@@ -173,7 +173,7 @@ std::vector<RVIZMarker> AvoidanceHandler::toRVIZMarkers()
         // of the arrow to be displayed to RVIZ
         for (int j = 0; j < 3; ++j)
         {
-            rvzcc[j].size *= collPoints[i].m;
+            rvzcc[j].size *= collPoints[i].mag;
         }
 
         res.insert(std::end(res),
@@ -226,7 +226,7 @@ MatrixXd AvoidanceHandlerTactile::getV_LIM(const MatrixXd &v_lim)
 
             if (s[j] >= 0.0)
             {
-                double tmp = v_lim(j,1)*(1.0 - collPoints[i].m);
+                double tmp = v_lim(j,1)*(1.0 - collPoints[i].mag);
 
                 V_LIM(j,1) = std::min(V_LIM(j,1),        tmp);
                 V_LIM(j,0) = std::min(V_LIM(j,0), V_LIM(j,1));
@@ -235,7 +235,7 @@ MatrixXd AvoidanceHandlerTactile::getV_LIM(const MatrixXd &v_lim)
             }
             else
             {
-                double tmp = v_lim(j,0)*(1.0 - collPoints[i].m);
+                double tmp = v_lim(j,0)*(1.0 - collPoints[i].mag);
 
                 V_LIM(j,0) = std::max(V_LIM(j,0),        tmp);
                 V_LIM(j,1) = std::max(V_LIM(j,0), V_LIM(j,1));
@@ -247,7 +247,7 @@ MatrixXd AvoidanceHandlerTactile::getV_LIM(const MatrixXd &v_lim)
         // LEGACY CODE
         // // Project movement along the normal into joint velocity space and scale by default
         // // avoidingSpeed and m of skin (or PPS) activation
-        // VectorXd s = (J_xyz.transpose()*nrm) * avoidingSpeed * collPoints[i].m;
+        // VectorXd s = (J_xyz.transpose()*nrm) * avoidingSpeed * collPoints[i].mag;
 
         // s = s * -1.0; // we reverse the direction to obtain joint velocities that bring about avoidance
         // // ROS_INFO_STREAM("s*(-1): " << s.transpose());

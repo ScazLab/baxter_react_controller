@@ -29,7 +29,7 @@ protected:
     std::string type;
 
     std::vector<BaxterChain>    ctrlChains;
-    std::vector<collisionPoint> collPoints;
+    std::vector<CollisionPoint> collPoints;
 
 public:
     AvoidanceHandler(const BaxterChain &_chain,
@@ -52,7 +52,7 @@ public:
      *
      * @return an std::vector of all the control points
      */
-    std::vector<collisionPoint> getCtrlPoints();
+    std::vector<CollisionPoint> getCtrlPoints();
 
 
     /**
