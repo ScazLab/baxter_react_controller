@@ -446,7 +446,7 @@ bool BaxterChain::obstacleToCollisionPoint(const Obstacle& _obstacle,
     // Compute the norm vector in the end-effector reference frame
     _coll_pt.n_erf = ( obstacle_erf - _coll_pt.x_erf);
 
-    double dist = _coll_pt.n_erf.norm();
+    double dist = _coll_pt.n_erf.norm() - _coll_pt.size;
 
     if (!is_between(pos_ee, pos_ee_minus_one, _coll_pt.x_wrf))
     {

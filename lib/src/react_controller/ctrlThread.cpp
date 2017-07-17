@@ -258,7 +258,7 @@ void CtrlThread::publishRVIZMarkers()
     // TODO remove this at some point
     // Create some fake obstacles to test
     obstacles.clear();
-    obstacles.push_back(Obstacle(0.20, Vector3d(0.00, 0.0, 0.65)));
+    // obstacles.push_back(Obstacle(0.20, Vector3d(0.00, 0.0, 0.65)));
     obstacles.push_back(Obstacle(0.05, Vector3d(0.40, 0.1, 0.35)));
 
     vector <RVIZMarker> rviz_markers;

@@ -216,7 +216,8 @@ MatrixXd AvoidanceHandlerTactile::getV_LIM(const MatrixXd &v_lim)
 
         // Project movement along the normal into joint velocity space and scale by default
         // avoidingSpeed and m of skin (or PPS) activation
-        VectorXd s = -1.0 * J_xyz.transpose()*nrm;
+        // VectorXd s = -1.0 * J_xyz.transpose()*nrm;   // This is for reaching
+        VectorXd s = J_xyz.transpose()*nrm; // This is for avoiding
 
         for (size_t j = 0; j < size_t(s.rows()); ++j)
         {
