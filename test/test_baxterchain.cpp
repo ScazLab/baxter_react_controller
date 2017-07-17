@@ -57,16 +57,33 @@ TEST(BaxterChainTest, testClass)
     EXPECT_EQ(q_0, chain.getAng());
     for (size_t i = 0; i < chain.getNrOfJoints(); ++i)
     {
-        EXPECT_EQ(q_0[i], chain.getAng()[i]) << "q_0[i] and chain.getAng()[i]  differ at" << i;
-        EXPECT_EQ(q_0[i], chain.getAng(i))   << "q_0[i] and chain.getAng(i) differ at" << i;
+        EXPECT_EQ(q_0[i], chain.getAng()[i]) << "q_0[i] and chain.getAng()[i]  "
+                                                "differ at idx " << i;
+        EXPECT_EQ(q_0[i], chain.getAng(i))   << "q_0[i] and chain.getAng(i)    "
+                                                "differ at idx " << i;
     }
 
     q_0[1] = 0.4;
     q_0[4] = 0.8;
 
-    EXPECT_TRUE(chain.setAng(q_0));
-    EXPECT_FALSE(chain.setAng(    Eigen::VectorXd(chain.getNrOfJoints()+1)));
-    EXPECT_EQ(q_0, chain.getAng());
+    EXPECT_TRUE (chain.setAng(q_0));
+    EXPECT_FALSE(chain.setAng(Eigen::VectorXd(chain.getNrOfJoints()+1)));
+    EXPECT_EQ   (q_0, chain.getAng());
+
+    q_0[1] =  100.0;
+    q_0[4] = -100.0;
+    EXPECT_TRUE (chain.setAng(q_0));
+    EXPECT_NE   (q_0, chain.getAng());
+    q_0[1] = chain.getMax(1);
+    q_0[4] = chain.getMin(4);
+    EXPECT_EQ   (q_0, chain.getAng());
+    for (size_t i = 0; i < chain.getNrOfJoints(); ++i)
+    {
+        EXPECT_EQ(q_0[i], chain.getAng()[i]) << "q_0[i] and chain.getAng()[i]  "
+                                                "differ at idx " << i;
+        EXPECT_EQ(q_0[i], chain.getAng(i))   << "q_0[i] and chain.getAng(i)    "
+                                                "differ at idx " << i;
+    }
 }
 
 TEST(BaxterChainTest, testRemoveSegment)
