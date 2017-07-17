@@ -29,7 +29,7 @@ private:
     Eigen::MatrixXd vlim_coll; // matrix of maximum joint velocities per joint
                                // limited by the collision points
 
-    std::vector<Eigen::Vector3d>  obstacles; // Vector of 3D obstacles in the world reference frame
+    std::vector<Obstacle>         obstacles; // Vector of 3D obstacles in the world reference frame
     std::unique_ptr<AvoidanceHandler> avhdl; // Pointer to the avoidance handler
 
     double    dT;       // time constraint for IpOpt solver time per optimization

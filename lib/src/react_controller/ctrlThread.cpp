@@ -258,16 +258,18 @@ void CtrlThread::publishRVIZMarkers()
     // TODO remove this at some point
     // Create some fake obstacles to test
     obstacles.clear();
-    // Vector3d obs1(0.20, -0.42, 0.3);
-    Vector3d obs2(0.00, 0.0, 0.65);
-    // obstacles.push_back(obs1);
-    obstacles.push_back(obs2);
+    obstacles.push_back(Obstacle(0.20, Vector3d(0.00, 0.0, 0.65)));
+    obstacles.push_back(Obstacle(0.05, Vector3d(0.40, 0.1, 0.35)));
 
-    // Publishes all the markers to rviz
-    vector <RVIZMarker> rviz_markers{// RVIZMarker(obs1, ColorRGBA(1.0, 0.0, 1.0), 0.03),
-                                     RVIZMarker(obs2, ColorRGBA(1.0, 0.0, 1.0), 0.03)};
+    vector <RVIZMarker> rviz_markers;
+    for (size_t i = 0; i < obstacles.size(); ++i)
+    {
+        rviz_markers.push_back(RVIZMarker(obstacles[i].x_wrf,
+                                          ColorRGBA(1.0, 0.0, 1.0),
+                                          obstacles[i].size));
+    }
+
     vector <RVIZMarker> rviz_chain = asRVIZMarkers(*chain);
-
     rviz_markers.insert(std::end(rviz_markers),
                         std::begin(rviz_chain), std::end(rviz_chain));
 

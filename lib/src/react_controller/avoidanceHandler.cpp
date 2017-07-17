@@ -4,7 +4,7 @@ using namespace   std;
 using namespace Eigen;
 
 AvoidanceHandler::AvoidanceHandler(const BaxterChain &_chain,
-                                   const vector<Vector3d> &_obstacles,
+                                   const vector<Obstacle> &_obstacles,
                                    const string _type) :
                                    chain(_chain), type(_type)
 {
@@ -191,7 +191,7 @@ AvoidanceHandler::~AvoidanceHandler()
 /****************************************************************/
 /****************************************************************/
 AvoidanceHandlerTactile::AvoidanceHandlerTactile(const BaxterChain &_chain,
-                                                 const vector<Vector3d> &_obstacles) :
+                                                 const vector<Obstacle> &_obstacles) :
                                                  AvoidanceHandler(_chain, _obstacles, "tactile"),
                                                  avoidingSpeed(0.25)
 {
@@ -216,7 +216,7 @@ MatrixXd AvoidanceHandlerTactile::getV_LIM(const MatrixXd &v_lim)
 
         // Project movement along the normal into joint velocity space and scale by default
         // avoidingSpeed and m of skin (or PPS) activation
-        VectorXd s = J_xyz.transpose()*nrm;
+        VectorXd s = -1.0 * J_xyz.transpose()*nrm;
 
         for (size_t j = 0; j < size_t(s.rows()); ++j)
         {

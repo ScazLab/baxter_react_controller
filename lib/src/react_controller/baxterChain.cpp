@@ -419,18 +419,19 @@ bool BaxterChain::is_between(Eigen::Vector3d _a, Eigen::Vector3d _b, Eigen::Vect
     return false;
 }
 
-bool BaxterChain::obstacleToCollisionPoint(const Eigen::Vector3d& _obstacle_wrf,
-                                           CollisionPoint&             _coll_pt)
+bool BaxterChain::obstacleToCollisionPoint(const Obstacle& _obstacle,
+                                           CollisionPoint&  _coll_pt)
 {
-    _coll_pt.o_wrf = _obstacle_wrf;
+    _coll_pt.o_wrf = _obstacle.x_wrf;
+    _coll_pt.size  = _obstacle.size;
 
 
     // Project the point onto the last segment of the chain
     Vector3d pos_ee           = getH(getNrOfJoints()-1).block<3,1>(0,3);
     Vector3d pos_ee_minus_one = getH(getNrOfJoints()-2).block<3,1>(0,3);
 
-    _coll_pt.x_wrf = projectOntoSegment(pos_ee_minus_one, pos_ee, _obstacle_wrf);
-    _coll_pt.n_wrf = _obstacle_wrf - _coll_pt.x_wrf;
+    _coll_pt.x_wrf = projectOntoSegment(pos_ee_minus_one, pos_ee, _obstacle.x_wrf);
+    _coll_pt.n_wrf = _obstacle.x_wrf - _coll_pt.x_wrf;
 
     // Convert the collision point from the wrf to end-effector reference frame
     Vector4d tmp(0, 0, 0, 1);
@@ -440,7 +441,7 @@ bool BaxterChain::obstacleToCollisionPoint(const Eigen::Vector3d& _obstacle_wrf,
 
     // Convert the obstacle point from the wrf to end-effector reference frame
     Vector3d obstacle_erf;
-    changeFoR(_obstacle_wrf, getH(), obstacle_erf);
+    changeFoR(_obstacle.x_wrf, getH(), obstacle_erf);
 
     // Compute the norm vector in the end-effector reference frame
     _coll_pt.n_erf = ( obstacle_erf - _coll_pt.x_erf);
@@ -449,7 +450,8 @@ bool BaxterChain::obstacleToCollisionPoint(const Eigen::Vector3d& _obstacle_wrf,
 
     if (!is_between(pos_ee, pos_ee_minus_one, _coll_pt.x_wrf))
     {
-        dist += min((pos_ee - _coll_pt.x_wrf).squaredNorm(), (pos_ee_minus_one - _coll_pt.x_wrf).squaredNorm());
+        dist += min((pos_ee           - _coll_pt.x_wrf).norm(),
+                    (pos_ee_minus_one - _coll_pt.x_wrf).norm());
     }
 
     _coll_pt.n_erf /= dist;

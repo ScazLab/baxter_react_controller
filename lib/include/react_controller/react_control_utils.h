@@ -117,4 +117,15 @@ struct CollisionPoint
     Eigen::Vector3d o_wrf; // position (x,y,z) of the obstacle in the world reference frame
 };
 
+struct Obstacle
+{
+    double size;           // size (in meters) of a sphere that approximates the obstacle
+    Eigen::Vector3d x_wrf; // position (x,y,z) in the world reference frame
+
+    /**
+     * Constructor that assigns a size and position to the obstacle
+     */
+    Obstacle(double _size, Eigen::Vector3d _x_wrf) : size(_size), x_wrf(_x_wrf) {};
+};
+
 #endif

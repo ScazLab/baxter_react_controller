@@ -33,7 +33,7 @@ protected:
 
 public:
     AvoidanceHandler(const BaxterChain &_chain,
-                             const std::vector<Eigen::Vector3d> &_obstacles,
+                             const std::vector<Obstacle> &_obstacles,
                              const std::string _type = "none");
 
     std::string getType() { return type; };
@@ -75,7 +75,7 @@ private:
 
 public:
     AvoidanceHandlerTactile(const BaxterChain &_chain,
-                            const std::vector<Eigen::Vector3d> &_obstacles);
+                            const std::vector<Obstacle> &_obstacles);
 
     Eigen::MatrixXd getV_LIM(const Eigen::MatrixXd &v_lim);
 
