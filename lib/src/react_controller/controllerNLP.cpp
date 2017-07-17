@@ -85,7 +85,7 @@ void ControllerNLP::computeBounds()
         }
     }
 
-    ROS_INFO_STREAM_COND(print_level>=4, "bounds before" << endl << bounds);
+    ROS_INFO_STREAM_COND(print_level>=8, "bounds before" << endl << bounds);
 
     for (size_t i=0; i<chain.getNrOfJoints(); ++i)
     {
@@ -93,7 +93,7 @@ void ControllerNLP::computeBounds()
         bounds(i,1)*=v_lim(i,1);
     }
 
-    ROS_INFO_STREAM_COND(print_level>=4, "bounds after" << endl << bounds);
+    ROS_INFO_STREAM_COND(print_level>=4, "Bounds:" << endl << bounds);
 
     // for (size_t i=0; i<chain.getNrOfJoints(); ++i)
     // {
