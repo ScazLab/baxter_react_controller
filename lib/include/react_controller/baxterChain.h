@@ -22,10 +22,12 @@ private:
     size_t nrOfJoints;    // number of joints
     size_t nrOfSegments;  // number of segments
 
-    Eigen::VectorXd q;    // vector of joint angles in the arm chain
-    Eigen::VectorXd l;    // vector of lower bounds for the joints
-    Eigen::VectorXd u;    // vector of upper bounds for the joints
-    Eigen::VectorXd v;    // vector of joint velocities of the arm chain
+    Eigen::VectorXd   q;  // vector of joint angles in the arm chain
+    Eigen::VectorXd q_l;  // vector of lower joint bounds
+    Eigen::VectorXd q_u;  // vector of upper joint bounds
+    Eigen::VectorXd   v;  // vector of joint velocities of the arm chain
+    Eigen::VectorXd v_l;  // vector of lower velocity bounds
+    Eigen::VectorXd v_u;  // vector of upper velocity bounds
 
     /**
      * Takes an arm chain and returns the KDL::Frame of the end effector w.r.t.
@@ -174,13 +176,20 @@ public:
     Eigen::VectorXd getVel()    { return v; };
 
     /**
-     * Functions to set the joint angles of the arm chain.
+     * Sets the joint angles of the arm chain.
      *
-     * @param _q  vector of joint positions (in rad)
+     * @param _q  vector of joint positions [rad]
      * @return    true/false if success/failure
      */
-    bool     setAng(Eigen::VectorXd         _q);
-    bool     setAng(sensor_msgs::JointState _j);
+    bool setAng(const Eigen::VectorXd&         _q);
+
+    /**
+     * Sets the joint angles of the arm chain.
+     *
+     * @param _j  joint positions [rad] and joint velocities in a sensor_msgs::JointState
+     * @return    true/false if success/failure
+     */
+    bool setAng(const sensor_msgs::JointState& _j);
 
     /**
      * Functions to set the joint velocities of the arm chain.
@@ -188,7 +197,7 @@ public:
      * @param _v  vector of joint velocities
      * @return    true/false if success/failure
      */
-    bool     setVel(Eigen::VectorXd         _v);
+    bool setVel(const Eigen::VectorXd&         _v);
 
     /**
      * Function that returns the current pose as a geometry_msgs::Pose
@@ -232,7 +241,7 @@ public:
     void removeJoint();
 
     /**
-     * Functions to get joint angle limits for the _i'th joint
+     * Functions to get joint angle limits for the _i-th joint
      *
      * @param _i [number of the joint to get max/min limit]
      *
@@ -240,7 +249,6 @@ public:
      */
     double getMax(const size_t _i);
     double getMin(const size_t _i);
-
 
     bool is_between(Eigen::Vector3d _a, Eigen::Vector3d _b, Eigen::Vector3d _c);
 

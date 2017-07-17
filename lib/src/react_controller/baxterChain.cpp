@@ -1,5 +1,4 @@
 #include <ros/ros.h>
-#include <kdl/chainfksolverpos_recursive.hpp>
 
 #include "react_controller/baxterChain.h"
 
@@ -80,17 +79,17 @@ BaxterChain::BaxterChain(urdf::Model _robot, const string& _base,
 
             if (hasLimits)
             {
-                l(joint_num-1) = lower;
-                u(joint_num-1) = upper;
+                q_l(joint_num-1) = lower;
+                q_u(joint_num-1) = upper;
             }
             else
             {
-                l(joint_num-1) = numeric_limits<float>::lowest();
-                u(joint_num-1) = numeric_limits<float>::max();
+                q_l(joint_num-1) = numeric_limits<float>::lowest();
+                q_u(joint_num-1) = numeric_limits<float>::max();
             }
 
             ROS_DEBUG_STREAM("IK Using joint "<<joint->name<<" "<<
-                              l(joint_num-1)<<" "<<u(joint_num-1));
+                              q_l(joint_num-1)<<" "<<q_u(joint_num-1));
         }
     }
 
@@ -99,7 +98,7 @@ BaxterChain::BaxterChain(urdf::Model _robot, const string& _base,
     {
         // This will initialize the joint in the
         // middle of its operational range
-        q[i] = (l[i]+u[i])/2;
+        q[i] = (q_l[i]+q_u[i])/2;
     }
 }
 
@@ -124,8 +123,8 @@ bool BaxterChain::resetChain()
     nrOfSegments=0;
     segments.resize(0);
     q.resize(0);
-    l.resize(0);
-    u.resize(0);
+    q_l.resize(0);
+    q_u.resize(0);
     v.resize(0);
 
     return true;
@@ -153,9 +152,9 @@ BaxterChain& BaxterChain::operator=(const KDL::Chain& _ch)
 
     for (size_t i = 0; i < getNrOfJoints(); ++i)
     {
-        q[i] = 0;
-        l[i] = 0;
-        u[i] = 0;
+        q  [i] = 0.0;
+        q_l[i] = 0.0;
+        q_u[i] = 0.0;
     }
 
     return *this;
@@ -175,8 +174,8 @@ BaxterChain& BaxterChain::operator=(const BaxterChain& _ch)
         for (size_t i = 0; i < getNrOfJoints(); ++i)
         {
             q[i] = _ch.q[i];
-            l[i] = _ch.l[i];
-            u[i] = _ch.u[i];
+            q_l[i] = _ch.q_l[i];
+            q_u[i] = _ch.q_u[i];
         }
     }
 
@@ -187,12 +186,13 @@ void BaxterChain::addSegment(const KDL::Segment& segment)
 {
     segments.push_back(segment);
     nrOfSegments++;
+
     if(segment.getJoint().getType()!=KDL::Joint::None)
     {
         nrOfJoints++;
 
-        l.conservativeResize(getNrOfJoints());
-        u.conservativeResize(getNrOfJoints());
+        q_l.conservativeResize(getNrOfJoints());
+        q_u.conservativeResize(getNrOfJoints());
         q.conservativeResize(getNrOfJoints());
         v.conservativeResize(getNrOfJoints());
     }
@@ -216,7 +216,7 @@ MatrixXd BaxterChain::GeoJacobian()
     return JntToJac().data;
 }
 
-bool BaxterChain::setAng(sensor_msgs::JointState _q)
+bool BaxterChain::setAng(const sensor_msgs::JointState& _q)
 {
     if (_q.position.size() != getNrOfJoints()) { return false; }
     if (_q.velocity.size() != getNrOfJoints()) { return false; }
@@ -232,15 +232,24 @@ bool BaxterChain::setAng(sensor_msgs::JointState _q)
     return setAng(new_q) && setVel(new_v);
 }
 
-bool BaxterChain::setAng(VectorXd _q)
+bool BaxterChain::setAng(const VectorXd& _q)
 {
     if (_q.size() != int(getNrOfJoints()))     { return false; }
 
     q = _q;
+
+    // Check for consistency (each joint should be lower than its
+    // upper limit and bigger than its lower limit)
+    for (size_t i = 0; i < getNrOfJoints(); ++i)
+    {
+        q[i]=_q[i]>q_u[i]?q_u[i]:_q[i];
+        q[i]=_q[i]<q_l[i]?q_l[i]:_q[i];
+    }
+
     return true;
 }
 
-bool BaxterChain::setVel(VectorXd _v)
+bool BaxterChain::setVel(const VectorXd& _v)
 {
     if (_v.size() != int(getNrOfJoints()))     { return false; }
 
@@ -370,8 +379,8 @@ void BaxterChain::removeSegment()
     if(segments.back().getJoint().getType()!=KDL::Joint::None)
     {
         --nrOfJoints;
-        l.conservativeResize(getNrOfJoints());
-        u.conservativeResize(getNrOfJoints());
+        q_l.conservativeResize(getNrOfJoints());
+        q_u.conservativeResize(getNrOfJoints());
         q.conservativeResize(getNrOfJoints());
         v.conservativeResize(getNrOfJoints());
     }
@@ -401,12 +410,12 @@ void BaxterChain::removeJoint()
 
 double BaxterChain::getMax(const size_t _i)
 {
-    return u[_i];
+    return q_u[_i];
 }
 
 double BaxterChain::getMin(const size_t _i)
 {
-    return l[_i];
+    return q_l[_i];
 }
 
 bool BaxterChain::is_between(Eigen::Vector3d _a, Eigen::Vector3d _b, Eigen::Vector3d _c)
