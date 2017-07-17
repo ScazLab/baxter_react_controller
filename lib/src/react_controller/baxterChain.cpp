@@ -236,14 +236,13 @@ bool BaxterChain::setAng(const VectorXd& _q)
 {
     if (_q.size() != int(getNrOfJoints()))     { return false; }
 
-    q = _q;
-
     // Check for consistency (each joint should be lower than its
     // upper limit and bigger than its lower limit)
     for (size_t i = 0; i < getNrOfJoints(); ++i)
     {
-        q[i]=_q[i]>q_u[i]?q_u[i]:_q[i];
-        q[i]=_q[i]<q_l[i]?q_l[i]:_q[i];
+        if      (_q[i]>q_u[i])   { q[i] = q_u[i]; }
+        else if (_q[i]<q_l[i])   { q[i] = q_l[i]; }
+        else                     { q[i] =  _q[i]; }
     }
 
     return true;
