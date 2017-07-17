@@ -169,18 +169,18 @@ void ControllerNLP::init()
     R_0 = H_0.block<3,3>(0,0);
     p_0 = H_0.block<3,1>(0,3);
 
-    ROS_INFO_STREAM_COND(print_level>=8, "H_0: \n" << H_0);
-    ROS_INFO_STREAM_COND(print_level>=8, "R_0: \n" << R_0);
-    ROS_INFO_STREAM_COND(print_level>=8, "p_0: \t" << p_0.transpose());
+    ROS_INFO_STREAM_COND(print_level>=6, "H_0: \n" << H_0);
+    ROS_INFO_STREAM_COND(print_level>=6, "R_0: \n" << R_0);
+    ROS_INFO_STREAM_COND(print_level>=6, "p_0: \t" << p_0.transpose());
 
     MatrixXd J_0 = chain.GeoJacobian();
     J_0_xyz = J_0.block(0,0,3,chain.getNrOfJoints());
     J_0_ang = J_0.block(3,0,3,chain.getNrOfJoints());
 
-    ROS_INFO_STREAM_COND(print_level>=8, "J_0:    \n" << J_0    );
-    ROS_INFO_STREAM_COND(print_level>=2, "J_0_xyz:\n" << J_0_xyz);
+    ROS_INFO_STREAM_COND(print_level>=6, "J_0:    \n" << J_0    );
+    ROS_INFO_STREAM_COND(print_level>=3, "J_0_xyz:\n" << J_0_xyz);
 
-    ROS_INFO_STREAM_COND(print_level>=2 && ctrl_ori, "J_0_ang:\n" << J_0_ang);
+    ROS_INFO_STREAM_COND(print_level>=3 && ctrl_ori, "J_0_ang:\n" << J_0_ang);
 
     computeBounds();
 }
@@ -262,8 +262,8 @@ void ControllerNLP::computeQuantities(const Ipopt::Number *x, const bool new_x)
 
         err_xyz = p_r-p_e;
 
-        ROS_INFO_STREAM_COND(print_level>=2, "    v_e: " <<     v_e.transpose());
-        ROS_INFO_STREAM_COND(print_level>=2, "err_xyz: " << err_xyz.transpose() <<
+        ROS_INFO_STREAM_COND(print_level>=3, "    v_e: " <<     v_e.transpose());
+        ROS_INFO_STREAM_COND(print_level>=3, "err_xyz: " << err_xyz.transpose() <<
                                         " squaredNorm: " << err_xyz.squaredNorm());
         if (ctrl_ori)
         {
@@ -274,11 +274,11 @@ void ControllerNLP::computeQuantities(const Ipopt::Number *x, const bool new_x)
             if (theta > 0.0) { w_e /= theta; }
 
             AngleAxisd w_e_aa(theta * dt, w_e);   // angular increment in axis angle representation
-            ROS_INFO_STREAM_COND(print_level>=6, "w_e_aa: \t" <<
+            ROS_INFO_STREAM_COND(print_level>=5, "w_e_aa: \t" <<
                                  w_e_aa.axis().transpose() << " " << w_e_aa.angle());
 
             R_e = w_e_aa.toRotationMatrix() * R_0;
-            ROS_INFO_STREAM_COND(print_level>=6, "R_e: \n" << R_e);
+            ROS_INFO_STREAM_COND(print_level>=5, "R_e: \n" << R_e);
 
             Quaterniond o_e(R_e);
 
@@ -379,17 +379,17 @@ void ControllerNLP::finalize_solution(Ipopt::SolverReturn status, Ipopt::Index n
     }
 
     // printf("\n");
-    if (status != Ipopt::SUCCESS)     { ROS_WARN("IPOPT Failed. Error code: %i", status); }
-    else                              { ROS_INFO("IPOPT succeeded!");                     }
+    string print_str = "";
+    if (status != Ipopt::SUCCESS) { print_str = "IPOPT Failed. Error code: " + toString(status) + ". "; }
 
     switch(status)
     {
         case Ipopt::SUCCESS                  : break;
-        case Ipopt::CPUTIME_EXCEEDED         : ROS_WARN("Maximum CPU time exceeded."); break;
-        case Ipopt::LOCAL_INFEASIBILITY      : ROS_WARN("Algorithm converged to a point of local infeasibility. "
-                                                        "Problem may be infeasible."); break;
-        case Ipopt::DIVERGING_ITERATES       : ROS_WARN("Iterates divering; problem might be unbounded."); break;
-        case Ipopt::STOP_AT_ACCEPTABLE_POINT : ROS_WARN("Solved to acceptable level."); break;
+        case Ipopt::CPUTIME_EXCEEDED         : ROS_WARN((print_str + "Maximum CPU time exceeded.").c_str()); break;
+        case Ipopt::LOCAL_INFEASIBILITY      : ROS_WARN((print_str + "Algorithm converged to a point of local infeasibility. "
+                                                        "Problem may be infeasible.").c_str()); break;
+        case Ipopt::DIVERGING_ITERATES       : ROS_WARN((print_str + "Iterates divering; problem might be unbounded.").c_str()); break;
+        case Ipopt::STOP_AT_ACCEPTABLE_POINT : ROS_WARN((print_str + "Solved to acceptable level.").c_str()); break;
         default : break;
         // Error codes: https://www.coin-or.org/Ipopt/doxygen/classorg_1_1coinor_1_1Ipopt.html
         //    see also: https://www.coin-or.org/Doxygen/CoinAll/_ip_alg_types_8hpp-source.html#l00022
@@ -401,16 +401,24 @@ void ControllerNLP::finalize_solution(Ipopt::SolverReturn status, Ipopt::Index n
         // };
     }
 
-    ROS_INFO_STREAM_COND(print_level>=2, "init pos [p_0]: " << p_0.transpose());
-    ROS_INFO_STREAM_COND(print_level>=2, "ref  pos [p_r]: " << p_r.transpose());
-    ROS_INFO_STREAM_COND(print_level>=2, "est  pos [p_e]: " << p_e.transpose());
+    ROS_INFO_STREAM_COND(print_level>=1, "init pos [p_0]: " << p_0.transpose());
+    ROS_INFO_STREAM_COND(print_level>=1, "ref  pos [p_r]: " << p_r.transpose());
+    ROS_INFO_STREAM_COND(print_level>=1, "est  pos [p_e]: " << p_e.transpose());
     // Eigen::VectorXd pos_0rr = (p_0-p_r) * 1000.0;
     // ROS_INFO_STREAM("  pos 0rr [mm]: " << pos_0rr.transpose() <<
     //            "\tsquared norm [mm]: " << pos_0rr.squaredNorm());
 
     Eigen::VectorXd pos_err = (p_e-p_r) * 1000.0;
-    ROS_INFO_STREAM_COND(print_level>=2, "  pos err [mm]: " << pos_err.transpose() <<
-                                    "\tsquared norm [mm]: " << pos_err.squaredNorm());
+
+    if (status == Ipopt::SUCCESS)
+    {
+        ROS_INFO_STREAM("IPOPT succeeded! pos err (sq.norm) [mm]: " << pos_err.squaredNorm());
+    }
+    else
+    {
+        ROS_INFO_STREAM_COND(print_level>=2, "  pos err [mm]: " << pos_err.transpose() <<
+                                        "\tsquared norm [mm]: " << pos_err.squaredNorm());
+    }
 
     if (ctrl_ori)
     {
@@ -433,8 +441,10 @@ void ControllerNLP::finalize_solution(Ipopt::SolverReturn status, Ipopt::Index n
     ROS_INFO_STREAM_COND(print_level>=2, "v_0: " << v_0.transpose());
     ROS_INFO_STREAM_COND(print_level>=2, "q_0: " << q_0.transpose());
     ROS_INFO_STREAM_COND(print_level>=2, "v_e: " << v_e.transpose());
+    ROS_WARN_STREAM_COND(v_e.norm()>=0.5, "v_e norm is high: " << v_e.norm());
     ROS_INFO_STREAM_COND(print_level>=2, "q_e: " << VectorXd(q_0 + (dt * v_e)).transpose());
-    printf("\n");
+
+    if (print_level >= 1)   { printf("\n"); }
 
     if (status == Ipopt::SUCCESS)
     {

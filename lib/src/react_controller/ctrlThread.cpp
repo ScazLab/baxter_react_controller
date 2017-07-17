@@ -82,7 +82,7 @@ void CtrlThread::NLPOptionsFromParameterServer()
 
     nlp_derivative_test = derivative_test?"first-order":"none";
 
-    if (nlp_print_level > 0)
+    if (nlp_print_level >= 3)
     {
         ROS_INFO("[NLP]         Print Level: %i", nlp_print_level);
         ROS_INFO("[NLP] Orientation Control: %s", nlp_ctrl_ori?"on":"off");
