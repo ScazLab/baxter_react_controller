@@ -172,7 +172,7 @@ public:
      *
      * @return array of joint velocities as an Eigen::VectorXd
      */
-    Eigen::VectorXd getVel()    { return v; };
+    Eigen::VectorXd getVel() { return v; };
 
     /**
      * Sets the joint angles of the arm chain.
@@ -246,8 +246,9 @@ public:
      *
      * @return value of joint limit
      */
-    double getMax(const size_t _i);
-    double getMin(const size_t _i);
+    double getMin (size_t _i)    { return q_l[_i]; };
+    double getMax (size_t _i)    { return q_u[_i]; };
+    double getVLim(size_t _i)    { return v_l[_i]; };
 
     bool is_between(Eigen::Vector3d _a, Eigen::Vector3d _b, Eigen::Vector3d _c);
 

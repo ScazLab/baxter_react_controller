@@ -39,10 +39,13 @@ CtrlThread::CtrlThread(const string& _name, const string& _limb, bool _use_robot
     q_dot.setZero();
 
     vLim.resize(chain->getNrOfJoints(), 2);
-    for (size_t r = 0, DoFs = chain->getNrOfJoints(); r < DoFs; ++r)
+    for (size_t r = 0; r < chain->getNrOfJoints(); ++r)
     {
-        vLim(r, 0) = -vMax;
-        vLim(r, 1) =  vMax;
+        // Let's find the most conservative choice between the limits from URDF
+        // and the one in ctrlThread.
+        double lim = std::min(vMax, chain->getVLim(r));
+        vLim(r, 0) = -lim;
+        vLim(r, 1) =  lim;
     }
 
     initializeNLP();

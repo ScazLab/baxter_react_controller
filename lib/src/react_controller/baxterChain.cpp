@@ -417,23 +417,15 @@ void BaxterChain::removeJoint()
     return;
 }
 
-double BaxterChain::getMax(const size_t _i)
-{
-    return q_u[_i];
-}
-
-double BaxterChain::getMin(const size_t _i)
-{
-    return q_l[_i];
-}
-
 bool BaxterChain::is_between(Eigen::Vector3d _a, Eigen::Vector3d _b, Eigen::Vector3d _c)
 {
     double dot_product = (_b - _a).dot(_c - _a);
+
     if (dot_product > 0 && dot_product < (_a - _b).squaredNorm())
     {
         return true;
     }
+
     return false;
 }
 
