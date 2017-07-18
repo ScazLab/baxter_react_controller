@@ -441,7 +441,7 @@ void ControllerNLP::finalize_solution(Ipopt::SolverReturn status, Ipopt::Index n
     ROS_INFO_STREAM_COND(print_level>=2, "v_0: " << v_0.transpose());
     ROS_INFO_STREAM_COND(print_level>=2, "q_0: " << q_0.transpose());
     ROS_INFO_STREAM_COND(print_level>=2, "v_e: " << v_e.transpose());
-    ROS_WARN_STREAM_COND(v_e.norm()>=0.5, "v_e norm is high: " << v_e.norm());
+    ROS_WARN_STREAM_COND(v_e.norm()>=0.25, "v_e norm is high: " << v_e.norm());
     ROS_INFO_STREAM_COND(print_level>=2, "q_e: " << VectorXd(q_0 + (dt * v_e)).transpose());
 
     if (print_level >= 1)   { printf("\n"); }

@@ -128,4 +128,11 @@ struct Obstacle
     Obstacle(double _size, Eigen::Vector3d _x_wrf) : size(_size), x_wrf(_x_wrf) {};
 };
 
+/**
+ * Reads an array of obstacles from the parameter server.
+ *
+ * @param  _param the XmlRpcValue read from the parameter server.
+ */
+std::vector<Obstacle> readFromParamServer(XmlRpc::XmlRpcValue _param);
+
 #endif

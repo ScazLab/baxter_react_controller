@@ -89,12 +89,19 @@ void CtrlThread::NLPOptionsFromParameterServer()
         ROS_INFO("[NLP]     Derivative Test: %s", nlp_derivative_test.c_str());
     }
 
-    if (nlp_ctrl_ori == true) {     setCtrlType("pose"); }
+    if (nlp_ctrl_ori == true) { setCtrlType("pose"    ); }
     else                      { setCtrlType("position"); }
 
     app->Options()->SetStringValue ("derivative_test", nlp_derivative_test);
     app->Options()->SetIntegerValue(    "print_level",     nlp_print_level);
     app->Initialize();
+
+    // Read the obstacles from the parameter server
+    XmlRpc::XmlRpcValue obstacles_db;
+    if(nh.getParam("/"+getName()+"/obstacles", obstacles_db))
+    {
+        obstacles = readFromParamServer(obstacles_db);
+    }
 }
 
 bool CtrlThread::debugIPOPT()
@@ -255,12 +262,6 @@ VectorXd CtrlThread::solveIK(int &_exit_code)
 
 void CtrlThread::publishRVIZMarkers()
 {
-    // TODO remove this at some point
-    // Create some fake obstacles to test
-    obstacles.clear();
-    // obstacles.push_back(Obstacle(0.20, Vector3d(0.00, 0.0, 0.65)));
-    obstacles.push_back(Obstacle(0.05, Vector3d(0.40, 0.1, 0.35)));
-
     vector <RVIZMarker> rviz_markers;
     for (size_t i = 0; i < obstacles.size(); ++i)
     {
