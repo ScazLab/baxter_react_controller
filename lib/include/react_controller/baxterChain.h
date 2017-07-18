@@ -26,8 +26,7 @@ private:
     Eigen::VectorXd q_l;  // vector of lower joint bounds
     Eigen::VectorXd q_u;  // vector of upper joint bounds
     Eigen::VectorXd   v;  // vector of joint velocities of the arm chain
-    Eigen::VectorXd v_l;  // vector of lower velocity bounds
-    Eigen::VectorXd v_u;  // vector of upper velocity bounds
+    Eigen::VectorXd v_l;  // vector of lower and upper velocity bounds
 
     /**
      * Takes an arm chain and returns the KDL::Frame of the end effector w.r.t.

@@ -26,8 +26,8 @@ BaxterChain::BaxterChain(urdf::Model _robot, const string& _base,
                          const string& _tip): BaxterChain()
 {
     // Read joints and links from URDF
-    ROS_INFO("Reading joints and links from URDF, from %s link to %s link",
-                                              _base.c_str(), _tip.c_str());
+    ROS_INFO("Reading joints and links from URDF, from %s to %s link",
+                                         _base.c_str(), _tip.c_str());
 
     KDL::Tree tree;
     if (not kdl_parser::treeFromUrdfModel(_robot, tree))
@@ -48,17 +48,17 @@ BaxterChain::BaxterChain(urdf::Model _robot, const string& _base,
 
     for (size_t i = 0; i < segments.size(); ++i)
     {
-        // ROS_INFO("Segment %lu, name %s,\tJoint name %s", i, segments[i].getName().c_str(),
-        //                                         segments[i].getJoint().getName().c_str());
+        // ROS_INFO("[%lu]: name %s,\tJoint name %s", i, segments[i].getName().c_str(),
+        //                                    segments[i].getJoint().getName().c_str());
         joint = _robot.getJoint(segments[i].getJoint().getName());
 
         if (joint->type != urdf::Joint::UNKNOWN &&
             joint->type != urdf::Joint::FIXED)
         {
-            joint_num++;
-            float lower, upper;
-            int hasLimits = 0;
+            ++joint_num;
+            double lower, upper, velocity;
 
+            int hasLimits = 0;
             if (joint->type != urdf::Joint::CONTINUOUS )
             {
                 if (joint->safety)
@@ -74,18 +74,21 @@ BaxterChain::BaxterChain(urdf::Model _robot, const string& _base,
                     upper = joint->limits->upper;
                 }
 
+                velocity = joint->limits->velocity;
                 hasLimits = 1;
             }
 
             if (hasLimits)
             {
-                q_l(joint_num-1) = lower;
-                q_u(joint_num-1) = upper;
+                q_l(joint_num-1) =    lower;
+                q_u(joint_num-1) =    upper;
+                v_l(joint_num-1) = velocity;
             }
             else
             {
-                q_l(joint_num-1) = numeric_limits<float>::lowest();
-                q_u(joint_num-1) = numeric_limits<float>::max();
+                q_l(joint_num-1) = numeric_limits<double>::lowest();
+                q_u(joint_num-1) = numeric_limits<double>::   max();
+                v_l(joint_num-1) = numeric_limits<double>::   max();
             }
 
             ROS_DEBUG_STREAM("IK Using joint "<<joint->name<<" "<<
@@ -122,10 +125,11 @@ bool BaxterChain::resetChain()
     nrOfJoints=0;
     nrOfSegments=0;
     segments.resize(0);
-    q.resize(0);
+    q  .resize(0);
     q_l.resize(0);
     q_u.resize(0);
-    v.resize(0);
+    v  .resize(0);
+    v_l.resize(0);
 
     return true;
 }
@@ -155,6 +159,8 @@ BaxterChain& BaxterChain::operator=(const KDL::Chain& _ch)
         q  [i] = 0.0;
         q_l[i] = 0.0;
         q_u[i] = 0.0;
+        v  [i] = 0.0;
+        v_l[i] = 0.0;
     }
 
     return *this;
@@ -173,9 +179,11 @@ BaxterChain& BaxterChain::operator=(const BaxterChain& _ch)
 
         for (size_t i = 0; i < getNrOfJoints(); ++i)
         {
-            q[i] = _ch.q[i];
+            q  [i] = _ch.q  [i];
             q_l[i] = _ch.q_l[i];
             q_u[i] = _ch.q_u[i];
+            v  [i] = _ch.v  [i];
+            v_l[i] = _ch.v_l[i];
         }
     }
 
@@ -191,10 +199,11 @@ void BaxterChain::addSegment(const KDL::Segment& segment)
     {
         nrOfJoints++;
 
+        q  .conservativeResize(getNrOfJoints());
         q_l.conservativeResize(getNrOfJoints());
         q_u.conservativeResize(getNrOfJoints());
-        q.conservativeResize(getNrOfJoints());
-        v.conservativeResize(getNrOfJoints());
+        v  .conservativeResize(getNrOfJoints());
+        v_l.conservativeResize(getNrOfJoints());
     }
 }
 
@@ -378,10 +387,11 @@ void BaxterChain::removeSegment()
     if(segments.back().getJoint().getType()!=KDL::Joint::None)
     {
         --nrOfJoints;
+        q  .conservativeResize(getNrOfJoints());
         q_l.conservativeResize(getNrOfJoints());
         q_u.conservativeResize(getNrOfJoints());
-        q.conservativeResize(getNrOfJoints());
-        v.conservativeResize(getNrOfJoints());
+        v  .conservativeResize(getNrOfJoints());
+        v_l.conservativeResize(getNrOfJoints());
     }
     segments.pop_back();
     --nrOfSegments;

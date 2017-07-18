@@ -12,10 +12,11 @@ CtrlThread::CtrlThread(const string& _name, const string& _limb, bool _use_robot
 {
     urdf::Model robot_model;
     string       xml_string;
+    string         urdf_xml;
+    string    full_urdf_xml;
 
-    string urdf_xml,full_urdf_xml;
-    nh.param<string>("urdf_xml",urdf_xml,"/robot_description");
-    nh.searchParam(urdf_xml,full_urdf_xml);
+    nh.param<string>("urdf_xml", urdf_xml, "/robot_description");
+    nh.searchParam  ( urdf_xml , full_urdf_xml);
 
     ROS_DEBUG("Reading xml file from parameter server");
     if (!nh.getParam(full_urdf_xml, xml_string))
