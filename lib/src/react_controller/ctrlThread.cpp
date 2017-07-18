@@ -108,88 +108,6 @@ void CtrlThread::NLPOptionsFromParameterServer()
     }
 }
 
-bool CtrlThread::debugIPOPT()
-{
-    if (isRobotNotUsed())
-    {
-        VectorXd q(7);
-        if (getLimb() == "left") { q << -0.08, -1.0, -1.19, 1.94,  0.67, 1.03, -0.50; }
-        else                     { q <<  0.08, -1.0,  1.19, 1.94, -0.67, 1.03,  0.50; }
-
-        chain->setAng(q);
-        ROS_INFO("New  pose: %s", toString(chain->getPose()).c_str());
-    }
-
-    Matrix4d    H_ee(chain->getH());
-    Matrix3d    R_ee= H_ee.block<3,3>(0,0);
-    Vector3d    p_ee= H_ee.block<3,1>(0,3);
-    Quaterniond o_ee(R_ee);
-    o_ee.normalize();
-
-    // internal_state = goToPoseNoCheck(p_ee[0], p_ee[1], p_ee[2] + 0.02,
-    //                                  o_ee.x(), o_ee.y(), o_ee.z(), o_ee.w());
-    // return internal_state;
-
-    double    offs_x =     0;
-    double    offs_y =     0;
-    double    offs_z =     0;
-    int      counter =     0;
-    bool      result =  true;
-    int   n_failures =     0;
-
-    vector<double> increment{0.001, 0.004};
-
-    // Let's do all the test together
-    // The number of test performed is 2^2^increment.size()
-
-    for (int i = -1; i < 2; ++i) // -1, 0, +1
-    {
-        for (int j = -1; j < 2; ++j) // -1, 0, +1
-        {
-            for (int k = -1; k < 2; ++k) // -1, 0, +1
-            {
-                for (size_t p = 0; p < increment.size(); ++p)
-                {
-                    offs_x = i * increment[p];
-                    offs_y = j * increment[p];
-                    offs_z = k * increment[p];
-
-                    result = goToPoseNoCheck(p_ee[0] + offs_x,
-                                             p_ee[1] + offs_y,
-                                             p_ee[2] + offs_z,
-                                             o_ee.x(), o_ee.y(), o_ee.z(), o_ee.w());
-                    q_dot.setZero(); // in simulation, we always start from 0 velocities
-
-                    if (result == false)
-                    {
-                        ROS_ERROR("[%s] Test number %i , dT %g, offset [%g %g %g], result %s",
-                                   getLimb().c_str(), counter, dT, offs_x, offs_y, offs_z,
-                                   result==true?"TRUE":"FALSE");
-                        n_failures++;
-                    }
-                    else
-                    {
-                        ROS_WARN("[%s] Test number %i , dT %g, offset [%g %g %g], result %s",
-                                  getLimb().c_str(), counter, dT, offs_x, offs_y, offs_z,
-                                  result==true?"TRUE":"FALSE");
-                    }
-
-                    ++counter;
-                    internal_state = internal_state & result;
-                }
-            }
-        }
-    }
-
-    if (n_failures)
-    {
-        ROS_ERROR("[%s] Number of failures: %i", getLimb().c_str(), n_failures);
-    }
-
-    return internal_state;
-    // return goToPoseNoCheck(frame.p[0], frame.p[1], frame.p[2], ox, oy, oz, ow);
-}
-
 bool CtrlThread::goToPoseNoCheck(double px, double py, double pz,
                                  double ox, double oy, double oz, double ow)
 {
@@ -288,6 +206,88 @@ void CtrlThread::publishRVIZMarkers()
 
     // Let's publish the set of markers to RVIZ
     rviz_pub.setMarkers(rviz_markers);
+}
+
+bool CtrlThread::debugIPOPT()
+{
+    if (isRobotNotUsed())
+    {
+        VectorXd q(7);
+        if (getLimb() == "left") { q << -0.08, -1.0, -1.19, 1.94,  0.67, 1.03, -0.50; }
+        else                     { q <<  0.08, -1.0,  1.19, 1.94, -0.67, 1.03,  0.50; }
+
+        chain->setAng(q);
+        ROS_INFO("New  pose: %s", toString(chain->getPose()).c_str());
+    }
+
+    Matrix4d    H_ee(chain->getH());
+    Matrix3d    R_ee= H_ee.block<3,3>(0,0);
+    Vector3d    p_ee= H_ee.block<3,1>(0,3);
+    Quaterniond o_ee(R_ee);
+    o_ee.normalize();
+
+    // internal_state = goToPoseNoCheck(p_ee[0], p_ee[1], p_ee[2] + 0.02,
+    //                                  o_ee.x(), o_ee.y(), o_ee.z(), o_ee.w());
+    // return internal_state;
+
+    double    offs_x =     0;
+    double    offs_y =     0;
+    double    offs_z =     0;
+    int      counter =     0;
+    bool      result =  true;
+    int   n_failures =     0;
+
+    vector<double> increment{0.001, 0.004};
+
+    // Let's do all the test together
+    // The number of test performed is 2^2^increment.size()
+
+    for (int i = -1; i < 2; ++i) // -1, 0, +1
+    {
+        for (int j = -1; j < 2; ++j) // -1, 0, +1
+        {
+            for (int k = -1; k < 2; ++k) // -1, 0, +1
+            {
+                for (size_t p = 0; p < increment.size(); ++p)
+                {
+                    offs_x = i * increment[p];
+                    offs_y = j * increment[p];
+                    offs_z = k * increment[p];
+
+                    result = goToPoseNoCheck(p_ee[0] + offs_x,
+                                             p_ee[1] + offs_y,
+                                             p_ee[2] + offs_z,
+                                             o_ee.x(), o_ee.y(), o_ee.z(), o_ee.w());
+                    q_dot.setZero(); // in simulation, we always start from 0 velocities
+
+                    if (result == false)
+                    {
+                        ROS_ERROR("[%s] Test number %i , dT %g, offset [%g %g %g], result %s",
+                                   getLimb().c_str(), counter, dT, offs_x, offs_y, offs_z,
+                                   result==true?"TRUE":"FALSE");
+                        n_failures++;
+                    }
+                    else
+                    {
+                        ROS_WARN("[%s] Test number %i , dT %g, offset [%g %g %g], result %s",
+                                  getLimb().c_str(), counter, dT, offs_x, offs_y, offs_z,
+                                  result==true?"TRUE":"FALSE");
+                    }
+
+                    ++counter;
+                    internal_state = internal_state & result;
+                }
+            }
+        }
+    }
+
+    if (n_failures)
+    {
+        ROS_ERROR("[%s] Number of failures: %i", getLimb().c_str(), n_failures);
+    }
+
+    return internal_state;
+    // return goToPoseNoCheck(frame.p[0], frame.p[1], frame.p[2], ox, oy, oz, ow);
 }
 
 CtrlThread::~CtrlThread()
