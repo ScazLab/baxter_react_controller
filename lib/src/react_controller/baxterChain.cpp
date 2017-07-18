@@ -421,7 +421,7 @@ bool BaxterChain::is_between(Eigen::Vector3d _a, Eigen::Vector3d _b, Eigen::Vect
 {
     double dot_product = (_b - _a).dot(_c - _a);
 
-    if (dot_product > 0 && dot_product < (_a - _b).squaredNorm())
+    if (dot_product > 0 && dot_product < (_a - _b).norm())
     {
         return true;
     }
