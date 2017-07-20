@@ -7,7 +7,6 @@
 using namespace Eigen;
 using namespace   std;
 
-/****************************************************************/
 ControllerNLP::ControllerNLP(BaxterChain chain_, double dt_, bool ctrl_ori_) :
                              chain(chain_), dt(dt_), ctrl_ori(ctrl_ori_), print_level(0),
                              q_0(chain_.getNrOfJoints()), v_0(chain_.getNrOfJoints()),
@@ -37,7 +36,6 @@ ControllerNLP::ControllerNLP(BaxterChain chain_, double dt_, bool ctrl_ori_) :
     bounds=v_lim;
 }
 
-/****************************************************************/
 void ControllerNLP::computeGuard()
 {
     double guardRatio=0.1;
@@ -56,7 +54,6 @@ void ControllerNLP::computeGuard()
     }
 }
 
-/****************************************************************/
 void ControllerNLP::computeBounds()
 {
     computeGuard();
@@ -102,7 +99,6 @@ void ControllerNLP::computeBounds()
     // }
 }
 
-/****************************************************************/
 void ControllerNLP::set_x_r(const Eigen::Vector3d &_p_r, const Eigen::Quaterniond &_o_r)
 {
     p_r = _p_r;
@@ -114,7 +110,6 @@ void ControllerNLP::set_x_r(const Eigen::Vector3d &_p_r, const Eigen::Quaternion
     skew_ar = skew(R_r.col(2));
 }
 
-/****************************************************************/
 void ControllerNLP::set_v_lim(const MatrixXd &_v_lim)
 {
     v_lim = DEG2RAD*_v_lim;
@@ -130,13 +125,11 @@ void ControllerNLP::set_v_lim(const MatrixXd &_v_lim)
     // }
 }
 
-/****************************************************************/
 void ControllerNLP::set_ctrl_ori(const bool _ctrl_ori)
 {
     ctrl_ori=_ctrl_ori;
 }
 
-/****************************************************************/
 void ControllerNLP::set_dt(const double _dt)
 {
     ROS_ASSERT(dt>0.0);
@@ -145,20 +138,17 @@ void ControllerNLP::set_dt(const double _dt)
     ROS_INFO_COND(print_level>=3, "\t\t\t  [NLP]\t\t[actual] dT: %g", dt);
 }
 
-/****************************************************************/
 void ControllerNLP::set_v_0(const VectorXd &_v_0)
 {
     ROS_ASSERT(v_0.size() == _v_0.size());
     v_0 = _v_0;
 }
 
-/****************************************************************/
 void ControllerNLP::set_print_level(size_t _print_level)
 {
     print_level = _print_level;
 }
 
-/****************************************************************/
 void ControllerNLP::init()
 {
     q_0 = chain.getAng();
@@ -187,19 +177,16 @@ void ControllerNLP::init()
     computeBounds();
 }
 
-/****************************************************************/
 VectorXd ControllerNLP::get_est_vels()
 {
     return v_e;
 }
 
-/****************************************************************/
 VectorXd ControllerNLP::get_est_conf()
 {
     return q_0 + (dt * v_e);
 }
 
-/****************************************************************/
 bool ControllerNLP::get_nlp_info(Ipopt::Index &n, Ipopt::Index &m, Ipopt::Index &nnz_jac_g,
                   Ipopt::Index &nnz_h_lag, IndexStyleEnum &index_style)
 {
@@ -214,7 +201,6 @@ bool ControllerNLP::get_nlp_info(Ipopt::Index &n, Ipopt::Index &m, Ipopt::Index 
     return true;
 }
 
-/****************************************************************/
 bool ControllerNLP::get_bounds_info(Ipopt::Index n, Ipopt::Number *x_l, Ipopt::Number *x_u,
                                     Ipopt::Index m, Ipopt::Number *g_l, Ipopt::Number *g_u)
 {
@@ -243,7 +229,6 @@ bool ControllerNLP::get_bounds_info(Ipopt::Index n, Ipopt::Number *x_l, Ipopt::N
     return true;
 }
 
-/****************************************************************/
 bool ControllerNLP::get_starting_point(Ipopt::Index n, bool init_x, Ipopt::Number *x,
                         bool init_z, Ipopt::Number *z_L, Ipopt::Number *z_U,
                         Ipopt::Index m, bool init_lambda, Ipopt::Number *lambda)
@@ -255,7 +240,6 @@ bool ControllerNLP::get_starting_point(Ipopt::Index n, bool init_x, Ipopt::Numbe
     return true;
 }
 
-/************************************************************************/
 void ControllerNLP::computeQuantities(const Ipopt::Number *x, const bool new_x)
 {
     if (new_x)
@@ -304,7 +288,6 @@ void ControllerNLP::computeQuantities(const Ipopt::Number *x, const bool new_x)
     }
 }
 
-/****************************************************************/
 bool ControllerNLP::eval_f(Ipopt::Index n, const Ipopt::Number *x, bool new_x,
             Ipopt::Number &obj_value)
 {
@@ -314,7 +297,6 @@ bool ControllerNLP::eval_f(Ipopt::Index n, const Ipopt::Number *x, bool new_x,
     return true;
 }
 
-/****************************************************************/
 bool ControllerNLP::eval_grad_f(Ipopt::Index n, const Ipopt::Number* x, bool new_x,
                  Ipopt::Number *grad_f)
 {
@@ -327,7 +309,6 @@ bool ControllerNLP::eval_grad_f(Ipopt::Index n, const Ipopt::Number* x, bool new
     return true;
 }
 
-// /****************************************************************/
 bool ControllerNLP::eval_g(Ipopt::Index n, const Ipopt::Number *x, bool new_x,
             Ipopt::Index m, Ipopt::Number *g)
 {
@@ -340,7 +321,6 @@ bool ControllerNLP::eval_g(Ipopt::Index n, const Ipopt::Number *x, bool new_x,
     return true;
 }
 
-/****************************************************************/
 bool ControllerNLP::eval_jac_g(Ipopt::Index n, const Ipopt::Number *x, bool new_x,
                 Ipopt::Index m, Ipopt::Index nele_jac, Ipopt::Index *iRow,
                 Ipopt::Index *jCol, Ipopt::Number *values)
@@ -373,7 +353,6 @@ bool ControllerNLP::eval_jac_g(Ipopt::Index n, const Ipopt::Number *x, bool new_
     return true;
 }
 
-/****************************************************************/
 void ControllerNLP::finalize_solution(Ipopt::SolverReturn status, Ipopt::Index n,
                                       const Ipopt::Number *x, const Ipopt::Number *z_L,
                                       const Ipopt::Number *z_U, Ipopt::Index m,
