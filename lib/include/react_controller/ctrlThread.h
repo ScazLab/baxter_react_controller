@@ -32,7 +32,7 @@ private:
     std::vector<Obstacle>         obstacles; // Vector of 3D obstacles in the world reference frame
     std::unique_ptr<AvoidanceHandler> avhdl; // Pointer to the avoidance handler
 
-    double    dT;       // time constraint for IpOpt solver time per optimization
+    double    dT;       // time constraint for IpOpt solver time per optimization [s]
     double   tol;       // tolerance for constraint violations
     double  vMax;       // maximum velocity of joints
     bool coll_av;       // collision avoidance mode
