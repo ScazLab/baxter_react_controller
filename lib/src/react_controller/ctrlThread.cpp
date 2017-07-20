@@ -7,7 +7,7 @@ CtrlThread::CtrlThread(const string& _name, const string& _limb, bool _use_robot
                        bool _is_debug, bool _coll_av, double _tol, double _vMax) :
                        RobotInterface(_name, _limb, _use_robot, _ctrl_freq, true, false, true, true),
                        chain(0), is_debug(_is_debug), internal_state(true), ctrl_ori(false),
-                       derivative_test(false), print_level(0), dT(1.0/_ctrl_freq),
+                       derivative_test(false), dT(1.0/_ctrl_freq),
                        tol(_tol), vMax(_vMax), coll_av(_coll_av)
 {
     urdf::Model robot_model;

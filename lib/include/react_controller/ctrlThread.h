@@ -18,7 +18,6 @@ private:
     // IPOPT params
     bool        ctrl_ori;  // Flag to know if to control the orientation or not
     bool derivative_test;  // String to enable the derivative test
-    int      print_level;  // Print level of the IPOPT app
 
     Eigen::Vector3d    x_n;  // Desired next end-effector position
     Eigen::Quaterniond o_n;  // Desired next end-effector orientation
