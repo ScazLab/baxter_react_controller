@@ -119,15 +119,15 @@ void ControllerNLP::set_v_lim(const MatrixXd &_v_lim)
 {
     v_lim = DEG2RAD*_v_lim;
 
-    if (print_level >= 2)
-    {
-        // Print stuff in a single line for convenience
-        MatrixXd vlim = v_lim;
-        vlim.transposeInPlace();
-        VectorXd vlim_vec(Map<VectorXd>(vlim.data(), vlim.cols()*vlim.rows()));
+    // if (print_level >= 2)
+    // {
+    //     // Print stuff in a single line for convenience
+    //     MatrixXd vlim = v_lim;
+    //     vlim.transposeInPlace();
+    //     VectorXd vlim_vec(Map<VectorXd>(vlim.data(), vlim.cols()*vlim.rows()));
 
-        ROS_INFO_STREAM("vlim: " << vlim_vec.transpose());
-    }
+    //     ROS_INFO_STREAM("vlim: " << vlim_vec.transpose());
+    // }
 }
 
 /****************************************************************/
@@ -140,6 +140,7 @@ void ControllerNLP::set_ctrl_ori(const bool _ctrl_ori)
 void ControllerNLP::set_dt(const double _dt)
 {
     ROS_ASSERT(dt>0.0);
+    ROS_INFO_COND(print_level>=2, "Setting dT to %g", _dt);
     dt=_dt;
 }
 
@@ -401,14 +402,17 @@ void ControllerNLP::finalize_solution(Ipopt::SolverReturn status, Ipopt::Index n
         // };
     }
 
-    ROS_INFO_STREAM_COND(print_level>=1, "init pos [p_0]: " << p_0.transpose());
+    Eigen::VectorXd pos_0rr = (p_0-p_r) * 1000.0;
+    Eigen::VectorXd pos_err = (p_e-p_r) * 1000.0;
+
     ROS_INFO_STREAM_COND(print_level>=1, "ref  pos [p_r]: " << p_r.transpose());
-    ROS_INFO_STREAM_COND(print_level>=1, "est  pos [p_e]: " << p_e.transpose());
-    // Eigen::VectorXd pos_0rr = (p_0-p_r) * 1000.0;
+    ROS_INFO_STREAM_COND(print_level>=1, "init err [p_0]: " << pos_0rr.transpose() <<
+                                         "\t\tsqNorm[mm]: " << pos_0rr.squaredNorm());
+    ROS_INFO_STREAM_COND(print_level>=1, "est  err [p_e]: " << pos_err.transpose() <<
+                                         "\t\tsqNorm[mm]: " << pos_err.squaredNorm());
+
     // ROS_INFO_STREAM("  pos 0rr [mm]: " << pos_0rr.transpose() <<
     //            "\tsquared norm [mm]: " << pos_0rr.squaredNorm());
-
-    Eigen::VectorXd pos_err = (p_e-p_r) * 1000.0;
 
     if (status == Ipopt::SUCCESS)
     {
@@ -441,8 +445,17 @@ void ControllerNLP::finalize_solution(Ipopt::SolverReturn status, Ipopt::Index n
     ROS_INFO_STREAM_COND(print_level>=2, "v_0: " << v_0.transpose());
     ROS_INFO_STREAM_COND(print_level>=2, "q_0: " << q_0.transpose());
     ROS_INFO_STREAM_COND(print_level>=2, "v_e: " << v_e.transpose());
-    ROS_WARN_STREAM_COND(v_e.norm()>=0.25, "v_e norm is high: " << v_e.norm());
+    ROS_WARN_STREAM_COND(v_e.norm()>=0.5, "v_e norm is high: " << v_e.norm());
     ROS_INFO_STREAM_COND(print_level>=2, "q_e: " << VectorXd(q_0 + (dt * v_e)).transpose());
+
+    if (print_level>=2)
+    {
+        BaxterChain ch(chain);
+        ch.setAng(q_0 + dt*v_e);
+        Vector3d p_ee = ch.getH().block<3,1>(0,3);
+
+        ROS_ASSERT((p_e - p_ee).squaredNorm() < 1e-5);
+    }
 
     if (print_level >= 1)   { printf("\n"); }
 
