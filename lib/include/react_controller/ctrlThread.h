@@ -16,9 +16,9 @@ private:
     bool internal_state;  // Flag to know the internal state. True if OK.
 
     // IPOPT params
-    bool               nlp_ctrl_ori;  // Flag to know if to control the orientation or not
-    std::string nlp_derivative_test;  // String to enable the derivative test
-    int             nlp_print_level;  // Print level of the IPOPT app
+    bool        ctrl_ori;  // Flag to know if to control the orientation or not
+    bool derivative_test;  // String to enable the derivative test
+    int      print_level;  // Print level of the IPOPT app
 
     Eigen::Vector3d    x_n;  // Desired next end-effector position
     Eigen::Quaterniond o_n;  // Desired next end-effector orientation

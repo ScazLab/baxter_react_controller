@@ -6,8 +6,8 @@ using namespace Eigen;
 CtrlThread::CtrlThread(const string& _name, const string& _limb, bool _use_robot, double _ctrl_freq,
                        bool _is_debug, bool _coll_av, double _tol, double _vMax) :
                        RobotInterface(_name, _limb, _use_robot, _ctrl_freq, true, false, true, true),
-                       chain(0), is_debug(_is_debug), internal_state(true), nlp_ctrl_ori(false),
-                       nlp_derivative_test("none"), nlp_print_level(0), dT(1000.0/_ctrl_freq),
+                       chain(0), is_debug(_is_debug), internal_state(true), ctrl_ori(false),
+                       derivative_test(false), print_level(0), dT(1.0/_ctrl_freq),
                        tol(_tol), vMax(_vMax), coll_av(_coll_av)
 {
     urdf::Model robot_model;
@@ -43,7 +43,7 @@ CtrlThread::CtrlThread(const string& _name, const string& _limb, bool _use_robot
     {
         // Let's find the most conservative choice between the limits from URDF
         // and the one in ctrlThread.
-        double lim = std::min(vMax, chain->getVLim(r));
+        double lim = std::min(vMax, RAD2DEG*chain->getVLim(r));
         vLim(r, 0) = -lim;
         vLim(r, 1) =  lim;
     }
@@ -72,32 +72,29 @@ void CtrlThread::initializeNLP()
     app->Options()->SetIntegerValue("acceptable_iter",  10);
     app->Options()->SetStringValue ( "mu_strategy", "adaptive");
     // if (is_debug == false) { app->Options()->SetStringValue ("linear_solver", "ma57"); }
-    app->Options()->SetNumericValue("max_cpu_time", 0.95 * dT / 1000.0);
+    app->Options()->SetNumericValue("max_cpu_time", 0.95 * dT);
     // app->Options()->SetStringValue ("nlp_scaling_method","gradient-based");
     app->Options()->SetStringValue ("hessian_approximation","limited-memory");
 }
 
 void CtrlThread::NLPOptionsFromParameterServer()
 {
-    bool derivative_test = false;
-    nh.param<bool>("ctrl_ori", nlp_ctrl_ori, false);
+    nh.param<bool>("ctrl_ori", ctrl_ori, false);
     nh.param<bool>("derivative_test", derivative_test, false);
-    nh.param<int> ("print_level", nlp_print_level, 0);
+    nh.param<int> ("print_level", print_level, 0);
 
-    nlp_derivative_test = derivative_test?"first-order":"none";
-
-    if (nlp_print_level >= 3)
+    if (print_level >= 3)
     {
-        ROS_INFO("[NLP]         Print Level: %i", nlp_print_level);
-        ROS_INFO("[NLP] Orientation Control: %s", nlp_ctrl_ori?"on":"off");
-        ROS_INFO("[NLP]     Derivative Test: %s", nlp_derivative_test.c_str());
+        ROS_INFO("[NLP]                  dT: %g", dT);
+        ROS_INFO("[NLP]         Print Level: %i", print_level);
+        ROS_INFO("[NLP] Orientation Control: %s", ctrl_ori?"on":"off");
+        ROS_INFO("[NLP]     Derivative Test: %s", derivative_test?"first-order":"none");
     }
 
-    if (nlp_ctrl_ori == true) { setCtrlType("pose"    ); }
-    else                      { setCtrlType("position"); }
+    setCtrlType(ctrl_ori?"pose":"position");
 
-    app->Options()->SetStringValue ("derivative_test", nlp_derivative_test);
-    app->Options()->SetIntegerValue(    "print_level",     nlp_print_level);
+    app->Options()->SetStringValue ("derivative_test", derivative_test?"first-order":"none");
+    app->Options()->SetIntegerValue(    "print_level",     print_level);
     app->Initialize();
 
     // Read the obstacles from the parameter server
@@ -122,32 +119,40 @@ bool CtrlThread::goToPoseNoCheck(double px, double py, double pz,
 
     // Solve the task
     int exit_code = -1;
-    VectorXd est_vels = solveIK(exit_code);
-    // ROS_INFO_STREAM("est_vels: " << est_vels.transpose());
+    VectorXd est = solveIK(exit_code);
 
     publishRVIZMarkers();
 
-    vector<double> des_poss(chain->getNrOfJoints());
-    for (size_t i = 0; i < chain->getNrOfJoints(); ++i)
-    {
-        des_poss[i] = chain->getAng(i) + (dT * est_vels[i]);
-    }
-
-    // ROS_INFO("sending joint position: %s", toString(des_poss).c_str());
+    if (exit_code != 0)    { ROS_WARN("Exit code: %i", exit_code); }
 
     // if (exit_code != 0 && exit_code != 4 && exit_code != -4) { return false; }
-    if (is_debug)                                            { return  true; }
-    if (exit_code == 5 || exit_code == 2)                    { return  true; }
+    if (is_debug) { return true; }
+
+    // if (exit_code == -4)    // Maximum CPU time exceeded
+    // {
+    //     if (print_level >= 1)   { printf("\n"); }
+
+    //     return  false;
+    // }
+
+    if (exit_code ==  2)    // Local infeasibility
+    {
+        if (print_level >= 1)   { printf("\n"); }
+
+        return  false;
+    }
 
     // if (exit_code == 0)
     {
-        q_dot = est_vels;
+        q_dot = nlp->get_est_vels();
     }
 
     if (isRobotUsed())
     {
         // suppressCollisionAv();
-        if (goToJointConfNoCheck(des_poss))   { return true; }
+
+        ROS_INFO_STREAM("send:  " << est.transpose() <<" mode: " << getCtrlMode() << endl);
+        if (goToJointConfNoCheck(est))     { return true; }
     }
 
     return true;
@@ -157,7 +162,7 @@ VectorXd CtrlThread::solveIK(int &_exit_code)
 {
     NLPOptionsFromParameterServer();
 
-    nlp->set_print_level(size_t(nlp_print_level));
+    nlp->set_print_level(size_t(print_level));
 
     if (coll_av)
     {
@@ -171,15 +176,23 @@ VectorXd CtrlThread::solveIK(int &_exit_code)
         nlp->set_v_lim(vLim);
     }
 
-    nlp->set_ctrl_ori(nlp_ctrl_ori);
+    nlp->set_ctrl_ori(ctrl_ori);
     nlp->set_dt(dT);
     nlp->set_x_r(x_n, o_n);
     nlp->set_v_0(q_dot);
+    // nlp->set_v_0(chain->getVel());
     nlp->init();
 
     _exit_code=app->OptimizeTNLP(GetRawPtr(nlp));
 
-    return nlp->get_result();
+    if (getCtrlMode() == human_robot_collaboration_msgs::GoToPose::VELOCITY_MODE)
+    {
+        return nlp->get_est_vels();
+    }
+    else
+    {
+        return nlp->get_est_conf();
+    }
 }
 
 void CtrlThread::publishRVIZMarkers()
