@@ -140,8 +140,9 @@ void ControllerNLP::set_ctrl_ori(const bool _ctrl_ori)
 void ControllerNLP::set_dt(const double _dt)
 {
     ROS_ASSERT(dt>0.0);
-    ROS_INFO_COND(print_level>=2, "Setting dT to %g", _dt);
-    dt=_dt;
+
+    dt = 10.0 * _dt;  // TODO BUG FIX THIS FACTOR OF 10
+    ROS_INFO_COND(print_level>=3, "\t\t\t  [NLP]\t\t[actual] dT: %g", dt);
 }
 
 /****************************************************************/
@@ -187,9 +188,15 @@ void ControllerNLP::init()
 }
 
 /****************************************************************/
-VectorXd ControllerNLP::get_result() const
+VectorXd ControllerNLP::get_est_vels()
 {
     return v_e;
+}
+
+/****************************************************************/
+VectorXd ControllerNLP::get_est_conf()
+{
+    return q_0 + (dt * v_e);
 }
 
 /****************************************************************/
@@ -263,8 +270,8 @@ void ControllerNLP::computeQuantities(const Ipopt::Number *x, const bool new_x)
 
         err_xyz = p_r-p_e;
 
-        ROS_INFO_STREAM_COND(print_level>=3, "    v_e: " <<     v_e.transpose());
-        ROS_INFO_STREAM_COND(print_level>=3, "err_xyz: " << err_xyz.transpose() <<
+        ROS_INFO_STREAM_COND(print_level>=4, "    v_e: " <<     v_e.transpose());
+        ROS_INFO_STREAM_COND(print_level>=4, "err_xyz: " << err_xyz.transpose() <<
                                         " squaredNorm: " << err_xyz.squaredNorm());
         if (ctrl_ori)
         {
@@ -285,7 +292,7 @@ void ControllerNLP::computeQuantities(const Ipopt::Number *x, const bool new_x)
 
             err_ang = angularError(R_r, R_e);
             // err_ang = angularError(o_r, o_e);
-            ROS_INFO_STREAM_COND(print_level>=2, "err_ang: " << err_ang.transpose() <<
+            ROS_INFO_STREAM_COND(print_level>=4, "err_ang: " << err_ang.transpose() <<
                                             " squaredNorm: " << err_ang.squaredNorm());
 
             MatrixXd L=-0.5*(skew_nr*skew(R_e.col(0))+
@@ -442,22 +449,33 @@ void ControllerNLP::finalize_solution(Ipopt::SolverReturn status, Ipopt::Index n
         // ROS_INFO_STREAM("o_r: \n" << o_r.toRotationMatrix());
     }
 
+    VectorXd q_e = get_est_conf();
+
     ROS_INFO_STREAM_COND(print_level>=2, "v_0: " << v_0.transpose());
     ROS_INFO_STREAM_COND(print_level>=2, "q_0: " << q_0.transpose());
     ROS_INFO_STREAM_COND(print_level>=2, "v_e: " << v_e.transpose());
-    ROS_WARN_STREAM_COND(v_e.norm()>=0.5, "v_e norm is high: " << v_e.norm());
-    ROS_INFO_STREAM_COND(print_level>=2, "q_e: " << VectorXd(q_0 + (dt * v_e)).transpose());
+    // ROS_WARN_STREAM_COND(v_e.norm()>=0.5, "v_e norm is high: " << v_e.norm());
+    ROS_INFO_STREAM_COND(print_level>=2, "q_e: " << VectorXd(q_e).transpose());
 
     if (print_level>=2)
     {
+        // This is basically a check that the positional component of the jacobian is correct.
+        // It compares the estimated position at the end effector if computed with the jacobian
+        // p_e = p_0 + dt * (J_0_xyz * v_e);
+        // with the one computed with standard kinematics, i.e. with the new estimated joint conf:
+        // q_e = q_0 + dt * v_e -> p_ee = K_p(q_e)
+        // For dt small enough, p_e should be very close to p_ee
         BaxterChain ch(chain);
-        ch.setAng(q_0 + dt*v_e);
+        ch.setAng(q_e);
         Vector3d p_ee = ch.getH().block<3,1>(0,3);
 
-        ROS_ASSERT((p_e - p_ee).squaredNorm() < 1e-5);
+        ROS_INFO_STREAM_COND((p_e - p_ee).squaredNorm() >= 1e-3, "q_ee: " << ch.getAng().transpose());
+        ROS_INFO_STREAM_COND((p_e - p_ee).squaredNorm() >= 1e-3, "p_e : " << p_e .transpose());
+        ROS_INFO_STREAM_COND((p_e - p_ee).squaredNorm() >= 1e-3, "p_ee: " << p_ee.transpose());
+        ROS_INFO_STREAM_COND((p_e - p_ee).squaredNorm() >= 1e-3, "(p_e - p_ee).squaredNorm(): " <<
+                                                                  (p_e - p_ee).squaredNorm());
+        ROS_ASSERT((p_e - p_ee).squaredNorm() < 1e-3);
     }
-
-    if (print_level >= 1)   { printf("\n"); }
 
     if (status == Ipopt::SUCCESS)
     {

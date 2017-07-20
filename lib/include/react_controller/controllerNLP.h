@@ -70,8 +70,30 @@ private:
 public:
     ControllerNLP(BaxterChain chain_, double dt_ = 0.01, bool ctrl_ori_ = false);
 
+    /**
+     * Initializes the variables in the NLP problem (q_0, R_0, p_0, J_0), plus
+     * computes the variable bounds (i.e. velocity limits given the one provided by
+     * the URDF and the current joint configuration)
+     */
     void init();
-    Eigen::VectorXd get_result() const;
+
+    /**
+     * Returns the estimated velocities
+     * @return the estimated velocities that solve the NLP problem
+     */
+    Eigen::VectorXd get_est_vels();
+
+    /**
+     * Returns the estimated joint configuration
+     * @return the estimated joint configuration that solve the NLP problem
+     */
+    Eigen::VectorXd get_est_conf();
+
+    /**
+     * Returns the delta T
+     * @return the delta T used to solve the kinematic task
+     */
+    double get_dt()   { return dt; };
 
     void computeQuantities(const Ipopt::Number *x, const bool new_x);
     bool eval_f(Ipopt::Index n, const Ipopt::Number *x, bool new_x, Ipopt::Number &obj_value);
@@ -90,7 +112,6 @@ public:
     void set_v_0(const Eigen::VectorXd &_v_0);
     void set_print_level(size_t _print_level);
 
-    // Property getParameters() const;
     bool get_nlp_info(Ipopt::Index &n, Ipopt::Index &m, Ipopt::Index &nnz_jac_g,
                       Ipopt::Index &nnz_h_lag, IndexStyleEnum &index_style);
     bool get_bounds_info(Ipopt::Index n, Ipopt::Number *x_l, Ipopt::Number *x_u,
