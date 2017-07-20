@@ -81,10 +81,10 @@ public:
      * @param _tip    [tip link string of robot chain]
      * @param _q_0    [vector of initial joint angles]
      */
-    BaxterChain(urdf::Model        _robot,
-                const std::string&  _base,
-                const std::string&   _tip,
-                std::vector<double> _q_0);
+    BaxterChain(urdf::Model          _robot,
+                const std::string&    _base,
+                const std::string&     _tip,
+                const Eigen::VectorXd& _q_0);
 
     /**
      * Resets the chain
@@ -107,17 +107,17 @@ public:
     /**
      * Adds a new segment to the <strong>end</strong> of the chain.
      *
-     * @param segment The segment to add
+     * @param _seg The segment to add
      */
-    void addSegment(const KDL::Segment& segment);
+    void addSegment(const KDL::Segment& _seg);
 
     /**
      * Adds a complete chain to the <strong>end</strong> of the chain
      * The added chain is copied.
      *
-     * @param chain The chain to add
+     * @param _ch The chain to add
      */
-    void addChain(const KDL::Chain& chain);
+    void addChain(const KDL::Chain& _ch);
 
     /**
      * Request the total number of joints in the chain.\n
@@ -127,13 +127,13 @@ public:
      * creating a KDL::JntArray to use with this chain.
      * @return total nr of joints
      */
-    size_t getNrOfJoints()const {return nrOfJoints;};
+    size_t getNrOfJoints()const   { return   nrOfJoints; };
 
     /**
      * Request the total number of segments in the chain.
      * @return total number of segments
      */
-    size_t getNrOfSegments()const {return nrOfSegments;};
+    size_t getNrOfSegments()const { return nrOfSegments; };
 
     /**
      * Request the nth segment of the chain. There is no boundary

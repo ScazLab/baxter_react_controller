@@ -96,6 +96,8 @@ BaxterChain::BaxterChain(urdf::Model _robot, const string& _base,
         }
     }
 
+    // ROS_INFO_STREAM("Velocity limits: " << v_l.transpose());
+
     // Assign default values for q
     for (size_t i = 0; i < getNrOfJoints(); ++i)
     {
@@ -105,19 +107,14 @@ BaxterChain::BaxterChain(urdf::Model _robot, const string& _base,
     }
 }
 
-BaxterChain::BaxterChain(urdf::Model _robot, const string& _base,
-                         const string& _tip, vector<double> _q_0):
+BaxterChain::BaxterChain(urdf::Model _robot, const   string& _base,
+                         const string& _tip, const VectorXd&  _q_0):
                          BaxterChain(_robot, _base, _tip)
 
 {
-    // TODO : instead of assert, just
-    // place a ROS_ERROR and fill q with defaults.
-    ROS_ASSERT(getNrOfJoints() == _q_0.size());
+    ROS_ASSERT(int(getNrOfJoints()) == _q_0.size());
 
-    for (size_t i = 0; i < getNrOfJoints(); ++i)
-    {
-        q[i] = _q_0[i];
-    }
+    q = _q_0;
 }
 
 bool BaxterChain::resetChain()
@@ -190,12 +187,12 @@ BaxterChain& BaxterChain::operator=(const BaxterChain& _ch)
     return *this;
 }
 
-void BaxterChain::addSegment(const KDL::Segment& segment)
+void BaxterChain::addSegment(const KDL::Segment& _seg)
 {
-    segments.push_back(segment);
+    segments.push_back(_seg);
     nrOfSegments++;
 
-    if(segment.getJoint().getType()!=KDL::Joint::None)
+    if(_seg.getJoint().getType()!=KDL::Joint::None)
     {
         nrOfJoints++;
 
@@ -207,11 +204,11 @@ void BaxterChain::addSegment(const KDL::Segment& segment)
     }
 }
 
-void BaxterChain::addChain(const KDL::Chain& chain)
+void BaxterChain::addChain(const KDL::Chain& _ch)
 {
-    for(size_t i=0; i<chain.getNrOfSegments(); ++i)
+    for(size_t i=0; i<_ch.getNrOfSegments(); ++i)
     {
-        this->addSegment(chain.getSegment(i));
+        this->addSegment(_ch.getSegment(i));
     }
 }
 
