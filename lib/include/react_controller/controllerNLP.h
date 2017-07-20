@@ -28,6 +28,9 @@ private:
     // Print level of the IPOPT app
     size_t print_level;
 
+    // K value of the (proportional?) gain of a PID controller
+    double pid;
+
     Eigen::Vector3d     p_0;  // Initial 3D position
     Eigen::VectorXd     q_0;  // Initial ND joint configuration
     Eigen::VectorXd     v_0;  // Initial ND joint velocities

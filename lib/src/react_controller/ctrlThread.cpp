@@ -151,7 +151,8 @@ bool CtrlThread::goToPoseNoCheck(double px, double py, double pz,
     {
         // suppressCollisionAv();
 
-        ROS_INFO_STREAM("send:  " << est.transpose() <<" mode: " << getCtrlMode() << endl);
+        ROS_INFO_STREAM(" send:  " << est.transpose() <<
+                        " mode:  " <<   getCtrlMode() << endl);
         if (goToJointConfNoCheck(est))     { return true; }
     }
 

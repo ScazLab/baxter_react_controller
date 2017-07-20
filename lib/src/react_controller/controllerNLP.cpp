@@ -8,7 +8,7 @@ using namespace Eigen;
 using namespace   std;
 
 ControllerNLP::ControllerNLP(BaxterChain chain_, double dt_, bool ctrl_ori_) :
-                             chain(chain_), dt(dt_), ctrl_ori(ctrl_ori_), print_level(0),
+                             chain(chain_), dt(dt_), ctrl_ori(ctrl_ori_), print_level(0), pid(10.0),
                              q_0(chain_.getNrOfJoints()), v_0(chain_.getNrOfJoints()),
                              J_0_xyz(3,chain_.getNrOfJoints()), J_0_ang(3,chain_.getNrOfJoints()),
                              v_e(chain_.getNrOfJoints()), q_lim(chain_.getNrOfJoints(),2),
@@ -134,8 +134,8 @@ void ControllerNLP::set_dt(const double _dt)
 {
     ROS_ASSERT(dt>0.0);
 
-    dt = 10.0 * _dt;  // TODO BUG FIX THIS FACTOR OF 10
-    ROS_INFO_COND(print_level>=3, "\t\t\t  [NLP]\t\t[actual] dT: %g", dt);
+    dt = _dt;
+    ROS_INFO_COND(print_level>=12, "dT set to: %g", dt);
 }
 
 void ControllerNLP::set_v_0(const VectorXd &_v_0)
@@ -184,7 +184,7 @@ VectorXd ControllerNLP::get_est_vels()
 
 VectorXd ControllerNLP::get_est_conf()
 {
-    return q_0 + (dt * v_e);
+    return q_0 + (pid * dt * v_e);
 }
 
 bool ControllerNLP::get_nlp_info(Ipopt::Index &n, Ipopt::Index &m, Ipopt::Index &nnz_jac_g,
@@ -250,7 +250,7 @@ void ControllerNLP::computeQuantities(const Ipopt::Number *x, const bool new_x)
             v_e[i]=x[i];
         }
 
-        p_e = p_0 + dt * (J_0_xyz * v_e);
+        p_e = p_0 + pid * dt * (J_0_xyz * v_e);
 
         err_xyz = p_r-p_e;
 
@@ -265,7 +265,7 @@ void ControllerNLP::computeQuantities(const Ipopt::Number *x, const bool new_x)
             double theta =   w_e.norm();
             if (theta > 0.0) { w_e /= theta; }
 
-            AngleAxisd w_e_aa(theta * dt, w_e);   // angular increment in axis angle representation
+            AngleAxisd w_e_aa(theta * pid * dt, w_e);   // angular increment in axis angle representation
             ROS_INFO_STREAM_COND(print_level>=5, "w_e_aa: \t" <<
                                  w_e_aa.axis().transpose() << " " << w_e_aa.angle());
 
@@ -283,7 +283,7 @@ void ControllerNLP::computeQuantities(const Ipopt::Number *x, const bool new_x)
                              skew_sr*skew(R_e.col(1))+
                              skew_ar*skew(R_e.col(2)));
 
-            Derr_ang=-dt*(L*J_0_ang);
+            Derr_ang=-pid*dt*(L*J_0_ang);
         }
     }
 }
@@ -345,7 +345,7 @@ bool ControllerNLP::eval_jac_g(Ipopt::Index n, const Ipopt::Number *x, bool new_
         // reaching in position
         for (Ipopt::Index i=0; i<n; ++i)
         {
-            values[i]=-2.0*dt*(err_xyz.dot(J_0_xyz.col(i)));
+            values[i]=-2.0*pid*dt*(err_xyz.dot(J_0_xyz.col(i)));
             idx++;
         }
     }
@@ -436,13 +436,13 @@ void ControllerNLP::finalize_solution(Ipopt::SolverReturn status, Ipopt::Index n
     // ROS_WARN_STREAM_COND(v_e.norm()>=0.5, "v_e norm is high: " << v_e.norm());
     ROS_INFO_STREAM_COND(print_level>=2, "q_e: " << VectorXd(q_e).transpose());
 
-    if (print_level>=2)
+    if (print_level>=1)
     {
         // This is basically a check that the positional component of the jacobian is correct.
         // It compares the estimated position at the end effector if computed with the jacobian
-        // p_e = p_0 + dt * (J_0_xyz * v_e);
+        // p_e = p_0 + pid * dt * (J_0_xyz * v_e);
         // with the one computed with standard kinematics, i.e. with the new estimated joint conf:
-        // q_e = q_0 + dt * v_e -> p_ee = K_p(q_e)
+        // q_e = q_0 + pid * dt * v_e -> p_ee = K_p(q_e)
         // For dt small enough, p_e should be very close to p_ee
         BaxterChain ch(chain);
         ch.setAng(q_e);
