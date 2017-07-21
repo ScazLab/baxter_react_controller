@@ -8,8 +8,8 @@ using namespace Eigen;
 using namespace   std;
 
 ControllerNLP::ControllerNLP(BaxterChain chain_, double dt_, bool ctrl_ori_) :
-                             chain(chain_), dt(dt_), ctrl_ori(ctrl_ori_), print_level(0), pid(10.0),
-                             q_0(chain_.getNrOfJoints()), v_0(chain_.getNrOfJoints()),
+                             chain(chain_), int_status(true), dt(dt_), ctrl_ori(ctrl_ori_), print_level(0),
+                             pid(10.0), q_0(chain_.getNrOfJoints()), v_0(chain_.getNrOfJoints()),
                              J_0_xyz(3,chain_.getNrOfJoints()), J_0_ang(3,chain_.getNrOfJoints()),
                              v_e(chain_.getNrOfJoints()), q_lim(chain_.getNrOfJoints(),2),
                              v_lim(chain_.getNrOfJoints(),2), bounds(chain_.getNrOfJoints(),2),
@@ -151,6 +151,8 @@ void ControllerNLP::set_print_level(size_t _print_level)
 
 void ControllerNLP::init()
 {
+    int_status = true;
+
     q_0 = chain.getAng();
     // v_0 = chain.getVel();
 
@@ -448,12 +450,16 @@ void ControllerNLP::finalize_solution(Ipopt::SolverReturn status, Ipopt::Index n
         ch.setAng(q_e);
         Vector3d p_ee = ch.getH().block<3,1>(0,3);
 
-        ROS_INFO_STREAM_COND((p_e - p_ee).squaredNorm() >= 1e-3, "q_ee: " << ch.getAng().transpose());
-        ROS_INFO_STREAM_COND((p_e - p_ee).squaredNorm() >= 1e-3, "p_e : " << p_e .transpose());
-        ROS_INFO_STREAM_COND((p_e - p_ee).squaredNorm() >= 1e-3, "p_ee: " << p_ee.transpose());
-        ROS_INFO_STREAM_COND((p_e - p_ee).squaredNorm() >= 1e-3, "(p_e - p_ee).squaredNorm(): " <<
-                                                                  (p_e - p_ee).squaredNorm());
-        ROS_ASSERT((p_e - p_ee).squaredNorm() < 1e-3);
+        if ((p_e - p_ee).squaredNorm() >= 1e-3)
+        {
+            ROS_ERROR_STREAM("q_ee: " << ch.getAng().transpose());
+            ROS_ERROR_STREAM("p_e : " << p_e .transpose());
+            ROS_ERROR_STREAM("p_ee: " << p_ee.transpose());
+            ROS_ERROR_STREAM("(p_e - p_ee).squaredNorm(): " <<
+                              (p_e - p_ee).squaredNorm());
+
+            int_status = false;
+        }
     }
 
     if (status == Ipopt::SUCCESS)

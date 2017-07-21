@@ -19,6 +19,9 @@ private:
     // Chain to solve the IK against
     BaxterChain chain;
 
+    // Internal status of the Controller (not dependent from the NLP problem)
+    bool int_status;
+
     // Period of the control thread
     double dt;
 
@@ -96,7 +99,13 @@ public:
      * Returns the delta T
      * @return the delta T used to solve the kinematic task
      */
-    double get_dt()   { return dt; };
+    double get_dt()   { return     dt; };
+
+    /**
+     * Returns the internal status of the controller
+     * @return the internal status of the controller
+     */
+    bool get_int_status() { return int_status; };
 
     void computeQuantities(const Ipopt::Number *x, const bool new_x);
     bool eval_f(Ipopt::Index n, const Ipopt::Number *x, bool new_x, Ipopt::Number &obj_value);
