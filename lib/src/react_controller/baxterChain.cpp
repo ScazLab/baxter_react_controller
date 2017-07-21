@@ -472,27 +472,26 @@ bool BaxterChain::obstacleToCollisionPoint(const Obstacle& _obstacle,
     // Compute the norm vector in the end-effector reference frame
     _coll_pt.n_erf = ( obstacle_erf - _coll_pt.x_erf);
 
-    double dist = _coll_pt.n_erf.norm() - _coll_pt.size;
+    _coll_pt.dist = _coll_pt.n_erf.norm() - _coll_pt.size;
 
     if (!is_between(pos_ee, pos_ee_minus_one, _coll_pt.x_wrf))
     {
-        dist += min((pos_ee           - _coll_pt.x_wrf).norm(),
-                    (pos_ee_minus_one - _coll_pt.x_wrf).norm());
+        _coll_pt.dist += min((pos_ee           - _coll_pt.x_wrf).norm(),
+                             (pos_ee_minus_one - _coll_pt.x_wrf).norm());
     }
 
-    _coll_pt.n_erf /= dist;
+    _coll_pt.n_erf /= _coll_pt.dist;
 
-    double rho   = 0.4;
-    double alpha = 6.0;
-    double thres = 0.5;
+    double alpha = 4.0;
+    double thres = 0.4;
     // Compute the magnitude
-    if (dist > thres)
+    if (_coll_pt.dist > thres)
     {
         _coll_pt.mag = 0.0;
     }
     else
     {
-        _coll_pt.mag = 1.0/(1.0+exp((dist*(2.0/rho)-1.0)*alpha));
+        _coll_pt.mag = 1.0/(1.0+exp((_coll_pt.dist*(2.0/thres)-1.0)*alpha));
     }
 
     ROS_ASSERT(_coll_pt.mag >= 0.0 && _coll_pt.mag <= 1.0);
