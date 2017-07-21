@@ -451,7 +451,6 @@ bool BaxterChain::obstacleToCollisionPoint(const Obstacle& _obstacle,
     _coll_pt.o_wrf = _obstacle.x_wrf;
     _coll_pt.size  = _obstacle.size;
 
-
     // Project the point onto the last segment of the chain
     Vector3d pos_ee           = getH(getNrOfJoints()-1).block<3,1>(0,3);
     Vector3d pos_ee_minus_one = getH(getNrOfJoints()-2).block<3,1>(0,3);
@@ -460,9 +459,6 @@ bool BaxterChain::obstacleToCollisionPoint(const Obstacle& _obstacle,
     _coll_pt.n_wrf = _obstacle.x_wrf - _coll_pt.x_wrf;
 
     // Convert the collision point from the wrf to end-effector reference frame
-    Vector4d tmp(0, 0, 0, 1);
-    tmp.block<3,1>(0,0) = _coll_pt.x_wrf;
-
     changeFoR(_coll_pt.x_wrf, getH(), _coll_pt.x_erf);
 
     // Convert the obstacle point from the wrf to end-effector reference frame
@@ -471,20 +467,38 @@ bool BaxterChain::obstacleToCollisionPoint(const Obstacle& _obstacle,
 
     // Compute the norm vector in the end-effector reference frame
     _coll_pt.n_erf = ( obstacle_erf - _coll_pt.x_erf);
+    ROS_ASSERT_MSG(_coll_pt.n_wrf.norm() -   _coll_pt.n_erf.norm() < EPSILON,
+                  "_coll_pt.n_wrf.norm(): %g _coll_pt.n_erf.norm(): %g",
+                   _coll_pt.n_wrf.norm(),    _coll_pt.n_erf.norm() );
 
-    _coll_pt.dist = _coll_pt.n_erf.norm() - _coll_pt.size;
+    // Compute the "distance"
+    // ROS_INFO_STREAM("      _obstacle.x_wrf: " <<_obstacle.x_wrf.transpose() <<
+    //                      ", _coll_pt.x_wrf: " << _coll_pt.x_wrf.transpose());
+    // ROS_INFO("_coll_pt.n_wrf.norm(): %g,  _coll_pt.size: %g",
+    //           _coll_pt.n_wrf.norm(),      _coll_pt.size);
+    _coll_pt.dist = _coll_pt.n_wrf.norm() - _coll_pt.size;
 
-    if (!is_between(pos_ee, pos_ee_minus_one, _coll_pt.x_wrf))
+    if (not is_between(pos_ee, pos_ee_minus_one, _coll_pt.x_wrf))
     {
+        // ROS_INFO("(pos_ee           - _coll_pt.x_wrf).norm(): %g"
+        //          "(pos_ee_minus_one - _coll_pt.x_wrf).norm(): %g",
+        //           (pos_ee           - _coll_pt.x_wrf).norm(),
+        //           (pos_ee_minus_one - _coll_pt.x_wrf).norm());
         _coll_pt.dist += min((pos_ee           - _coll_pt.x_wrf).norm(),
                              (pos_ee_minus_one - _coll_pt.x_wrf).norm());
     }
 
-    _coll_pt.n_erf /= _coll_pt.dist;
+    // Normalize the norm vectors
+    _coll_pt.n_wrf = _coll_pt.n_wrf / _coll_pt.n_wrf.norm();
+    _coll_pt.n_erf = _coll_pt.n_erf / _coll_pt.n_erf.norm();
 
+    ROS_ASSERT(_coll_pt.n_wrf.norm() - 1 < EPSILON);
+    ROS_ASSERT(_coll_pt.n_erf.norm() - 1 < EPSILON);
+
+    // Compute the magnitude
     double alpha = 4.0;
     double thres = 0.4;
-    // Compute the magnitude
+
     if (_coll_pt.dist > thres)
     {
         _coll_pt.mag = 0.0;

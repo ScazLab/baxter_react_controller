@@ -76,6 +76,10 @@ AvoidanceHandler::AvoidanceHandler(BaxterChain _chain,
                 BaxterChain chainToAdd = customChain;
                 chainToAdd.addSegment(s);
                 tmpCC.push_back(chainToAdd);
+
+                // Vector3d getH_ee = chainToAdd.getH().block<3,1>(0,3);
+                // ROS_INFO_STREAM_COND(print_level>=2, "coll_pt:" << coll_pt.x_wrf.transpose() <<
+                //                                      "getH_ee:" <<       getH_ee.transpose());
             }
 
             ROS_INFO_COND(print_level>=6, "tmpCP.size %lu tmpCC.size %lu", tmpCP.size(), tmpCC.size());
