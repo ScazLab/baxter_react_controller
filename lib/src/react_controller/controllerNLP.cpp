@@ -7,9 +7,8 @@
 using namespace Eigen;
 using namespace   std;
 
-/****************************************************************/
 ControllerNLP::ControllerNLP(BaxterChain chain_, double dt_, bool ctrl_ori_) :
-                             chain(chain_), dt(dt_), ctrl_ori(ctrl_ori_), print_level(0),
+                             chain(chain_), dt(dt_), ctrl_ori(ctrl_ori_), print_level(0), pid(10.0),
                              q_0(chain_.getNrOfJoints()), v_0(chain_.getNrOfJoints()),
                              J_0_xyz(3,chain_.getNrOfJoints()), J_0_ang(3,chain_.getNrOfJoints()),
                              v_e(chain_.getNrOfJoints()), q_lim(chain_.getNrOfJoints(),2),
@@ -37,7 +36,6 @@ ControllerNLP::ControllerNLP(BaxterChain chain_, double dt_, bool ctrl_ori_) :
     bounds=v_lim;
 }
 
-/****************************************************************/
 void ControllerNLP::computeGuard()
 {
     double guardRatio=0.1;
@@ -56,53 +54,51 @@ void ControllerNLP::computeGuard()
     }
 }
 
-/****************************************************************/
 void ControllerNLP::computeBounds()
 {
-    // computeGuard();
+    computeGuard();
 
-    // bounds.resize(chain.getNrOfJoints(), 2);
-
-    // for (size_t i=0; i<chain.getNrOfJoints(); ++i)
-    // {
-    //     double qi=q_0[i];
-
-    //     if ((qi>=qGuardMinInt[i]) && (qi<=qGuardMaxInt[i]))
-    //     {
-    //         bounds(i,0)=bounds(i,1)=1.0;
-    //     }
-    //     else if (qi<qGuardMinInt[i])
-    //     {
-    //         bounds(i,0)=(qi<=qGuardMinExt[i]?0.0:
-    //                      0.5*(1.0+tanh(+10.0*(qi-qGuardMinCOG[i])/qGuard[i])));
-    //         bounds(i,1)=1.0;
-    //     }
-    //     else
-    //     {
-    //         bounds(i,0)=1.0;
-    //         bounds(i,1)=(qi>=qGuardMaxExt[i]?0.0:
-    //                      0.5*(1.0+tanh(-10.0*(qi-qGuardMaxCOG[i])/qGuard[i])));
-    //     }
-    // }
-
-    // ROS_INFO_STREAM_COND(print_level>=2, "bounds before" << endl << bounds);
-
-    // for (size_t i=0; i<chain.getNrOfJoints(); ++i)
-    // {
-    //     bounds(i,0)*=v_lim(i,0);
-    //     bounds(i,1)*=v_lim(i,1);
-    // }
-
-    // ROS_INFO_STREAM_COND(print_level>=2, "bounds after" << endl << bounds);
+    bounds.resize(chain.getNrOfJoints(), 2);
 
     for (size_t i=0; i<chain.getNrOfJoints(); ++i)
     {
-        bounds(i,0)=v_lim(i,0);
-        bounds(i,1)=v_lim(i,1);
+        double qi=q_0[i];
+
+        if ((qi>=qGuardMinInt[i]) && (qi<=qGuardMaxInt[i]))
+        {
+            bounds(i,0)=bounds(i,1)=1.0;
+        }
+        else if (qi<qGuardMinInt[i])
+        {
+            bounds(i,0)=(qi<=qGuardMinExt[i]?0.0:
+                         0.5*(1.0+tanh(+10.0*(qi-qGuardMinCOG[i])/qGuard[i])));
+            bounds(i,1)=1.0;
+        }
+        else
+        {
+            bounds(i,0)=1.0;
+            bounds(i,1)=(qi>=qGuardMaxExt[i]?0.0:
+                         0.5*(1.0+tanh(-10.0*(qi-qGuardMaxCOG[i])/qGuard[i])));
+        }
     }
+
+    ROS_INFO_STREAM_COND(print_level>=8, "bounds before" << endl << bounds);
+
+    for (size_t i=0; i<chain.getNrOfJoints(); ++i)
+    {
+        bounds(i,0)*=v_lim(i,0);
+        bounds(i,1)*=v_lim(i,1);
+    }
+
+    ROS_INFO_STREAM_COND(print_level>=4, "Bounds:" << endl << bounds);
+
+    // for (size_t i=0; i<chain.getNrOfJoints(); ++i)
+    // {
+    //     bounds(i,0)=v_lim(i,0);
+    //     bounds(i,1)=v_lim(i,1);
+    // }
 }
 
-/****************************************************************/
 void ControllerNLP::set_x_r(const Eigen::Vector3d &_p_r, const Eigen::Quaterniond &_o_r)
 {
     p_r = _p_r;
@@ -114,49 +110,45 @@ void ControllerNLP::set_x_r(const Eigen::Vector3d &_p_r, const Eigen::Quaternion
     skew_ar = skew(R_r.col(2));
 }
 
-/****************************************************************/
 void ControllerNLP::set_v_lim(const MatrixXd &_v_lim)
 {
     v_lim = DEG2RAD*_v_lim;
 
-    if (print_level >= 2)
-    {
-        // Print stuff in a single line for convenience
-        MatrixXd vlim = v_lim;
-        vlim.transposeInPlace();
-        VectorXd vlim_vec(Map<VectorXd>(vlim.data(), vlim.cols()*vlim.rows()));
+    // if (print_level >= 2)
+    // {
+    //     // Print stuff in a single line for convenience
+    //     MatrixXd vlim = v_lim;
+    //     vlim.transposeInPlace();
+    //     VectorXd vlim_vec(Map<VectorXd>(vlim.data(), vlim.cols()*vlim.rows()));
 
-        ROS_INFO_STREAM("vlim: " << vlim_vec.transpose());
-    }
+    //     ROS_INFO_STREAM("vlim: " << vlim_vec.transpose());
+    // }
 }
 
-/****************************************************************/
 void ControllerNLP::set_ctrl_ori(const bool _ctrl_ori)
 {
     ctrl_ori=_ctrl_ori;
 }
 
-/****************************************************************/
 void ControllerNLP::set_dt(const double _dt)
 {
     ROS_ASSERT(dt>0.0);
-    dt=_dt;
+
+    dt = _dt;
+    ROS_INFO_COND(print_level>=12, "dT set to: %g", dt);
 }
 
-/****************************************************************/
 void ControllerNLP::set_v_0(const VectorXd &_v_0)
 {
     ROS_ASSERT(v_0.size() == _v_0.size());
     v_0 = _v_0;
 }
 
-/****************************************************************/
 void ControllerNLP::set_print_level(size_t _print_level)
 {
     print_level = _print_level;
 }
 
-/****************************************************************/
 void ControllerNLP::init()
 {
     q_0 = chain.getAng();
@@ -169,29 +161,32 @@ void ControllerNLP::init()
     R_0 = H_0.block<3,3>(0,0);
     p_0 = H_0.block<3,1>(0,3);
 
-    ROS_INFO_STREAM_COND(print_level>=8, "H_0: \n" << H_0);
-    ROS_INFO_STREAM_COND(print_level>=8, "R_0: \n" << R_0);
-    ROS_INFO_STREAM_COND(print_level>=8, "p_0: \t" << p_0.transpose());
+    ROS_INFO_STREAM_COND(print_level>=6, "H_0: \n" << H_0);
+    ROS_INFO_STREAM_COND(print_level>=6, "R_0: \n" << R_0);
+    ROS_INFO_STREAM_COND(print_level>=6, "p_0: \t" << p_0.transpose());
 
     MatrixXd J_0 = chain.GeoJacobian();
     J_0_xyz = J_0.block(0,0,3,chain.getNrOfJoints());
     J_0_ang = J_0.block(3,0,3,chain.getNrOfJoints());
 
-    ROS_INFO_STREAM_COND(print_level>=8, "J_0:    \n" << J_0    );
-    ROS_INFO_STREAM_COND(print_level>=2, "J_0_xyz:\n" << J_0_xyz);
+    ROS_INFO_STREAM_COND(print_level>=6, "J_0:    \n" << J_0    );
+    ROS_INFO_STREAM_COND(print_level>=3, "J_0_xyz:\n" << J_0_xyz);
 
-    ROS_INFO_STREAM_COND(print_level>=2 && ctrl_ori, "J_0_ang:\n" << J_0_ang);
+    ROS_INFO_STREAM_COND(print_level>=3 && ctrl_ori, "J_0_ang:\n" << J_0_ang);
 
     computeBounds();
 }
 
-/****************************************************************/
-VectorXd ControllerNLP::get_result() const
+VectorXd ControllerNLP::get_est_vels()
 {
     return v_e;
 }
 
-/****************************************************************/
+VectorXd ControllerNLP::get_est_conf()
+{
+    return q_0 + (pid * dt * v_e);
+}
+
 bool ControllerNLP::get_nlp_info(Ipopt::Index &n, Ipopt::Index &m, Ipopt::Index &nnz_jac_g,
                   Ipopt::Index &nnz_h_lag, IndexStyleEnum &index_style)
 {
@@ -206,7 +201,6 @@ bool ControllerNLP::get_nlp_info(Ipopt::Index &n, Ipopt::Index &m, Ipopt::Index 
     return true;
 }
 
-/****************************************************************/
 bool ControllerNLP::get_bounds_info(Ipopt::Index n, Ipopt::Number *x_l, Ipopt::Number *x_u,
                                     Ipopt::Index m, Ipopt::Number *g_l, Ipopt::Number *g_u)
 {
@@ -235,7 +229,6 @@ bool ControllerNLP::get_bounds_info(Ipopt::Index n, Ipopt::Number *x_l, Ipopt::N
     return true;
 }
 
-/****************************************************************/
 bool ControllerNLP::get_starting_point(Ipopt::Index n, bool init_x, Ipopt::Number *x,
                         bool init_z, Ipopt::Number *z_L, Ipopt::Number *z_U,
                         Ipopt::Index m, bool init_lambda, Ipopt::Number *lambda)
@@ -247,7 +240,6 @@ bool ControllerNLP::get_starting_point(Ipopt::Index n, bool init_x, Ipopt::Numbe
     return true;
 }
 
-/************************************************************************/
 void ControllerNLP::computeQuantities(const Ipopt::Number *x, const bool new_x)
 {
     if (new_x)
@@ -258,12 +250,12 @@ void ControllerNLP::computeQuantities(const Ipopt::Number *x, const bool new_x)
             v_e[i]=x[i];
         }
 
-        p_e = p_0 + dt * (J_0_xyz * v_e);
+        p_e = p_0 + pid * dt * (J_0_xyz * v_e);
 
         err_xyz = p_r-p_e;
 
-        ROS_INFO_STREAM_COND(print_level>=2, "    v_e: " <<     v_e.transpose());
-        ROS_INFO_STREAM_COND(print_level>=2, "err_xyz: " << err_xyz.transpose() <<
+        ROS_INFO_STREAM_COND(print_level>=4, "    v_e: " <<     v_e.transpose());
+        ROS_INFO_STREAM_COND(print_level>=4, "err_xyz: " << err_xyz.transpose() <<
                                         " squaredNorm: " << err_xyz.squaredNorm());
         if (ctrl_ori)
         {
@@ -273,30 +265,29 @@ void ControllerNLP::computeQuantities(const Ipopt::Number *x, const bool new_x)
             double theta =   w_e.norm();
             if (theta > 0.0) { w_e /= theta; }
 
-            AngleAxisd w_e_aa(theta * dt, w_e);   // angular increment in axis angle representation
-            ROS_INFO_STREAM_COND(print_level>=6, "w_e_aa: \t" <<
+            AngleAxisd w_e_aa(theta * pid * dt, w_e);   // angular increment in axis angle representation
+            ROS_INFO_STREAM_COND(print_level>=5, "w_e_aa: \t" <<
                                  w_e_aa.axis().transpose() << " " << w_e_aa.angle());
 
             R_e = w_e_aa.toRotationMatrix() * R_0;
-            ROS_INFO_STREAM_COND(print_level>=6, "R_e: \n" << R_e);
+            ROS_INFO_STREAM_COND(print_level>=5, "R_e: \n" << R_e);
 
             Quaterniond o_e(R_e);
 
             err_ang = angularError(R_r, R_e);
             // err_ang = angularError(o_r, o_e);
-            ROS_INFO_STREAM_COND(print_level>=2, "err_ang: " << err_ang.transpose() <<
+            ROS_INFO_STREAM_COND(print_level>=4, "err_ang: " << err_ang.transpose() <<
                                             " squaredNorm: " << err_ang.squaredNorm());
 
             MatrixXd L=-0.5*(skew_nr*skew(R_e.col(0))+
                              skew_sr*skew(R_e.col(1))+
                              skew_ar*skew(R_e.col(2)));
 
-            Derr_ang=-dt*(L*J_0_ang);
+            Derr_ang=-pid*dt*(L*J_0_ang);
         }
     }
 }
 
-/****************************************************************/
 bool ControllerNLP::eval_f(Ipopt::Index n, const Ipopt::Number *x, bool new_x,
             Ipopt::Number &obj_value)
 {
@@ -306,7 +297,6 @@ bool ControllerNLP::eval_f(Ipopt::Index n, const Ipopt::Number *x, bool new_x,
     return true;
 }
 
-/****************************************************************/
 bool ControllerNLP::eval_grad_f(Ipopt::Index n, const Ipopt::Number* x, bool new_x,
                  Ipopt::Number *grad_f)
 {
@@ -319,7 +309,6 @@ bool ControllerNLP::eval_grad_f(Ipopt::Index n, const Ipopt::Number* x, bool new
     return true;
 }
 
-// /****************************************************************/
 bool ControllerNLP::eval_g(Ipopt::Index n, const Ipopt::Number *x, bool new_x,
             Ipopt::Index m, Ipopt::Number *g)
 {
@@ -332,7 +321,6 @@ bool ControllerNLP::eval_g(Ipopt::Index n, const Ipopt::Number *x, bool new_x,
     return true;
 }
 
-/****************************************************************/
 bool ControllerNLP::eval_jac_g(Ipopt::Index n, const Ipopt::Number *x, bool new_x,
                 Ipopt::Index m, Ipopt::Index nele_jac, Ipopt::Index *iRow,
                 Ipopt::Index *jCol, Ipopt::Number *values)
@@ -357,7 +345,7 @@ bool ControllerNLP::eval_jac_g(Ipopt::Index n, const Ipopt::Number *x, bool new_
         // reaching in position
         for (Ipopt::Index i=0; i<n; ++i)
         {
-            values[i]=-2.0*dt*(err_xyz.dot(J_0_xyz.col(i)));
+            values[i]=-2.0*pid*dt*(err_xyz.dot(J_0_xyz.col(i)));
             idx++;
         }
     }
@@ -365,7 +353,6 @@ bool ControllerNLP::eval_jac_g(Ipopt::Index n, const Ipopt::Number *x, bool new_
     return true;
 }
 
-/****************************************************************/
 void ControllerNLP::finalize_solution(Ipopt::SolverReturn status, Ipopt::Index n,
                                       const Ipopt::Number *x, const Ipopt::Number *z_L,
                                       const Ipopt::Number *z_U, Ipopt::Index m,
@@ -379,17 +366,17 @@ void ControllerNLP::finalize_solution(Ipopt::SolverReturn status, Ipopt::Index n
     }
 
     // printf("\n");
-    if (status != Ipopt::SUCCESS)     { ROS_WARN("IPOPT Failed. Error code: %i", status); }
-    else                              { ROS_INFO("IPOPT succeeded!");                     }
+    string print_str = "";
+    if (status != Ipopt::SUCCESS) { print_str = "IPOPT Failed. Error code: " + toString(status) + ". "; }
 
     switch(status)
     {
         case Ipopt::SUCCESS                  : break;
-        case Ipopt::CPUTIME_EXCEEDED         : ROS_WARN("Maximum CPU time exceeded."); break;
-        case Ipopt::LOCAL_INFEASIBILITY      : ROS_WARN("Algorithm converged to a point of local infeasibility. "
-                                                        "Problem may be infeasible."); break;
-        case Ipopt::DIVERGING_ITERATES       : ROS_WARN("Iterates divering; problem might be unbounded."); break;
-        case Ipopt::STOP_AT_ACCEPTABLE_POINT : ROS_WARN("Solved to acceptable level."); break;
+        case Ipopt::CPUTIME_EXCEEDED         : ROS_WARN((print_str + "Maximum CPU time exceeded.").c_str()); break;
+        case Ipopt::LOCAL_INFEASIBILITY      : ROS_WARN((print_str + "Algorithm converged to a point of local infeasibility. "
+                                                        "Problem may be infeasible.").c_str()); break;
+        case Ipopt::DIVERGING_ITERATES       : ROS_WARN((print_str + "Iterates divering; problem might be unbounded.").c_str()); break;
+        case Ipopt::STOP_AT_ACCEPTABLE_POINT : ROS_WARN((print_str + "Solved to acceptable level.").c_str()); break;
         default : break;
         // Error codes: https://www.coin-or.org/Ipopt/doxygen/classorg_1_1coinor_1_1Ipopt.html
         //    see also: https://www.coin-or.org/Doxygen/CoinAll/_ip_alg_types_8hpp-source.html#l00022
@@ -401,16 +388,27 @@ void ControllerNLP::finalize_solution(Ipopt::SolverReturn status, Ipopt::Index n
         // };
     }
 
-    ROS_INFO_STREAM_COND(print_level>=2, "init pos [p_0]: " << p_0.transpose());
-    ROS_INFO_STREAM_COND(print_level>=2, "ref  pos [p_r]: " << p_r.transpose());
-    ROS_INFO_STREAM_COND(print_level>=2, "est  pos [p_e]: " << p_e.transpose());
-    // Eigen::VectorXd pos_0rr = (p_0-p_r) * 1000.0;
+    Eigen::VectorXd pos_0rr = (p_0-p_r) * 1000.0;
+    Eigen::VectorXd pos_err = (p_e-p_r) * 1000.0;
+
+    ROS_INFO_STREAM_COND(print_level>=1, "ref  pos [p_r]: " << p_r.transpose());
+    ROS_INFO_STREAM_COND(print_level>=1, "init err [p_0]: " << pos_0rr.transpose() <<
+                                         "\t\tsqNorm[mm]: " << pos_0rr.squaredNorm());
+    ROS_INFO_STREAM_COND(print_level>=1, "est  err [p_e]: " << pos_err.transpose() <<
+                                         "\t\tsqNorm[mm]: " << pos_err.squaredNorm());
+
     // ROS_INFO_STREAM("  pos 0rr [mm]: " << pos_0rr.transpose() <<
     //            "\tsquared norm [mm]: " << pos_0rr.squaredNorm());
 
-    Eigen::VectorXd pos_err = (p_e-p_r) * 1000.0;
-    ROS_INFO_STREAM_COND(print_level>=2, "  pos err [mm]: " << pos_err.transpose() <<
-                                    "\tsquared norm [mm]: " << pos_err.squaredNorm());
+    if (status == Ipopt::SUCCESS)
+    {
+        ROS_INFO_STREAM("IPOPT succeeded! pos err (sq.norm) [mm]: " << pos_err.squaredNorm());
+    }
+    else
+    {
+        ROS_INFO_STREAM_COND(print_level>=2, "  pos err [mm]: " << pos_err.transpose() <<
+                                        "\tsquared norm [mm]: " << pos_err.squaredNorm());
+    }
 
     if (ctrl_ori)
     {
@@ -430,11 +428,33 @@ void ControllerNLP::finalize_solution(Ipopt::SolverReturn status, Ipopt::Index n
         // ROS_INFO_STREAM("o_r: \n" << o_r.toRotationMatrix());
     }
 
+    VectorXd q_e = get_est_conf();
+
     ROS_INFO_STREAM_COND(print_level>=2, "v_0: " << v_0.transpose());
     ROS_INFO_STREAM_COND(print_level>=2, "q_0: " << q_0.transpose());
     ROS_INFO_STREAM_COND(print_level>=2, "v_e: " << v_e.transpose());
-    ROS_INFO_STREAM_COND(print_level>=2, "q_e: " << VectorXd(q_0 + (dt * v_e)).transpose());
-    printf("\n");
+    // ROS_WARN_STREAM_COND(v_e.norm()>=0.5, "v_e norm is high: " << v_e.norm());
+    ROS_INFO_STREAM_COND(print_level>=2, "q_e: " << VectorXd(q_e).transpose());
+
+    if (print_level>=1)
+    {
+        // This is basically a check that the positional component of the jacobian is correct.
+        // It compares the estimated position at the end effector if computed with the jacobian
+        // p_e = p_0 + pid * dt * (J_0_xyz * v_e);
+        // with the one computed with standard kinematics, i.e. with the new estimated joint conf:
+        // q_e = q_0 + pid * dt * v_e -> p_ee = K_p(q_e)
+        // For dt small enough, p_e should be very close to p_ee
+        BaxterChain ch(chain);
+        ch.setAng(q_e);
+        Vector3d p_ee = ch.getH().block<3,1>(0,3);
+
+        ROS_INFO_STREAM_COND((p_e - p_ee).squaredNorm() >= 1e-3, "q_ee: " << ch.getAng().transpose());
+        ROS_INFO_STREAM_COND((p_e - p_ee).squaredNorm() >= 1e-3, "p_e : " << p_e .transpose());
+        ROS_INFO_STREAM_COND((p_e - p_ee).squaredNorm() >= 1e-3, "p_ee: " << p_ee.transpose());
+        ROS_INFO_STREAM_COND((p_e - p_ee).squaredNorm() >= 1e-3, "(p_e - p_ee).squaredNorm(): " <<
+                                                                  (p_e - p_ee).squaredNorm());
+        ROS_ASSERT((p_e - p_ee).squaredNorm() < 1e-3);
+    }
 
     if (status == Ipopt::SUCCESS)
     {

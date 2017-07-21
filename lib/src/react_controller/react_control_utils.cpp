@@ -49,35 +49,6 @@ Vector3d angularError(const Quaterniond& _a, const Quaterniond& _b)
     return _b.w()*_a.vec() - _a.w()*_b.vec() -skew(_a.vec())*_b.vec();
 }
 
-bool computeCollisionPoints(const std::vector<Vector3d>&      _joints,
-                            const             Vector3d & _coll_coords,
-                            std::vector<collisionPoint>& _coll_points)
-{
-    _coll_points.clear();
-
-    for (size_t i = 0; i < _joints.size() - 1; ++i)
-    {
-        Vector3d ab = _joints[i + 1] - _joints[i];
-        Vector3d ap = _coll_coords - _joints[i];
-        Vector3d coll_pt = _joints[i] + ((ap).dot(ab)) / ((ab).dot(ab)) * ab;
-
-        collisionPoint cp;
-        cp.x = coll_pt;
-        cp.m = (_coll_coords - coll_pt).norm();
-        cp.n = (_coll_coords - coll_pt) / cp.m;
-
-        _coll_points.push_back(cp);
-
-        // ROS_INFO("coll point %zu at x: %g y: %g z: %g", i,
-        //           _coll_points[i].x(0), _coll_points[i].x(1), _coll_points[i].x(2));
-        // ROS_INFO("      norm %zu at x: %g y: %g z: %g", i,
-        //           _coll_points[i].n(0), _coll_points[i].n(1), _coll_points[i].n(2));
-    }
-    // printf("\n");
-
-    return true;
-}
-
 bool changeFoR(const Vector3d orig, const Matrix4d transform, Vector3d &new_pt)
 {
     Vector4d tmp(0, 0, 0, 1);
@@ -86,7 +57,7 @@ bool changeFoR(const Vector3d orig, const Matrix4d transform, Vector3d &new_pt)
     return true;
 }
 
-KDL::Frame toKDLFrame(Eigen::Matrix4d mat)
+KDL::Frame toKDLFrame(Matrix4d mat)
 {
     KDL::Vector x, y, z, pos;
 
@@ -100,19 +71,40 @@ KDL::Frame toKDLFrame(Eigen::Matrix4d mat)
     return KDL::Frame(rot, pos);
 }
 
-Eigen::VectorXd stdToEigen(std::vector<double> vec)
+VectorXd stdToEigen(std::vector<double> vec)
 {
-    Eigen::VectorXd eigen_vec(vec.size());
+    VectorXd res(vec.size());
+
     for (size_t i = 0; i < vec.size(); ++i)
     {
-        eigen_vec(i) = vec[i];
+        res(i) = vec[i];
     }
-    return eigen_vec;
+
+    return res;
 }
 
-Eigen::Vector3d projectOntoSegment(Eigen::Vector3d base, Eigen::Vector3d tip, Eigen::Vector3d point)
+Vector3d projectOntoSegment(Vector3d base, Vector3d tip, Vector3d point)
 {
-    Eigen::Vector3d ab = tip - base;
-    Eigen::Vector3d ap = point - base;
+    Vector3d ab =   tip - base;
+    Vector3d ap = point - base;
+
     return base + ((ap).dot(ab)) / ((ab).dot(ab)) * ab;
+}
+
+std::vector<Obstacle> readFromParamServer(XmlRpc::XmlRpcValue _param)
+{
+    std::vector<Obstacle> res;
+
+    ROS_ASSERT(_param.getType() == XmlRpc::XmlRpcValue::TypeArray);
+    ROS_ASSERT(_param.size() > 0);
+
+    for (int i = 0; i < _param.size(); ++i)
+    {
+        ROS_ASSERT(_param[i].getType() == XmlRpc::XmlRpcValue::TypeArray);
+        ROS_ASSERT(_param[i].size()    == 4);
+
+        res.push_back(Obstacle(_param[i][3], Vector3d(_param[i][0], _param[i][1], _param[i][2])));
+    }
+
+    return res;
 }

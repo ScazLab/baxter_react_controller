@@ -1,5 +1,4 @@
 #include <ros/ros.h>
-#include <kdl/chainfksolverpos_recursive.hpp>
 
 #include "react_controller/baxterChain.h"
 
@@ -27,8 +26,8 @@ BaxterChain::BaxterChain(urdf::Model _robot, const string& _base,
                          const string& _tip): BaxterChain()
 {
     // Read joints and links from URDF
-    ROS_INFO("Reading joints and links from URDF, from %s link to %s link",
-                                              _base.c_str(), _tip.c_str());
+    ROS_INFO("Reading joints and links from URDF, from %s to %s link",
+                                         _base.c_str(), _tip.c_str());
 
     KDL::Tree tree;
     if (not kdl_parser::treeFromUrdfModel(_robot, tree))
@@ -49,17 +48,17 @@ BaxterChain::BaxterChain(urdf::Model _robot, const string& _base,
 
     for (size_t i = 0; i < segments.size(); ++i)
     {
-        // ROS_INFO("Segment %lu, name %s,\tJoint name %s", i, segments[i].getName().c_str(),
-        //                                         segments[i].getJoint().getName().c_str());
+        // ROS_INFO("[%lu]: name %s,\tJoint name %s", i, segments[i].getName().c_str(),
+        //                                    segments[i].getJoint().getName().c_str());
         joint = _robot.getJoint(segments[i].getJoint().getName());
 
         if (joint->type != urdf::Joint::UNKNOWN &&
             joint->type != urdf::Joint::FIXED)
         {
-            joint_num++;
-            float lower, upper;
-            int hasLimits = 0;
+            ++joint_num;
+            double lower, upper, velocity;
 
+            int hasLimits = 0;
             if (joint->type != urdf::Joint::CONTINUOUS )
             {
                 if (joint->safety)
@@ -75,47 +74,47 @@ BaxterChain::BaxterChain(urdf::Model _robot, const string& _base,
                     upper = joint->limits->upper;
                 }
 
+                velocity = joint->limits->velocity;
                 hasLimits = 1;
             }
 
             if (hasLimits)
             {
-                l(joint_num-1) = lower;
-                u(joint_num-1) = upper;
+                q_l(joint_num-1) =    lower;
+                q_u(joint_num-1) =    upper;
+                v_l(joint_num-1) = velocity;
             }
             else
             {
-                l(joint_num-1) = numeric_limits<float>::lowest();
-                u(joint_num-1) = numeric_limits<float>::max();
+                q_l(joint_num-1) = numeric_limits<double>::lowest();
+                q_u(joint_num-1) = numeric_limits<double>::   max();
+                v_l(joint_num-1) = numeric_limits<double>::   max();
             }
 
             ROS_DEBUG_STREAM("IK Using joint "<<joint->name<<" "<<
-                              l(joint_num-1)<<" "<<u(joint_num-1));
+                              q_l(joint_num-1)<<" "<<q_u(joint_num-1));
         }
     }
+
+    // ROS_INFO_STREAM("Velocity limits: " << v_l.transpose());
 
     // Assign default values for q
     for (size_t i = 0; i < getNrOfJoints(); ++i)
     {
         // This will initialize the joint in the
         // middle of its operational range
-        q[i] = (l[i]+u[i])/2;
+        q[i] = (q_l[i]+q_u[i])/2;
     }
 }
 
-BaxterChain::BaxterChain(urdf::Model _robot, const string& _base,
-                         const string& _tip, vector<double> _q_0):
+BaxterChain::BaxterChain(urdf::Model _robot, const   string& _base,
+                         const string& _tip, const VectorXd&  _q_0):
                          BaxterChain(_robot, _base, _tip)
 
 {
-    // TODO : instead of assert, just
-    // place a ROS_ERROR and fill q with defaults.
-    ROS_ASSERT(getNrOfJoints() == _q_0.size());
+    ROS_ASSERT(int(getNrOfJoints()) == _q_0.size());
 
-    for (size_t i = 0; i < getNrOfJoints(); ++i)
-    {
-        q[i] = _q_0[i];
-    }
+    q = _q_0;
 }
 
 bool BaxterChain::resetChain()
@@ -123,10 +122,11 @@ bool BaxterChain::resetChain()
     nrOfJoints=0;
     nrOfSegments=0;
     segments.resize(0);
-    q.resize(0);
-    l.resize(0);
-    u.resize(0);
-    v.resize(0);
+    q  .resize(0);
+    q_l.resize(0);
+    q_u.resize(0);
+    v  .resize(0);
+    v_l.resize(0);
 
     return true;
 }
@@ -153,9 +153,11 @@ BaxterChain& BaxterChain::operator=(const KDL::Chain& _ch)
 
     for (size_t i = 0; i < getNrOfJoints(); ++i)
     {
-        q[i] = 0;
-        l[i] = 0;
-        u[i] = 0;
+        q  [i] = 0.0;
+        q_l[i] = 0.0;
+        q_u[i] = 0.0;
+        v  [i] = 0.0;
+        v_l[i] = 0.0;
     }
 
     return *this;
@@ -174,35 +176,39 @@ BaxterChain& BaxterChain::operator=(const BaxterChain& _ch)
 
         for (size_t i = 0; i < getNrOfJoints(); ++i)
         {
-            q[i] = _ch.q[i];
-            l[i] = _ch.l[i];
-            u[i] = _ch.u[i];
+            q  [i] = _ch.q  [i];
+            q_l[i] = _ch.q_l[i];
+            q_u[i] = _ch.q_u[i];
+            v  [i] = _ch.v  [i];
+            v_l[i] = _ch.v_l[i];
         }
     }
 
     return *this;
 }
 
-void BaxterChain::addSegment(const KDL::Segment& segment)
+void BaxterChain::addSegment(const KDL::Segment& _seg)
 {
-    segments.push_back(segment);
+    segments.push_back(_seg);
     nrOfSegments++;
-    if(segment.getJoint().getType()!=KDL::Joint::None)
+
+    if(_seg.getJoint().getType()!=KDL::Joint::None)
     {
         nrOfJoints++;
 
-        l.conservativeResize(getNrOfJoints());
-        u.conservativeResize(getNrOfJoints());
-        q.conservativeResize(getNrOfJoints());
-        v.conservativeResize(getNrOfJoints());
+        q  .conservativeResize(getNrOfJoints());
+        q_l.conservativeResize(getNrOfJoints());
+        q_u.conservativeResize(getNrOfJoints());
+        v  .conservativeResize(getNrOfJoints());
+        v_l.conservativeResize(getNrOfJoints());
     }
 }
 
-void BaxterChain::addChain(const KDL::Chain& chain)
+void BaxterChain::addChain(const KDL::Chain& _ch)
 {
-    for(size_t i=0; i<chain.getNrOfSegments(); ++i)
+    for(size_t i=0; i<_ch.getNrOfSegments(); ++i)
     {
-        this->addSegment(chain.getSegment(i));
+        this->addSegment(_ch.getSegment(i));
     }
 }
 
@@ -216,7 +222,7 @@ MatrixXd BaxterChain::GeoJacobian()
     return JntToJac().data;
 }
 
-bool BaxterChain::setAng(sensor_msgs::JointState _q)
+bool BaxterChain::setAng(const sensor_msgs::JointState& _q)
 {
     if (_q.position.size() != getNrOfJoints()) { return false; }
     if (_q.velocity.size() != getNrOfJoints()) { return false; }
@@ -232,15 +238,23 @@ bool BaxterChain::setAng(sensor_msgs::JointState _q)
     return setAng(new_q) && setVel(new_v);
 }
 
-bool BaxterChain::setAng(VectorXd _q)
+bool BaxterChain::setAng(const VectorXd& _q)
 {
     if (_q.size() != int(getNrOfJoints()))     { return false; }
 
-    q = _q;
+    // Check for consistency (each joint should be lower than its
+    // upper limit and bigger than its lower limit)
+    for (size_t i = 0; i < getNrOfJoints(); ++i)
+    {
+        if      (_q[i]>q_u[i])   { q[i] = q_u[i]; }
+        else if (_q[i]<q_l[i])   { q[i] = q_l[i]; }
+        else                     { q[i] =  _q[i]; }
+    }
+
     return true;
 }
 
-bool BaxterChain::setVel(VectorXd _v)
+bool BaxterChain::setVel(const VectorXd& _v)
 {
     if (_v.size() != int(getNrOfJoints()))     { return false; }
 
@@ -370,10 +384,11 @@ void BaxterChain::removeSegment()
     if(segments.back().getJoint().getType()!=KDL::Joint::None)
     {
         --nrOfJoints;
-        l.conservativeResize(getNrOfJoints());
-        u.conservativeResize(getNrOfJoints());
-        q.conservativeResize(getNrOfJoints());
-        v.conservativeResize(getNrOfJoints());
+        q  .conservativeResize(getNrOfJoints());
+        q_l.conservativeResize(getNrOfJoints());
+        q_u.conservativeResize(getNrOfJoints());
+        v  .conservativeResize(getNrOfJoints());
+        v_l.conservativeResize(getNrOfJoints());
     }
     segments.pop_back();
     --nrOfSegments;
@@ -399,73 +414,69 @@ void BaxterChain::removeJoint()
     return;
 }
 
-double BaxterChain::getMax(const size_t _i)
-{
-    return u[_i];
-}
-
-double BaxterChain::getMin(const size_t _i)
-{
-    return l[_i];
-}
-
 bool BaxterChain::is_between(Eigen::Vector3d _a, Eigen::Vector3d _b, Eigen::Vector3d _c)
 {
     double dot_product = (_b - _a).dot(_c - _a);
-    if (dot_product > 0 && dot_product < (_a - _b).squaredNorm())
+
+    if (dot_product > 0 && dot_product < (_a - _b).norm())
     {
         return true;
     }
+
     return false;
 }
 
-bool BaxterChain::obstacleToCollisionPoint(const Eigen::Vector3d& _obstacle_wrf,
-                                           collisionPoint&      _coll_point_erf)
+bool BaxterChain::obstacleToCollisionPoint(const Obstacle& _obstacle,
+                                           CollisionPoint&  _coll_pt)
 {
+    _coll_pt.o_wrf = _obstacle.x_wrf;
+    _coll_pt.size  = _obstacle.size;
+
+
     // Project the point onto the last segment of the chain
     Vector3d pos_ee           = getH(getNrOfJoints()-1).block<3,1>(0,3);
     Vector3d pos_ee_minus_one = getH(getNrOfJoints()-2).block<3,1>(0,3);
 
-    Vector3d coll_pt_wrf = projectOntoSegment(pos_ee_minus_one, pos_ee, _obstacle_wrf);
+    _coll_pt.x_wrf = projectOntoSegment(pos_ee_minus_one, pos_ee, _obstacle.x_wrf);
+    _coll_pt.n_wrf = _obstacle.x_wrf - _coll_pt.x_wrf;
 
     // Convert the collision point from the wrf to end-effector reference frame
     Vector4d tmp(0, 0, 0, 1);
-    tmp.block<3,1>(0,0) = coll_pt_wrf;
+    tmp.block<3,1>(0,0) = _coll_pt.x_wrf;
 
-    changeFoR(coll_pt_wrf, getH(), _coll_point_erf.x);
+    changeFoR(_coll_pt.x_wrf, getH(), _coll_pt.x_erf);
 
     // Convert the obstacle point from the wrf to end-effector reference frame
     Vector3d obstacle_erf;
-    changeFoR(_obstacle_wrf, getH(), obstacle_erf);
+    changeFoR(_obstacle.x_wrf, getH(), obstacle_erf);
 
     // Compute the norm vector in the end-effector reference frame
-    _coll_point_erf.n  = ( obstacle_erf - _coll_point_erf.x);
+    _coll_pt.n_erf = ( obstacle_erf - _coll_pt.x_erf);
 
-    double dist = _coll_point_erf.n.norm();
+    double dist = _coll_pt.n_erf.norm() - _coll_pt.size;
 
-    if (!is_between(pos_ee, pos_ee_minus_one, coll_pt_wrf))
+    if (!is_between(pos_ee, pos_ee_minus_one, _coll_pt.x_wrf))
     {
-        dist += min((pos_ee - coll_pt_wrf).squaredNorm(), (pos_ee_minus_one - coll_pt_wrf).squaredNorm());
+        dist += min((pos_ee           - _coll_pt.x_wrf).norm(),
+                    (pos_ee_minus_one - _coll_pt.x_wrf).norm());
     }
 
-    _coll_point_erf.n /= dist;
+    _coll_pt.n_erf /= dist;
 
+    double rho   = 0.4;
+    double alpha = 6.0;
     double thres = 0.5;
     // Compute the magnitude
     if (dist > thres)
     {
-        _coll_point_erf.m = 0.0;
+        _coll_pt.mag = 0.0;
     }
     else
     {
-        _coll_point_erf.m = (thres - dist) / thres;
+        _coll_pt.mag = 1.0/(1.0+exp((dist*(2.0/rho)-1.0)*alpha));
     }
 
-
-    // ROS_INFO("coll point %zu at x: %g y: %g z: %g", i,
-    //           _coll_points[i].x(0), _coll_points[i].x(1), _coll_points[i].x(2));
-    // ROS_INFO("      norm %zu at x: %g y: %g z: %g", i,
-    //           _coll_points[i].n(0), _coll_points[i].n(1), _coll_points[i].n(2));
+    ROS_ASSERT(_coll_pt.mag >= 0.0 && _coll_pt.mag <= 1.0);
 
     return true;
 }

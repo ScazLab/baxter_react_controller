@@ -69,27 +69,11 @@ Eigen::Vector3d angularError(const Eigen::Quaterniond& _a, const Eigen::Quaterni
 
 /**
  * TODO documentation
+ * @param  orig      [description]
+ * @param  transform [description]
+ * @param  new_pt    [description]
+ * @return           [description]
  */
-struct collisionPoint
-{
-    Eigen::Vector3d x; // position (x,y,z)
-    Eigen::Vector3d n; // direction of normal vector at that point
-    double          m; // activation level (magnitude)
-};
-
-/**
- * TODO documentation
- *
- * @param  joints      [description]
- * @param  coll_coords [description]
- * @param  coll_points [description]
- *
- * @return             true/false if success/failure
- */
-bool computeCollisionPoints(const std::vector<Eigen::Vector3d>&      _joints,
-                            const             Eigen::Vector3d & _coll_coords,
-                            std::vector<collisionPoint>&        _coll_points);
-
 bool changeFoR(const Eigen::Vector3d orig, const Eigen::Matrix4d transform, Eigen::Vector3d &new_pt);
 
 /**
@@ -100,8 +84,55 @@ bool changeFoR(const Eigen::Vector3d orig, const Eigen::Matrix4d transform, Eige
  */
 KDL::Frame toKDLFrame(Eigen::Matrix4d mat);
 
+/**
+ * TODO documentation
+ * @param  vec [description]
+ * @return     [description]
+ */
 Eigen::VectorXd stdToEigen(std::vector<double> vec);
 
+/**
+ * Projects a 3D point onto a line composed of base and tip
+ * @param  base  the base of the line
+ * @param  tip   the  tip of the line
+ * @param  point the point to project
+ * @return       the projected  point
+ */
 Eigen::Vector3d projectOntoSegment(Eigen::Vector3d base, Eigen::Vector3d tip, Eigen::Vector3d point);
+
+/**
+ * TODO documentation
+ */
+struct CollisionPoint
+{
+    double size; // size (in meters) of a sphere that approximates the obstacle
+    double  mag; // activation level (magnitude)
+
+    Eigen::Vector3d x_erf; // position (x,y,z) in the end effector reference frame
+    Eigen::Vector3d n_erf; // direction of normal vector in the end effector reference frame
+
+    Eigen::Vector3d x_wrf; // position (x,y,z) in the world reference frame
+    Eigen::Vector3d n_wrf; // direction of normal vector in the world reference frame
+
+    Eigen::Vector3d o_wrf; // position (x,y,z) of the obstacle in the world reference frame
+};
+
+struct Obstacle
+{
+    double size;           // size (in meters) of a sphere that approximates the obstacle
+    Eigen::Vector3d x_wrf; // position (x,y,z) in the world reference frame
+
+    /**
+     * Constructor that assigns a size and position to the obstacle
+     */
+    Obstacle(double _size, Eigen::Vector3d _x_wrf) : size(_size), x_wrf(_x_wrf) {};
+};
+
+/**
+ * Reads an array of obstacles from the parameter server.
+ *
+ * @param  _param the XmlRpcValue read from the parameter server.
+ */
+std::vector<Obstacle> readFromParamServer(XmlRpc::XmlRpcValue _param);
 
 #endif

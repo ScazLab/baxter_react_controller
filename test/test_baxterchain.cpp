@@ -5,82 +5,6 @@
 using namespace std;
 using namespace Eigen;
 
-// Declare a test
-TEST(BaxterChainTest, testCollisionPoints)
-{
-    vector<Vector3d> joints{Vector3d(0, 0, 0), Vector3d(0, 2, 0),
-                            Vector3d(2, 2, 0), Vector3d(2, 0, 0)};
-
-    vector<collisionPoint> coll_points;
-
-    EXPECT_TRUE(computeCollisionPoints(joints, Vector3d(1, 1, 0), coll_points));
-    EXPECT_EQ(coll_points[0].x[0],  0);
-    EXPECT_EQ(coll_points[0].x[1],  1);
-    EXPECT_EQ(coll_points[0].x[2],  0);
-    EXPECT_EQ(coll_points[1].x[0],  1);
-    EXPECT_EQ(coll_points[1].x[1],  2);
-    EXPECT_EQ(coll_points[1].x[2],  0);
-    EXPECT_EQ(coll_points[2].x[0],  2);
-    EXPECT_EQ(coll_points[2].x[1],  1);
-    EXPECT_EQ(coll_points[2].x[2],  0);
-
-    EXPECT_EQ(coll_points[0].n[0],  1);
-    EXPECT_EQ(coll_points[0].n[1],  0);
-    EXPECT_EQ(coll_points[0].n[2],  0);
-    EXPECT_EQ(coll_points[1].n[0],  0);
-    EXPECT_EQ(coll_points[1].n[1], -1);
-    EXPECT_EQ(coll_points[1].n[2],  0);
-    EXPECT_EQ(coll_points[2].n[0], -1);
-    EXPECT_EQ(coll_points[2].n[1],  0);
-    EXPECT_EQ(coll_points[2].n[2],  0);
-
-    coll_points.clear();
-
-    EXPECT_TRUE(computeCollisionPoints(joints, Vector3d(4, 4, 0), coll_points));
-    EXPECT_EQ(coll_points[0].x[0],  0);
-    EXPECT_EQ(coll_points[0].x[1],  4);
-    EXPECT_EQ(coll_points[0].x[2],  0);
-    EXPECT_EQ(coll_points[1].x[0],  4);
-    EXPECT_EQ(coll_points[1].x[1],  2);
-    EXPECT_EQ(coll_points[1].x[2],  0);
-    EXPECT_EQ(coll_points[2].x[0],  2);
-    EXPECT_EQ(coll_points[2].x[1],  4);
-    EXPECT_EQ(coll_points[2].x[2],  0);
-
-    EXPECT_EQ(coll_points[0].n[0],  1);
-    EXPECT_EQ(coll_points[0].n[1],  0);
-    EXPECT_EQ(coll_points[0].n[2],  0);
-    EXPECT_EQ(coll_points[1].n[0],  0);
-    EXPECT_EQ(coll_points[1].n[1],  1);
-    EXPECT_EQ(coll_points[1].n[2],  0);
-    EXPECT_EQ(coll_points[2].n[0],  1);
-    EXPECT_EQ(coll_points[2].n[1],  0);
-    EXPECT_EQ(coll_points[2].n[2],  0);
-
-    coll_points.clear();
-
-    EXPECT_TRUE(computeCollisionPoints(joints, Vector3d(-1, -1, 0), coll_points));
-    EXPECT_EQ(coll_points[0].x[0],  0);
-    EXPECT_EQ(coll_points[0].x[1], -1);
-    EXPECT_EQ(coll_points[0].x[2],  0);
-    EXPECT_EQ(coll_points[1].x[0], -1);
-    EXPECT_EQ(coll_points[1].x[1],  2);
-    EXPECT_EQ(coll_points[1].x[2],  0);
-    EXPECT_EQ(coll_points[2].x[0],  2);
-    EXPECT_EQ(coll_points[2].x[1], -1);
-    EXPECT_EQ(coll_points[2].x[2],  0);
-
-    EXPECT_EQ(coll_points[0].n[0], -1);
-    EXPECT_EQ(coll_points[0].n[1],  0);
-    EXPECT_EQ(coll_points[0].n[2],  0);
-    EXPECT_EQ(coll_points[1].n[0],  0);
-    EXPECT_EQ(coll_points[1].n[1], -1);
-    EXPECT_EQ(coll_points[1].n[2],  0);
-    EXPECT_EQ(coll_points[2].n[0], -1);
-    EXPECT_EQ(coll_points[2].n[1],  0);
-    EXPECT_EQ(coll_points[2].n[2],  0);
-}
-
 BaxterChain getChain(const std::string &_tip_link)
 {
     urdf::Model robot_model;
@@ -133,16 +57,33 @@ TEST(BaxterChainTest, testClass)
     EXPECT_EQ(q_0, chain.getAng());
     for (size_t i = 0; i < chain.getNrOfJoints(); ++i)
     {
-        EXPECT_EQ(q_0[i], chain.getAng()[i]) << "q_0[i] and chain.getAng()[i]  differ at" << i;
-        EXPECT_EQ(q_0[i], chain.getAng(i))   << "q_0[i] and chain.getAng(i) differ at" << i;
+        EXPECT_EQ(q_0[i], chain.getAng()[i]) << "q_0[i] and chain.getAng()[i]  "
+                                                "differ at idx " << i;
+        EXPECT_EQ(q_0[i], chain.getAng(i))   << "q_0[i] and chain.getAng(i)    "
+                                                "differ at idx " << i;
     }
 
     q_0[1] = 0.4;
     q_0[4] = 0.8;
 
-    EXPECT_TRUE(chain.setAng(q_0));
-    EXPECT_FALSE(chain.setAng(    Eigen::VectorXd(chain.getNrOfJoints()+1)));
-    EXPECT_EQ(q_0, chain.getAng());
+    EXPECT_TRUE (chain.setAng(q_0));
+    EXPECT_FALSE(chain.setAng(Eigen::VectorXd(chain.getNrOfJoints()+1)));
+    EXPECT_EQ   (q_0, chain.getAng());
+
+    q_0[1] =  100.0;
+    q_0[4] = -100.0;
+    EXPECT_TRUE (chain.setAng(q_0));
+    EXPECT_NE   (q_0, chain.getAng());
+    q_0[1] = chain.getMax(1);
+    q_0[4] = chain.getMin(4);
+    EXPECT_EQ   (q_0, chain.getAng());
+    for (size_t i = 0; i < chain.getNrOfJoints(); ++i)
+    {
+        EXPECT_EQ(q_0[i], chain.getAng()[i]) << "q_0[i] and chain.getAng()[i]  "
+                                                "differ at idx " << i;
+        EXPECT_EQ(q_0[i], chain.getAng(i))   << "q_0[i] and chain.getAng(i)    "
+                                                "differ at idx " << i;
+    }
 }
 
 TEST(BaxterChainTest, testRemoveSegment)
