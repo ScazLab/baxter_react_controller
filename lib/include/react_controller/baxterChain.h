@@ -177,10 +177,22 @@ public:
     /**
      * Sets the joint angles of the arm chain.
      *
-     * @param _q  vector of joint positions [rad]
+     * @param _q  vector of joint configurations [rad]
      * @return    true/false if success/failure
      */
     bool setAng(const Eigen::VectorXd&         _q);
+
+    /**
+     * Sets the joint angles of the arm chain.
+     *
+     * @param _q  vector of joint configurations [rad]
+     * @param _l  vector of lower joint   limits [rad]
+     * @param _u  vector of upper joint   limits [rad]
+     * @return    true/false if success/failure
+     */
+    bool setAng(const Eigen::VectorXd&         _q,
+                const Eigen::VectorXd&         _l,
+                const Eigen::VectorXd&         _u);
 
     /**
      * Sets the joint angles of the arm chain.
