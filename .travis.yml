@@ -49,7 +49,7 @@ notifications:
   email: false
   slack:
     rooms:
-    - scazlab:8EDCWkzrKK7EsZoVPIXXd7oD
+    - secure: G2L5JKwfhmF73vQUVQgLTuvF6IV3kH3VOF6CeMme5MHeH9ABf+dD4snzZAGsHVhH3YkyL+wS6oHgIvHPeLb4l0nDwYl7zYltW8xbILNh/d0GcY9OwwkL297575gW/1p6LxUZGOocR7W5SDcN84CLu+lkqhsCLl1bN5iGG9rU52mf8lYuuJ2HnogfA0Qkv0x6FY1ycAsHmZtICyShZKZk+08XohVUQRpFP2wAI+K6oF4VlrLsYeFPYjGCh/X8ZyGmb9FBLg6boNIKb3vK4yrNX2VWm0gJWhH6JwtQZmw6FNoSz1ioBAOyBaKvaZfGmajFyJYvLb3jKf0jeQunwHdtP5XU7a5u7DnoaFNXNLDguucLjfK9zrGyL8WQRju8uw4isVK1pd+WLAv9p7FgD78LhmQNDrhSRrCKBJwOFAu+ljIiJWbQ+1hm1XZdhlV/qCiFq1SZwBw+cdybpBXQ+GxhlkhkoG5eOgkymGGR/H2U+bPl63WDBTIv1rOb+BLkxnd8rB7Zr4BgupUcFYSh5u3dZHJuLe2A3S1XvLWS4/8uzlaJXdCT+zs8BlZh602bIvfR0g6vfexDJt3rXUsyuqKAfGr9f7L0Tm4RWOhusBDvrYrn7bPE3qoX5uNxn5pbvI8W/kvv+HUYb0f7COJqCidQl6XvzWDRQvKs2EKXkr7p0ZU=
     on_success: change
     on_failure: always
 
