@@ -6,7 +6,7 @@ using namespace Eigen;
 AvoidanceHandler::AvoidanceHandler(BaxterChain _chain,
                                    vector<Obstacle> _obstacles,
                                    string _type, int _print_level) :
-                                   chain(_chain), print_level(_print_level), type(_type)
+                                   chain(_chain), type(_type), print_level(_print_level)
 {
     // ROS_INFO_STREAM("Chain Angles: " << chain.getAng().transpose());
 
@@ -66,10 +66,10 @@ AvoidanceHandler::AvoidanceHandler(BaxterChain _chain,
                 BaxterChain chainToAdd = customChain;
                 chainToAdd.addSegment(s);
                 tmpCC.push_back(chainToAdd);
-                // ROS_INFO("adding chain with %zu joints and %zu segments", chainToAdd.getNrOfJoints(), chainToAdd.getNrOfSegments());
+                // ROS_INFO_COND(print_level>=2, "adding chain with %zu joints and %zu segments", chainToAdd.getNrOfJoints(), chainToAdd.getNrOfSegments());
             }
 
-            // ROS_INFO("tmpCP.size %lu tmpCC.size %lu", tmpCP.size(), tmpCC.size());
+            // ROS_INFO_COND(print_level>=2, "tmpCP.size %lu tmpCC.size %lu", tmpCP.size(), tmpCC.size());
         }
 
         // Cycle through the newfound collision points to find the max, and stick to that one
@@ -93,7 +93,8 @@ AvoidanceHandler::AvoidanceHandler(BaxterChain _chain,
 
         if (max_idx != -1)
         {
-            // ROS_INFO("Collision points with magnitude: %s Selected: %i", cp_str.c_str(), max_idx);
+            ROS_INFO_COND(print_level>=2, "Collision points with magnitude: %s Selected: %i",
+                                                                    cp_str.c_str(), max_idx);
 
             collPoints.push_back(tmpCP[max_idx]);
             ctrlChains.push_back(tmpCC[max_idx]);
@@ -206,8 +207,8 @@ MatrixXd AvoidanceHandlerTactile::getV_LIM(const MatrixXd &v_lim)
 
     for (size_t i = 0; i < collPoints.size(); ++i)
     {
-        // ROS_INFO("Chain with control point - index %d (last index %d), nDOF: %d.",
-        //           i, ctrlChains.size()-1, ctrlChains[i].getNrOfJoints());
+        ROS_INFO_COND(print_level>=2, "Chain with control point - index %d (last index %d), nDOF: %d.",
+                                       i, ctrlChains.size()-1, ctrlChains[i].getNrOfJoints());
         // First 3 rows ~ dPosition/dJoints
         MatrixXd J_xyz = ctrlChains[i].GeoJacobian().block(0, 0, 3, ctrlChains[i].getNrOfJoints());
 
@@ -233,8 +234,8 @@ MatrixXd AvoidanceHandlerTactile::getV_LIM(const MatrixXd &v_lim)
 
                 V_LIM(j,1) = std::min(V_LIM(j,1),        tmp);
                 V_LIM(j,0) = std::min(V_LIM(j,0), V_LIM(j,1));
-                ROS_INFO("s[%lu]: %g   \t[avoidance], adjusting min. "
-                         "Limits: [%g %g]->[%g %g]",j, sj, vm, vM, V_LIM(j,0),V_LIM(j,1));
+                ROS_INFO_COND(print_level>=2, "s[%lu]: %g   \t[avoidance], adjusting min. "
+                                              "Limits: [%g %g]->[%g %g]",j, sj, vm, vM, V_LIM(j,0),V_LIM(j,1));
             }
             else
             {
@@ -242,8 +243,8 @@ MatrixXd AvoidanceHandlerTactile::getV_LIM(const MatrixXd &v_lim)
 
                 V_LIM(j,0) = std::max(V_LIM(j,0),        tmp);
                 V_LIM(j,1) = std::max(V_LIM(j,0), V_LIM(j,1));
-                ROS_INFO("s[%lu]: %g   \t[ approach], adjusting max. "
-                         "Limits: [%g %g]->[%g %g]",j, sj, vm, vM, V_LIM(j,0),V_LIM(j,1));
+                ROS_INFO_COND(print_level>=2, "s[%lu]: %g   \t[ approach], adjusting max. "
+                                              "Limits: [%g %g]->[%g %g]",j, sj, vm, vM, V_LIM(j,0),V_LIM(j,1));
             }
         }
 
@@ -266,7 +267,7 @@ MatrixXd AvoidanceHandlerTactile::getV_LIM(const MatrixXd &v_lim)
         //         s[j]       = min(v_lim(j,1),       s[j]); // make sure new min vel is <= max vel
         //         V_LIM(j,0) = max(V_LIM(j,0),       s[j]); // set min vel to max of s[j] and current limit ~ avoiding action
         //         V_LIM(j,1) = max(V_LIM(j,0), V_LIM(j,1)); // make sure current max is at least equal to current min
-        //         ROS_INFO("s[%lu]: %g   \t[avoidance], adjusting min. "
+        //         ROS_INFO_COND(print_level>=2, "s[%lu]: %g   \t[avoidance], adjusting min. "
         //                  "Limits: [%g %g]->[%g %g]",j, sj, vm, vM, V_LIM(j,0),V_LIM(j,1));
         //     }
         //     else //joint acts to bring control point toward obstacle - we will shape the max vel
@@ -274,7 +275,7 @@ MatrixXd AvoidanceHandlerTactile::getV_LIM(const MatrixXd &v_lim)
         //         s[j]       = max(v_lim(j,0),       s[j]);
         //         V_LIM(j,1) = min(V_LIM(j,1),       s[j]);
         //         V_LIM(j,0) = min(V_LIM(j,0), V_LIM(j,1));
-        //         ROS_INFO("s[%lu]: %g   \t[ approach], adjusting max. "
+        //         ROS_INFO_COND(print_level>=2, "s[%lu]: %g   \t[ approach], adjusting max. "
         //                  "Limits: [%g %g]->[%g %g]",j, sj, vm, vM, V_LIM(j,0),V_LIM(j,1));
         //     }
         // }

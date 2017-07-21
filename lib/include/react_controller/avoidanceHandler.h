@@ -13,9 +13,6 @@ class AvoidanceHandler
 private:
     BaxterChain chain;
 
-    // Print level to be used throughout the code
-    int print_level;
-
     /**
      * Creates a full transform as given by a DCM matrix at the pos and norm w.r.t.
      * the original frame, from the pos and norm (one axis set arbitrarily)
@@ -30,6 +27,9 @@ private:
 
 protected:
     std::string type;
+
+    // Print level to be used throughout the code
+    int print_level;
 
     std::vector<BaxterChain>    ctrlChains;
     std::vector<CollisionPoint> collPoints;
