@@ -147,7 +147,7 @@ bool CtrlThread::goToPoseNoCheck(double px, double py, double pz,
         q_dot = nlp->get_est_vels();
     }
 
-    if (isRobotUsed() && not nlp->get_int_status())
+    if (isRobotUsed() && nlp->get_int_status() == true)
     {
         // suppressCollisionAv();
 
@@ -167,7 +167,7 @@ VectorXd CtrlThread::solveIK(int &_exit_code)
 
     if (coll_av)
     {
-        avhdl = std::make_unique<AvoidanceHandlerTactile>(*chain, obstacles, print_level);
+        avhdl.reset(new AvoidanceHandlerTactile(*chain, obstacles, print_level));
         vlim_coll = avhdl->getV_LIM(DEG2RAD * vLim) * RAD2DEG;
 
         nlp->set_v_lim(vlim_coll);
