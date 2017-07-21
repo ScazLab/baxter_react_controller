@@ -3,10 +3,10 @@
 using namespace   std;
 using namespace Eigen;
 
-AvoidanceHandler::AvoidanceHandler(const BaxterChain &_chain,
-                                   const vector<Obstacle> &_obstacles,
-                                   const string _type) :
-                                   chain(_chain), type(_type)
+AvoidanceHandler::AvoidanceHandler(BaxterChain _chain,
+                                   vector<Obstacle> _obstacles,
+                                   string _type, int _print_level) :
+                                   chain(_chain), print_level(_print_level), type(_type)
 {
     // ROS_INFO_STREAM("Chain Angles: " << chain.getAng().transpose());
 
@@ -190,9 +190,11 @@ AvoidanceHandler::~AvoidanceHandler()
 
 /****************************************************************/
 /****************************************************************/
-AvoidanceHandlerTactile::AvoidanceHandlerTactile(const BaxterChain &_chain,
-                                                 const vector<Obstacle> &_obstacles) :
-                                                 AvoidanceHandler(_chain, _obstacles, "tactile"),
+AvoidanceHandlerTactile::AvoidanceHandlerTactile(BaxterChain _chain,
+                                                 vector<Obstacle> _obstacles,
+                                                 int _print_level) :
+                                                 AvoidanceHandler(_chain, _obstacles,
+                                                                  "tactile", _print_level),
                                                  avoidingSpeed(0.25)
 {
 

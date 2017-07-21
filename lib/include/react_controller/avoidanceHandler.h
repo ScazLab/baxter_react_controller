@@ -13,6 +13,9 @@ class AvoidanceHandler
 private:
     BaxterChain chain;
 
+    // Print level to be used throughout the code
+    int print_level;
+
     /**
      * Creates a full transform as given by a DCM matrix at the pos and norm w.r.t.
      * the original frame, from the pos and norm (one axis set arbitrarily)
@@ -32,9 +35,10 @@ protected:
     std::vector<CollisionPoint> collPoints;
 
 public:
-    AvoidanceHandler(const BaxterChain &_chain,
-                             const std::vector<Obstacle> &_obstacles,
-                             const std::string _type = "none");
+    AvoidanceHandler(BaxterChain _chain,
+                     std::vector<Obstacle> _obstacles,
+                     std::string _type = "none",
+                     int _print_level = 0);
 
     std::string getType() { return type; };
 
@@ -74,8 +78,9 @@ private:
     double avoidingSpeed;
 
 public:
-    AvoidanceHandlerTactile(const BaxterChain &_chain,
-                            const std::vector<Obstacle> &_obstacles);
+    AvoidanceHandlerTactile(BaxterChain _chain,
+                            std::vector<Obstacle> _obstacles,
+                            int _print_level = 0);
 
     Eigen::MatrixXd getV_LIM(const Eigen::MatrixXd &v_lim);
 
