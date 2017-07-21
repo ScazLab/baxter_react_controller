@@ -84,11 +84,13 @@ AvoidanceHandler::AvoidanceHandler(BaxterChain _chain,
         // Cycle through the newfound collision points to find the max, and stick to that one
         double max_mag = 0.0;
         int    max_idx =  -1;
-        string  cp_str =  "";
+        string mag_str =  "";
+        string dst_str =  "";
 
         for (size_t i = 0; i < tmpCP.size(); ++i)
         {
-            cp_str = cp_str + " " + toString(tmpCP[i].mag);
+            mag_str = mag_str + " " + toString(tmpCP[i].mag );
+            dst_str = dst_str + " " + toString(tmpCP[i].dist);
 
             if (tmpCP[i].mag > 1e-2)
             {
@@ -102,8 +104,10 @@ AvoidanceHandler::AvoidanceHandler(BaxterChain _chain,
 
         if (max_idx != -1)
         {
+            ROS_INFO_COND(print_level>=2, "Collision points with  distance: %s Selected: %i",
+                                                                    dst_str.c_str(), max_idx);
             ROS_INFO_COND(print_level>=2, "Collision points with magnitude: %s Selected: %i",
-                                                                    cp_str.c_str(), max_idx);
+                                                                    mag_str.c_str(), max_idx);
 
             collPoints.push_back(tmpCP[max_idx]);
             ctrlChains.push_back(tmpCC[max_idx]);

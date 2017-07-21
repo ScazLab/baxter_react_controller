@@ -107,6 +107,7 @@ struct CollisionPoint
 {
     double size; // size (in meters) of a sphere that approximates the obstacle
     double  mag; // activation level (magnitude)
+    double dist; // Distance parameter (from which magnitude is computed)
 
     Eigen::Vector3d x_erf; // position (x,y,z) in the end effector reference frame
     Eigen::Vector3d n_erf; // direction of normal vector in the end effector reference frame
