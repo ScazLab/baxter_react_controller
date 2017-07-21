@@ -147,7 +147,7 @@ bool CtrlThread::goToPoseNoCheck(double px, double py, double pz,
         q_dot = nlp->get_est_vels();
     }
 
-    if (isRobotUsed())
+    if (isRobotUsed() && not nlp->get_int_status())
     {
         // suppressCollisionAv();
 
@@ -167,7 +167,7 @@ VectorXd CtrlThread::solveIK(int &_exit_code)
 
     if (coll_av)
     {
-        avhdl = std::make_unique<AvoidanceHandlerTactile>(*chain, obstacles);
+        avhdl = std::make_unique<AvoidanceHandlerTactile>(*chain, obstacles, print_level);
         vlim_coll = avhdl->getV_LIM(DEG2RAD * vLim) * RAD2DEG;
 
         nlp->set_v_lim(vlim_coll);
@@ -203,7 +203,8 @@ void CtrlThread::publishRVIZMarkers()
     {
         rviz_markers.push_back(RVIZMarker(obstacles[i].x_wrf,
                                           ColorRGBA(1.0, 0.0, 1.0),
-                                          obstacles[i].size));
+                                          obstacles[i].size,
+                                          visualization_msgs::Marker::SPHERE));
     }
 
     vector <RVIZMarker> rviz_chain = asRVIZMarkers(*chain);
