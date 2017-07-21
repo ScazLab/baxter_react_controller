@@ -18,25 +18,34 @@ AvoidanceHandler::AvoidanceHandler(BaxterChain _chain,
         // Let's start by creating a custom chain with only one joint
         BaxterChain customChain;
 
-        Eigen::VectorXd angles(1);
-        angles[0] = chain.getAng(0);
+        Eigen::VectorXd q_l(1), q_u(1), q_j(1);
+        q_l[0] = chain.getMin(0);
+        q_u[0] = chain.getMax(0);
+        q_j[0] = chain.getAng(0);
 
         while (customChain.getNrOfJoints() == 0)
         {
             customChain.addSegment(chain.getSegment(customChain.getNrOfSegments()));
         }
 
-        customChain.setAng(angles);
+        customChain.setAng(q_j, q_l, q_u);
 
         // This while loop incrementally creates bigger chains (up to the end-effector)
         while (customChain.getNrOfSegments() < _chain.getNrOfSegments())
         {
-            angles.conservativeResize(angles.rows()+1);
-            angles[angles.rows()-1] = chain.getAng(customChain.getNrOfJoints());
+            q_j.conservativeResize(q_j.rows()+1);
+            q_j[q_j.rows()-1] = chain.getAng(customChain.getNrOfJoints());
+
+            q_l.conservativeResize(q_l.rows()+1);
+            q_l[q_l.rows()-1] = chain.getMin(customChain.getNrOfJoints());
+
+            q_u.conservativeResize(q_u.rows()+1);
+            q_u[q_u.rows()-1] = chain.getMax(customChain.getNrOfJoints());
 
             customChain.addSegment(chain.getSegment(customChain.getNrOfSegments()));
 
-            customChain.setAng(angles);
+            ROS_ERROR_STREAM_COND(not customChain.setAng(q_j, q_l, q_u),
+                                  "Error setting angles in customChain!");
 
             while (chain.getSegment(customChain.getNrOfSegments()).getJoint().getType() == KDL::Joint::None)
             {
@@ -45,8 +54,9 @@ AvoidanceHandler::AvoidanceHandler(BaxterChain _chain,
                 customChain.addSegment(chain.getSegment(customChain.getNrOfSegments()));
             }
 
-            // ROS_INFO_STREAM("Get Angles:  " << customChain.getAng().transpose());
-            // ROS_INFO_STREAM("Real Angles: " <<       chain.getAng().transpose());
+            ROS_INFO_STREAM_COND(print_level>=4, "    Angles:  " <<                  q_j.transpose());
+            ROS_INFO_STREAM_COND(print_level>=4, "Get Angles:  " << customChain.getAng().transpose());
+            ROS_INFO_STREAM_COND(print_level>=4, "Real Angles: " <<       chain.getAng().transpose());
 
             // Compute collision points
             // obstacles are expressed in the world reference frame [WRF]
@@ -66,10 +76,9 @@ AvoidanceHandler::AvoidanceHandler(BaxterChain _chain,
                 BaxterChain chainToAdd = customChain;
                 chainToAdd.addSegment(s);
                 tmpCC.push_back(chainToAdd);
-                // ROS_INFO_COND(print_level>=2, "adding chain with %zu joints and %zu segments", chainToAdd.getNrOfJoints(), chainToAdd.getNrOfSegments());
             }
 
-            // ROS_INFO_COND(print_level>=2, "tmpCP.size %lu tmpCC.size %lu", tmpCP.size(), tmpCC.size());
+            ROS_INFO_COND(print_level>=6, "tmpCP.size %lu tmpCC.size %lu", tmpCP.size(), tmpCC.size());
         }
 
         // Cycle through the newfound collision points to find the max, and stick to that one
@@ -98,6 +107,7 @@ AvoidanceHandler::AvoidanceHandler(BaxterChain _chain,
 
             collPoints.push_back(tmpCP[max_idx]);
             ctrlChains.push_back(tmpCC[max_idx]);
+            ROS_INFO_STREAM_COND(print_level>=8, "Chain Angles: " << tmpCC[max_idx].getAng().transpose());
         }
 
         tmpCC.clear();
@@ -207,8 +217,6 @@ MatrixXd AvoidanceHandlerTactile::getV_LIM(const MatrixXd &v_lim)
 
     for (size_t i = 0; i < collPoints.size(); ++i)
     {
-        ROS_INFO_COND(print_level>=2, "Chain with control point - index %d (last index %d), nDOF: %d.",
-                                       i, ctrlChains.size()-1, ctrlChains[i].getNrOfJoints());
         // First 3 rows ~ dPosition/dJoints
         MatrixXd J_xyz = ctrlChains[i].GeoJacobian().block(0, 0, 3, ctrlChains[i].getNrOfJoints());
 
@@ -235,7 +243,8 @@ MatrixXd AvoidanceHandlerTactile::getV_LIM(const MatrixXd &v_lim)
                 V_LIM(j,1) = std::min(V_LIM(j,1),        tmp);
                 V_LIM(j,0) = std::min(V_LIM(j,0), V_LIM(j,1));
                 ROS_INFO_COND(print_level>=2, "s[%lu]: %g   \t[avoidance], adjusting min. "
-                                              "Limits: [%g %g]->[%g %g]",j, sj, vm, vM, V_LIM(j,0),V_LIM(j,1));
+                                              "Limits: [%g %g]->[%g %g]",
+                                               j, sj, vm, vM, V_LIM(j,0),V_LIM(j,1));
             }
             else
             {
@@ -244,7 +253,8 @@ MatrixXd AvoidanceHandlerTactile::getV_LIM(const MatrixXd &v_lim)
                 V_LIM(j,0) = std::max(V_LIM(j,0),        tmp);
                 V_LIM(j,1) = std::max(V_LIM(j,0), V_LIM(j,1));
                 ROS_INFO_COND(print_level>=2, "s[%lu]: %g   \t[ approach], adjusting max. "
-                                              "Limits: [%g %g]->[%g %g]",j, sj, vm, vM, V_LIM(j,0),V_LIM(j,1));
+                                              "Limits: [%g %g]->[%g %g]",
+                                               j, sj, vm, vM, V_LIM(j,0),V_LIM(j,1));
             }
         }
 
