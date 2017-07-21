@@ -72,7 +72,7 @@ TEST(BaxterChainTest, testClass)
 
     q_0[1] =  100.0;
     q_0[4] = -100.0;
-    EXPECT_TRUE (chain.setAng(q_0));
+    EXPECT_FALSE(chain.setAng(q_0));
     EXPECT_NE   (q_0, chain.getAng());
     q_0[1] = chain.getMax(1);
     q_0[4] = chain.getMin(4);
