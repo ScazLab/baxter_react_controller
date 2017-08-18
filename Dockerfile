@@ -1,4 +1,4 @@
-FROM scazlab/hrc:baxter
+FROM scazlab/hrc-docker:baxter
 
 # Compile IPOPT first
 USER root
