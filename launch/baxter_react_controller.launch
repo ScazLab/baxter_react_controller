@@ -2,8 +2,8 @@
     <!-- Obstacle database for the react controller -->
     <rosparam param = "baxter_react_controller/obstacles">
         <!-- Formatting is [x, y, z, size] -->
-        [[0.06, 0.0, 0.686, 0.15],
-         [0.40, 0.1, 0.350, 0.05]]
+        [[0.06,  0.0, 0.686, 0.15],
+         [0.40, -0.1, 0.350, 0.05]]
     </rosparam>
 </launch>
 

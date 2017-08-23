@@ -101,7 +101,7 @@ AvoidanceHandler::AvoidanceHandler(BaxterChain _chain,
                 if (tmpCP[i].mag > max_mag)
                 {
                     max_mag = tmpCP[i].mag;
-                    max_idx =     int(i);
+                    max_idx =       int(i);
                 }
             }
         }
@@ -180,9 +180,8 @@ bool AvoidanceHandler::computeFoR(const VectorXd &pos,
 
 std::vector<RVIZMarker> AvoidanceHandler::toRVIZMarkers()
 {
-    std::vector<RVIZMarker> res;
-
-    vector <RVIZMarker> rvzcc;
+    std::vector<RVIZMarker>   res;
+    std::vector<RVIZMarker> rvzcc;
 
     for (size_t i = 0; i < ctrlChains.size(); ++i)
     {
@@ -235,8 +234,8 @@ MatrixXd AvoidanceHandlerTactile::getV_LIM(const MatrixXd &v_lim)
 
         // Project movement along the normal into joint velocity space and scale by default
         // avoidingSpeed and m of skin (or PPS) activation
-        // VectorXd s = -1.0 * J_xyz.transpose()*nrm;   // This is for reaching
-        VectorXd s = J_xyz.transpose()*nrm; // This is for avoiding
+        VectorXd s = -1.0 * J_xyz.transpose()*nrm;   // This is for reaching
+        // VectorXd s = J_xyz.transpose()*nrm; // This is for avoiding
 
         for (size_t j = 0; j < size_t(s.rows()); ++j)
         {
@@ -250,7 +249,8 @@ MatrixXd AvoidanceHandlerTactile::getV_LIM(const MatrixXd &v_lim)
 
                 V_LIM(j,1) = std::min(V_LIM(j,1),        tmp);
                 V_LIM(j,0) = std::min(V_LIM(j,0), V_LIM(j,1));
-                ROS_INFO_COND(print_level>=2, "s[%lu]: %g   \t[avoidance], adjusting min. "
+
+                ROS_INFO_COND(print_level>=2, "s[%lu]: %g   \t[avoidance], adjusting max. "
                                               "Limits: [%g %g]->[%g %g]",
                                                j, sj, vm, vM, V_LIM(j,0),V_LIM(j,1));
             }
@@ -260,7 +260,8 @@ MatrixXd AvoidanceHandlerTactile::getV_LIM(const MatrixXd &v_lim)
 
                 V_LIM(j,0) = std::max(V_LIM(j,0),        tmp);
                 V_LIM(j,1) = std::max(V_LIM(j,0), V_LIM(j,1));
-                ROS_INFO_COND(print_level>=2, "s[%lu]: %g   \t[ approach], adjusting max. "
+
+                ROS_INFO_COND(print_level>=2, "s[%lu]: %g   \t[ approach], adjusting min. "
                                               "Limits: [%g %g]->[%g %g]",
                                                j, sj, vm, vM, V_LIM(j,0),V_LIM(j,1));
             }

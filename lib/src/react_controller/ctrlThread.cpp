@@ -151,8 +151,8 @@ bool CtrlThread::goToPoseNoCheck(double px, double py, double pz,
     {
         // suppressCollisionAv();
 
-        ROS_INFO_STREAM(" send:  " << est.transpose() <<
-                        " mode:  " <<   getCtrlMode() << endl);
+        ROS_INFO_STREAM_COND(print_level >= 4, " send:  " << est.transpose() <<
+                                               " mode:  " <<   getCtrlMode() << endl);
         if (goToJointConfNoCheck(est))     { return true; }
     }
 
@@ -199,12 +199,16 @@ VectorXd CtrlThread::solveIK(int &_exit_code)
 void CtrlThread::publishRVIZMarkers()
 {
     vector <RVIZMarker> rviz_markers;
-    for (size_t i = 0; i < obstacles.size(); ++i)
+
+    if (coll_av)
     {
-        rviz_markers.push_back(RVIZMarker(obstacles[i].x_wrf,
-                                          ColorRGBA(1.0, 0.0, 1.0),
-                                          obstacles[i].size,
-                                          visualization_msgs::Marker::SPHERE));
+        for (size_t i = 0; i < obstacles.size(); ++i)
+        {
+            rviz_markers.push_back(RVIZMarker(obstacles[i].x_wrf,
+                                              ColorRGBA(1.0, 0.0, 1.0),
+                                              obstacles[i].size,
+                                              visualization_msgs::Marker::SPHERE));
+        }
     }
 
     vector <RVIZMarker> rviz_chain = asRVIZMarkers(*chain);
