@@ -62,7 +62,7 @@ env:
   - ROSINSTALL_FILE=$CI_SOURCE_PATH/dependencies.rosinstall
   - CATKIN_OPTIONS=$CI_SOURCE_PATH/catkin.options
   - ROS_PARALLEL_JOBS='-j8 -l6'
-  - REPO_NAME=$(echo $TRAVIS_REPO_SLUG | cut -d"/" -f2)
+  - REPO_NAME=baxter_react_controller
   - IPOPT_DIR=~/src/ipopt/build
   - secure: An4Sq55uKyc88eXy3csarwZh0isdFRH6EZtJCPc5d4rpddPxtCcUFIx7Hk74a/EwlQZTg1pkmyNiew+J88kGCPc62rM5Mj99pMxUf5FkqBAP5VJIAGy0m9Ehnd1PsuxWQ2BBxUr/HzWqvh/GZ2E82eqMIT4jQpmcQUszzseZyY58H3gO0vLvzAQbNcjkCQnMUZNt8n6OLTZIj9nvSDk0Zq9DnOaJdmhcxO68wwYir0wa9L0JtYWbBCn3G809gQIQQNiEvhPV7T1M5vOa4sOaqStzLXKkklR0MLpq//7t7iSUuPllMWr0Vv+VPPCzn7cwRcMeBlw+7xxtA0hKyezQqSV5/7HHuaMPBVUl4UHvv9C2uV437bEEot1JO6X1PsvWP6+CJpYm0iOf6geNCAC5ULbZB4+l+wlhenjUJRJBE4/im0tnEXpmRDEO3GDqoecDVqWbd+pjwdPuUbxgUeGBaZhzCFbdtTUzJkTG32vu+niw812RgZodkDkuWhSv/JvYqoUCpW172eAFPlhgs5/gPgNfUeU2faE/aGHMTv3zqWDO2oVW9ZLpqdFl1Z/A9wUR5tkDMITOgY3pH2yZrSvk2eBNDRUpBu1HSLbVaZBrkl1EnwYa+II2g6LnEyT6GtNHhOc/NsCCQeY8CddYKos6coicRlfV1Kzon7HSGwyGbLY=
 

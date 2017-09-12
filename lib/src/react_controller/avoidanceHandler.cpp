@@ -54,9 +54,9 @@ AvoidanceHandler::AvoidanceHandler(BaxterChain _chain,
                 customChain.addSegment(chain.getSegment(customChain.getNrOfSegments()));
             }
 
-            ROS_INFO_STREAM_COND(print_level>=4, "    Angles:  " <<                  q_j.transpose());
-            ROS_INFO_STREAM_COND(print_level>=4, "Get Angles:  " << customChain.getAng().transpose());
-            ROS_INFO_STREAM_COND(print_level>=4, "Real Angles: " <<       chain.getAng().transpose());
+            ROS_INFO_STREAM_COND(print_level>=8, "    Angles:  " <<                  q_j.transpose());
+            ROS_INFO_STREAM_COND(print_level>=8, "Get Angles:  " << customChain.getAng().transpose());
+            ROS_INFO_STREAM_COND(print_level>=8, "Real Angles: " <<       chain.getAng().transpose());
 
             // Compute collision points
             // obstacles are expressed in the world reference frame [WRF]
@@ -234,8 +234,8 @@ MatrixXd AvoidanceHandlerTactile::getV_LIM(const MatrixXd &v_lim)
 
         // Project movement along the normal into joint velocity space and scale by default
         // avoidingSpeed and m of skin (or PPS) activation
-        VectorXd s = -1.0 * J_xyz.transpose()*nrm;   // This is for reaching
-        // VectorXd s = J_xyz.transpose()*nrm; // This is for avoiding
+        // VectorXd s = -1.0 * J_xyz.transpose()*nrm;   // This is for reaching
+        VectorXd s = J_xyz.transpose()*nrm; // This is for avoiding
 
         for (size_t j = 0; j < size_t(s.rows()); ++j)
         {

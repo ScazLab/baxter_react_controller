@@ -479,8 +479,6 @@ bool BaxterChain::obstacleToCollisionPoint(const Obstacle& _obstacle,
     //           _coll_pt.n_wrf.norm(),      _coll_pt.size);
     _coll_pt.dist = _coll_pt.n_wrf.norm() - _coll_pt.size;
 
-    printf("%g ", _coll_pt.dist);
-
     if (not is_between(pos_ee, pos_ee_minus_one, _coll_pt.x_wrf))
     {
         // ROS_INFO("(pos_ee           - _coll_pt.x_wrf).norm(): %g"
@@ -490,8 +488,6 @@ bool BaxterChain::obstacleToCollisionPoint(const Obstacle& _obstacle,
         _coll_pt.dist += min((pos_ee           - _coll_pt.x_wrf).norm(),
                              (pos_ee_minus_one - _coll_pt.x_wrf).norm());
     }
-
-    printf("%g ", _coll_pt.dist);
 
     // Normalize the norm vectors
     _coll_pt.n_wrf = _coll_pt.n_wrf / _coll_pt.n_wrf.norm();
@@ -511,7 +507,6 @@ bool BaxterChain::obstacleToCollisionPoint(const Obstacle& _obstacle,
     else
     {
         _coll_pt.mag = 1.0/(1.0+exp((_coll_pt.dist*(2.0/thres)-1.0)*alpha));
-        printf("%g %g\n", _coll_pt.dist, _coll_pt.mag);
     }
 
     ROS_ASSERT(_coll_pt.mag >= 0.0 && _coll_pt.mag <= 1.0);
