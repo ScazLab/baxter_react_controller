@@ -68,10 +68,9 @@ void CtrlThread::initializeNLP()
     app=new Ipopt::IpoptApplication;
     app->Options()->SetNumericValue(            "tol", tol);
     app->Options()->SetNumericValue("constr_viol_tol", tol);
-    app->Options()->SetNumericValue( "acceptable_tol", tol*1e1);
-    app->Options()->SetNumericValue(   "dual_inf_tol", tol*1e3);
-    app->Options()->SetIntegerValue("acceptable_iter",   5);
-    // app->Options()->SetStringValue ( "mu_strategy", "adaptive");
+    app->Options()->SetNumericValue( "acceptable_tol", tol);
+    app->Options()->SetIntegerValue("acceptable_iter",  10);
+    app->Options()->SetStringValue ( "mu_strategy", "adaptive");
     // if (is_debug == false) { app->Options()->SetStringValue ("linear_solver", "ma57"); }
     app->Options()->SetNumericValue("max_cpu_time", 0.95 * dT);
     // app->Options()->SetStringValue ("nlp_scaling_method","gradient-based");
@@ -129,12 +128,12 @@ bool CtrlThread::goToPoseNoCheck(double px, double py, double pz,
     // if (exit_code != 0 && exit_code != 4 && exit_code != -4) { return false; }
     if (is_debug) { return true; }
 
-    if (exit_code == -4)    // Maximum CPU time exceeded
-    {
-        if (print_level >= 1)   { printf("\n"); }
+    // if (exit_code == -4)    // Maximum CPU time exceeded
+    // {
+    //     if (print_level >= 1)   { printf("\n"); }
 
-        return  false;
-    }
+    //     return  false;
+    // }
 
     if (exit_code ==  2)    // Local infeasibility
     {
